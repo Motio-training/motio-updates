@@ -1,6 +1,6 @@
 {
   "versionCode": 51,
   "versionName": "1.50",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.50/motio.apk",
+  "apkUrl": "https://raw.githubusercontent.com/Motio-training/motio-updates/main/motio.apk",
   "notes": "Version de transition. Installe-la pour continuer a recevoir les mises a jour : les suivantes viendront du nouveau depot.\n\nNE PLUS MODIFIER CE FICHIER APRES CETTE VERSION."
 }
