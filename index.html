@@ -3,28 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Séance Chrono</title>
+<title>Séance Motio</title>
 <style>
-  :root { color-scheme: dark; }
+  :root { color-scheme: light; }
   body {
     margin: 0; min-height: 100vh; display: flex; align-items: center;
     justify-content: center; padding: 24px; box-sizing: border-box;
-    background: #1A1D16; color: #E6E4D4;
+    background: #F4F3EE; color: #23261C;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   .carte { width: 100%; max-width: 420px; text-align: center; }
-  .sur { font-size: 13px; letter-spacing: .18em; color: #7A7F68; text-transform: uppercase; }
+  .sur { font-size: 13px; letter-spacing: .18em; color: #6E7160; text-transform: uppercase; }
   h1 { font-size: 26px; margin: 10px 0 4px; }
-  .infos { color: #7A7F68; font-size: 14px; margin-bottom: 22px; }
+  .infos { color: #6E7160; font-size: 14px; margin-bottom: 22px; }
   ul { list-style: none; padding: 0; margin: 0 0 22px; }
   li {
-    background: #22261D; border-radius: 10px; padding: 11px 14px; margin-bottom: 8px;
+    background: #FFFFFF; border-radius: 10px; padding: 11px 14px; margin-bottom: 8px;
     display: flex; justify-content: space-between; gap: 12px; font-size: 15px; text-align: left;
   }
-  li span { color: #B8D98A; white-space: nowrap; }
+  li span { color: #4F6021; white-space: nowrap; font-weight: 700; }
   a.bouton {
     display: block; width: 100%; box-sizing: border-box; border: 0;
-    background: #B8D98A; color: #1A1D16; font-weight: 700; font-size: 17px;
+    background: #4F6021; color: #FFFFFF; font-weight: 700; font-size: 17px;
     padding: 15px; border-radius: 26px; text-decoration: none;
     font-family: inherit;
   }
@@ -33,11 +33,11 @@
 <body>
 <div class="carte">
   <div class="sur">Séance partagée</div>
-  <h1 id="titre">Séance Chrono</h1>
+  <h1 id="titre">Séance Motio</h1>
   <div class="infos" id="infos"></div>
   <ul id="liste"></ul>
 
-  <a class="bouton" id="ouvrir" href="#">Ouvrir dans Chrono</a>
+  <a class="bouton" id="ouvrir" href="#">Ouvrir dans Motio</a>
 </div>
 
 <script>
