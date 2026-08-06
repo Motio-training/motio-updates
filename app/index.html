@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motio — Espace web</title>
+<meta name="theme-color" content="#2A3222">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Karla:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="appbar">
+  <button id="menu" class="menu-btn" aria-label="Ouvrir le menu">≡</button>
+  <a class="wordmark" href="../index.html">Motio</a>
+  <button id="deconnexion" class="lien-txt">Se déconnecter</button>
+</header>
+
+<div class="coque">
+  <nav class="nav" aria-label="Navigation principale">
+    <p class="nav-groupe">Social</p>
+    <a href="#/fil">Fil</a>
+    <a href="#/amis">Amis</a>
+    <a href="#/profil">Mon profil</a>
+
+    <p class="nav-groupe">Entraînement</p>
+    <a href="#/seances">Séances</a>
+    <a href="#/programmes">Programmes</a>
+    <a href="#/historique">Historique</a>
+
+    <p class="nav-pied">La séance en cours se déroule dans l'application.</p>
+  </nav>
+
+  <main id="vue" tabindex="-1"></main>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
