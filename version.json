@@ -1,6 +1,6 @@
 {
-  "versionCode": 73,
-  "versionName": "1.72",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.72/motio.apk",
+  "versionCode": 74,
+  "versionName": "1.73",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.73/motio.apk",
   "notes": "Le detail d'une seance planifiee rappelle ta derniere charge sur chaque exercice."
 }
