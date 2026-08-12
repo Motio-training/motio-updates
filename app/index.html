@@ -4,32 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Motio — Espace web</title>
-<meta name="theme-color" content="#2A3222">
+<meta name="theme-color" content="#171A11">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=Karla:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
 <header class="appbar">
-  <button id="menu" class="menu-btn" aria-label="Ouvrir le menu">≡</button>
-  <a class="wordmark" href="../index.html">Motio</a>
+  <button id="menu" class="menu-btn" aria-label="Ouvrir le menu">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+
+  <a class="wordmark" href="../index.html">
+    <svg class="emb" viewBox="0 0 32 32" aria-hidden="true">
+      <rect class="emb-couronne" x="14.4" y="1" width="3.2" height="3.6" rx="1.4"/>
+      <path class="emb-anse" d="M12.6 4.4h6.8"/>
+      <circle class="emb-cercle" cx="16" cy="18" r="11.2"/>
+      <path class="emb-tic" d="M16 8.4v1.8M25.6 18h-1.8M16 27.6v-1.8M6.4 18h1.8"/>
+      <path class="emb-aiguille" d="M16 18V10.6"/>
+      <circle class="emb-axe" cx="16" cy="18" r="1.5"/>
+    </svg>
+    <span>Motio</span>
+  </a>
+
   <button id="deconnexion" class="lien-txt">Se déconnecter</button>
 </header>
 
 <div class="coque">
   <nav class="nav" aria-label="Navigation principale">
     <p class="nav-groupe">Social</p>
-    <a href="#/fil">Fil</a>
-    <a href="#/amis">Amis</a>
-    <a href="#/profil">Mon profil</a>
+    <a href="#/fil">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
+      <span>Fil</span></a>
+    <a href="#/amis">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16.5 5.4a3.2 3.2 0 0 1 0 5.6M18 13.4a5.5 5.5 0 0 1 3 5.6"/></svg>
+      <span>Amis</span></a>
+    <a href="#/profil">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+      <span>Mon profil</span></a>
 
     <p class="nav-groupe">Entraînement</p>
-    <a href="#/seances">Séances</a>
-    <a href="#/programmes">Programmes</a>
-    <a href="#/historique">Historique</a>
+    <a href="#/seances">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+      <span>Séances</span></a>
+    <a href="#/programmes">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3.5v3M16 3.5v3"/></svg>
+      <span>Programmes</span></a>
+    <a href="#/historique">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      <span>Historique</span></a>
 
     <p class="nav-pied">La séance en cours se déroule dans l'application.</p>
   </nav>
