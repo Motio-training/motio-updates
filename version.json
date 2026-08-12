@@ -1,6 +1,6 @@
 {
-  "versionCode": 86,
-  "versionName": "1.85",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.85/motio.apk",
-  "notes": "Profil dans la barre du bas, arrondis et couleurs harmonises sur toute l'appli, nouvelle icone de theme."
+  "versionCode": 87,
+  "versionName": "1.86",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.86/motio.apk",
+  "notes": "Carte musculaire en direct pendant la creation d'une seance, bulle au clic sur un muscle, developpe couche/dips colorent aussi biceps et abdos."
 }
