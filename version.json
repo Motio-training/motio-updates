@@ -1,6 +1,6 @@
 {
-  "versionCode": 89,
-  "versionName": "1.88",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.88/motio.apk",
-  "notes": "Correction du plein ecran de la carte musculaire : fond opaque, vraie taille d'ecran, le clic sur un muscle refonctionne une fois zoome."
+  "versionCode": 90,
+  "versionName": "1.89",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.89/motio.apk",
+  "notes": "Zoom plein ecran plus fluide (demarre au niveau deja atteint), glissement pour passer avant/arriere une fois zoome, bulle posee sur le muscle touche."
 }
