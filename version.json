@@ -1,6 +1,6 @@
 {
-  "versionCode": 90,
-  "versionName": "1.89",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.89/motio.apk",
-  "notes": "Zoom plein ecran plus fluide (demarre au niveau deja atteint), glissement pour passer avant/arriere une fois zoome, bulle posee sur le muscle touche."
+  "versionCode": 91,
+  "versionName": "1.90",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.90/motio.apk",
+  "notes": "Reconnaissance du muscle au pixel pres, ouverture depuis la carte, retournement en page (un doigt) pour passer avant/dos, deplacement a deux doigts."
 }
