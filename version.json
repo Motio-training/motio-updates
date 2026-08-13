@@ -1,6 +1,6 @@
 {
-  "versionCode": 92,
-  "versionName": "1.91",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.91/motio.apk",
-  "notes": "Correction du test au pixel sur la carte musculaire (mauvaise echelle, l'etiquette ratait une bonne partie de chaque muscle) et suppression d'une zone morte entre appui et glissement."
+  "versionCode": 93,
+  "versionName": "1.92",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.92/motio.apk",
+  "notes": "Correction du cadrage de la carte musculaire : la silhouette derivait hors du centre en dezoomant, elle reste desormais stable quel que soit le zoom."
 }
