@@ -1,6 +1,6 @@
 {
-  "versionCode": 96,
-  "versionName": "1.95",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.95/motio.apk",
-  "notes": "La sauvegarde par fichier rejoint l'ecran Compte : une seule entree pour tout le carnet, rubrique Donnees retiree du menu."
+  "versionCode": 97,
+  "versionName": "1.96",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.96/motio.apk",
+  "notes": "Menage interne : navigation du Profil securisee, briques d'interface partagees. Rien ne change a l'usage, les prochaines evolutions seront plus sures."
 }
