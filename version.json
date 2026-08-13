@@ -1,6 +1,6 @@
 {
-  "versionCode": 100,
-  "versionName": "1.99",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.99/motio.apk",
-  "notes": "Les nouveautes s'affichent de la plus recente a la plus ancienne : plus besoin de tout derouler pour voir ce qui vient de changer."
+  "versionCode": 101,
+  "versionName": "2.0",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.0/motio.apk",
+  "notes": "Nouveau visuel du bilan de seance partage : meme identite graphique que le site web (cadran, olive fonce, typographies Outfit et JetBrains Mono)."
 }
