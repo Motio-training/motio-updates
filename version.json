@@ -1,6 +1,6 @@
 {
-  "versionCode": 87,
-  "versionName": "1.86",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.86/motio.apk",
-  "notes": "Carte musculaire en direct pendant la creation d'une seance, bulle au clic sur un muscle, developpe couche/dips colorent aussi biceps et abdos."
+  "versionCode": 88,
+  "versionName": "1.87",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.87/motio.apk",
+  "notes": "Carte musculaire : pincez pour zoomer jusqu'au plein ecran, plus facile de toucher le bon muscle."
 }
