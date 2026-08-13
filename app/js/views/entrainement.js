@@ -6,6 +6,7 @@ import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
          prochainGroupId, etendueBloc, libelleBloc, GOALS, LEVELS } from '../model.js';
 import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '../catalog.js';
+import { ouvrirPartage } from '../partage.js';
 
 /* ======================================================== liste des séances */
 
@@ -434,18 +435,23 @@ export async function vueHistorique() {
 
   const ul = el.querySelector('[data-liste]');
   for (const s of seances) {
-    ul.appendChild(h(`
-      <li class="ligne">
-        <div class="ligne-tete">
-          <span class="ligne-titre">${esc(s.workout_name || 'Séance')}<span class="etiquette">${esc(s.category || '')}</span></span>
-          <span class="ligne-meta">${esc(dateCourte(s.started_at))}</span>
+    const li = h(`
+      <li class="ligne ligne-action">
+        <div>
+          <div class="ligne-tete">
+            <span class="ligne-titre">${esc(s.workout_name || 'Séance')}<span class="etiquette">${esc(s.category || '')}</span></span>
+            <span class="ligne-meta">${esc(dateCourte(s.started_at))}</span>
+          </div>
+          <p class="ligne-stats">
+            <span>${esc(duree((s.duration_ms || 0) / 1000))}</span>
+            <span>${esc(kg(s.volume_kg))}</span>
+            <span>${s.set_count || 0} séries</span>
+          </p>
         </div>
-        <p class="ligne-stats">
-          <span>${esc(duree((s.duration_ms || 0) / 1000))}</span>
-          <span>${esc(kg(s.volume_kg))}</span>
-          <span>${s.set_count || 0} séries</span>
-        </p>
-      </li>`));
+        <button class="btn btn-sm btn-ghost" data-partager type="button">Partager l'image</button>
+      </li>`);
+    li.querySelector('[data-partager]').onclick = () => ouvrirPartage(s);
+    ul.appendChild(li);
   }
   render(el);
 }
