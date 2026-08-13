@@ -1,6 +1,6 @@
 {
-  "versionCode": 88,
-  "versionName": "1.87",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.87/motio.apk",
-  "notes": "Carte musculaire : pincez pour zoomer jusqu'au plein ecran, plus facile de toucher le bon muscle."
+  "versionCode": 89,
+  "versionName": "1.88",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.88/motio.apk",
+  "notes": "Correction du plein ecran de la carte musculaire : fond opaque, vraie taille d'ecran, le clic sur un muscle refonctionne une fois zoome."
 }
