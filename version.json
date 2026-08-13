@@ -1,6 +1,6 @@
 {
-  "versionCode": 91,
-  "versionName": "1.90",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.90/motio.apk",
-  "notes": "Reconnaissance du muscle au pixel pres, ouverture depuis la carte, retournement en page (un doigt) pour passer avant/dos, deplacement a deux doigts."
+  "versionCode": 92,
+  "versionName": "1.91",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.91/motio.apk",
+  "notes": "Correction du test au pixel sur la carte musculaire (mauvaise echelle, l'etiquette ratait une bonne partie de chaque muscle) et suppression d'une zone morte entre appui et glissement."
 }
