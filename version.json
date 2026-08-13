@@ -1,6 +1,6 @@
 {
-  "versionCode": 98,
-  "versionName": "1.97",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.97/motio.apk",
-  "notes": "Blocs d'entrainement a l'accueil : les seances d'un meme programme sont regroupees, la categorie devient le titre, et celle dont c'est le tour remonte avec un marqueur a faire."
+  "versionCode": 99,
+  "versionName": "1.98",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.98/motio.apk",
+  "notes": "Les seances sont visibles des l'ouverture : creer une seance, importer et ouvrir le programme sont passes sous la liste."
 }
