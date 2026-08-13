@@ -1,6 +1,6 @@
 {
-  "versionCode": 97,
-  "versionName": "1.96",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.96/motio.apk",
-  "notes": "Menage interne : navigation du Profil securisee, briques d'interface partagees. Rien ne change a l'usage, les prochaines evolutions seront plus sures."
+  "versionCode": 98,
+  "versionName": "1.97",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.97/motio.apk",
+  "notes": "Blocs d'entrainement a l'accueil : les seances d'un meme programme sont regroupees, la categorie devient le titre, et celle dont c'est le tour remonte avec un marqueur a faire."
 }
