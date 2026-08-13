@@ -1,6 +1,6 @@
 {
-  "versionCode": 93,
-  "versionName": "1.92",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.92/motio.apk",
-  "notes": "Correction du cadrage de la carte musculaire : la silhouette derivait hors du centre en dezoomant, elle reste desormais stable quel que soit le zoom."
+  "versionCode": 94,
+  "versionName": "1.93",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.93/motio.apk",
+  "notes": "Une seule silhouette en grand en plein ecran (retournement net), defilement de la page retabli sur la carte, temps restant estime pendant la seance, superset compacte."
 }
