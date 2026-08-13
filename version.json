@@ -1,6 +1,6 @@
 {
-  "versionCode": 94,
-  "versionName": "1.93",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.93/motio.apk",
-  "notes": "Une seule silhouette en grand en plein ecran (retournement net), defilement de la page retabli sur la carte, temps restant estime pendant la seance, superset compacte."
+  "versionCode": 95,
+  "versionName": "1.94",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v1.94/motio.apk",
+  "notes": "Synchronisation entierement automatique : les seances partent vers les amis toutes seules, le carnet se sauvegarde et redescend sans bouton. Plus de Sauvegarder ni Restaurer."
 }
