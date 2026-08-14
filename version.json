@@ -1,6 +1,6 @@
 {
-  "versionCode": 106,
-  "versionName": "2.3",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.3/motio.apk",
-  "notes": "Vraies notifications push : tu recois maintenant une alerte quand un ami suivi commence une seance, meme appli fermee (necessite d'accepter la permission notifications). Tape la notification pour ouvrir directement son suivi en direct."
+  "versionCode": 107,
+  "versionName": "2.4",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.4/motio.apk",
+  "notes": "Confirmation avant desabonnement, acces direct au message non lu depuis l'icone Social, reactions emoji (appui long sur un message), correction du retour a ECHAUFFEMENT au changement d'onglet, sous-onglets Social reorganises (Fil/Messages/Defis/Amis), accords grammaticaux selon le sexe, icone de notification chrono, reprise de la seance apres fermeture complete de l'appli, recadrage de la photo de profil, records epingles a la main."
 }
