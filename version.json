@@ -1,6 +1,6 @@
 {
-  "versionCode": 104,
-  "versionName": "2.2",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.2/motio.apk",
-  "notes": "Notification quand un ami commence une seance (reglage dans Compte), suivi en direct de sa seance (exercice en cours, series faites) avec chat integre. Reglage a activer/desactiver dans Profil > Compte."
+  "versionCode": 105,
+  "versionName": "2.2.1",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.2.1/motio.apk",
+  "notes": "Correctifs : avatars et titres de seance qui affichaient litteralement null, onglet renomme Social, sessions en direct affichees en tete du fil, badge messages non lus, apercu d'une seance recue avant import, detail complet de la seance en direct (exercice/serie en cours en gras), fermeture automatique des ecrans plein ecran au changement d'onglet."
 }
