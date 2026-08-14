@@ -1,6 +1,6 @@
 {
-  "versionCode": 111,
-  "versionName": "2.8",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.8/motio.apk",
-  "notes": "Poids conseille pendant l'entrainement : l'appli propose desormais une charge a partir de ton poids et RIR de la derniere fois (autoregulation), ou d'une estimation de depart selon ton niveau pour les grands mouvements de base si tu n'as pas d'historique. Nouveau profil d'entrainement (niveau/objectif) dans Profil, reutilise par l'assistant de programme."
+  "versionCode": 112,
+  "versionName": "2.9",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.9/motio.apk",
+  "notes": "Generateur de programme revu en profondeur : chaque exercice suit desormais un palier realiste (principal / secondaire / accessoire) selon l'objectif, au lieu d'une seule fourchette de repetitions appliquee a toute la seance. Nombre d'exercices reduit en Force. Nouveau : generer une seance isolee (sans programme complet) depuis l'onglet Entrainement."
 }
