@@ -1,6 +1,6 @@
 {
-  "versionCode": 110,
-  "versionName": "2.7",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.7/motio.apk",
-  "notes": "Remontee automatique des plantages (Crashlytics) et protection du carnet d'entrainement contre une ecriture ou une lecture interrompue (fichier corrompu)."
+  "versionCode": 111,
+  "versionName": "2.8",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.8/motio.apk",
+  "notes": "Poids conseille pendant l'entrainement : l'appli propose desormais une charge a partir de ton poids et RIR de la derniere fois (autoregulation), ou d'une estimation de depart selon ton niveau pour les grands mouvements de base si tu n'as pas d'historique. Nouveau profil d'entrainement (niveau/objectif) dans Profil, reutilise par l'assistant de programme."
 }
