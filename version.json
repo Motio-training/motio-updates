@@ -1,6 +1,6 @@
 {
-  "versionCode": 112,
-  "versionName": "2.9",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.9/motio.apk",
-  "notes": "Generateur de programme revu en profondeur : chaque exercice suit desormais un palier realiste (principal / secondaire / accessoire) selon l'objectif, au lieu d'une seule fourchette de repetitions appliquee a toute la seance. Nombre d'exercices reduit en Force. Nouveau : generer une seance isolee (sans programme complet) depuis l'onglet Entrainement."
+  "versionCode": 113,
+  "versionName": "2.10",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.10/motio.apk",
+  "notes": "Apercu avant validation d'un programme genere : rien n'est plus ajoute a l'onglet Entrainement tant que tu n'as pas valide (avant, les seances apparaissaient des la generation). Suppression d'un programme : les modeles crees et jamais utilises sont maintenant nettoyes avec lui (ton historique reel n'est jamais touche). Seance isolee generee : suit desormais le meme principe, rien n'est enregistre avant que tu appuies sur Enregistrer."
 }
