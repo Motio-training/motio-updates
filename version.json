@@ -1,6 +1,6 @@
 {
-  "versionCode": 108,
-  "versionName": "2.5",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.5/motio.apk",
-  "notes": "Correction du crash au recadrage de la photo de profil : le choix d'une photo dans la galerie fermait l'application avant l'ecran de recadrage."
+  "versionCode": 109,
+  "versionName": "2.6",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.6/motio.apk",
+  "notes": "Correction du recadrage de photo de profil (bouton de validation invisible), correction definitive de la coupure d'entrainement au changement d'onglet, reorganisation des records epingles a l'appui long."
 }
