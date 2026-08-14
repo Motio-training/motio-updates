@@ -1,6 +1,6 @@
 {
-  "versionCode": 109,
-  "versionName": "2.6",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.6/motio.apk",
-  "notes": "Correction du recadrage de photo de profil (bouton de validation invisible), correction definitive de la coupure d'entrainement au changement d'onglet, reorganisation des records epingles a l'appui long."
+  "versionCode": 110,
+  "versionName": "2.7",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.7/motio.apk",
+  "notes": "Remontee automatique des plantages (Crashlytics) et protection du carnet d'entrainement contre une ecriture ou une lecture interrompue (fichier corrompu)."
 }
