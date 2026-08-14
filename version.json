@@ -1,6 +1,6 @@
 {
-  "versionCode": 103,
-  "versionName": "2.1.1",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.1.1/motio.apk",
-  "notes": "Correctif : le bouton Message du profil ami n'ouvrait pas le chat (l'ecran de profil restait affiche par-dessus)."
+  "versionCode": 104,
+  "versionName": "2.2",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.2/motio.apk",
+  "notes": "Notification quand un ami commence une seance (reglage dans Compte), suivi en direct de sa seance (exercice en cours, series faites) avec chat integre. Reglage a activer/desactiver dans Profil > Compte."
 }
