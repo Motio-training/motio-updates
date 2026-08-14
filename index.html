@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Motio — Le carnet d'entraînement qui compte le temps</title>
-<meta name="description" content="Chronomètre, minuteur, Tabata et carnet d'entraînement complet. Séances, programmes, historique et fil d'amis. Application Android.">
-<meta name="theme-color" content="#161A12">
+<meta name="description" content="Chronomètre, minuteur, Tabata et carnet d'entraînement complet. Séances, programmes, historique et fil d'amis. Application Android, sans compte, sans publicité.">
+<meta name="theme-color" content="#171A11">
 <meta property="og:title" content="Motio">
 <meta property="og:description" content="Le carnet d'entraînement qui compte le temps.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Karla:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/site.css">
 </head>
 <body>
@@ -19,179 +19,456 @@
 <a class="skip" href="#modes">Aller au contenu</a>
 
 <header class="topbar">
-  <a class="wordmark" href="#top">Motio</a>
+  <a class="brand" href="#top" aria-label="Motio — accueil">
+    <img class="mark" src="assets/img/logo_m.png" alt="">
+    <img class="word" src="assets/img/logo_motio.png" alt="Motio">
+  </a>
   <nav class="topnav">
-    <a href="#modes">Fonctions</a>
+    <a href="#modes">Chrono</a>
+    <a href="#carnet">Carnet</a>
     <a href="#programmes">Programmes</a>
+    <a href="#comparatif">Comparatif</a>
+    <a href="#faq">FAQ</a>
     <a href="app/">Espace web</a>
-    <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener">Télécharger</a>
   </nav>
+  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener">Télécharger</a>
 </header>
 
 <main id="top">
 
-  <!-- ============ HERO ============ -->
-  <section class="block hero" data-tc="00:00">
-    <div class="tc" aria-hidden="true">00:00</div>
-    <div class="block-body">
-      <p class="eyebrow">Application Android · Chronomètre &amp; carnet</p>
-      <h1>Le carnet<br>d'entraînement<br><em>qui compte le temps.</em></h1>
+  <!-- ============ HÉROS ============ -->
+  <section class="hero">
+    <img class="hero-ghost" src="assets/img/logo_m.png" alt="" aria-hidden="true">
 
-      <div class="dial" role="img" aria-label="Chronomètre en cours">
-        <div class="dial-face">
-          <span id="chrono" class="dial-digits">00:00.00</span>
+    <div class="hero-main">
+      <p class="eyebrow">Application Android · chronomètre &amp; carnet</p>
+      <h1>Le carnet d'entraînement <em>qui compte le temps.</em></h1>
+
+      <div class="dial">
+        <div>
+          <span id="heroChrono" class="dial-digits">00:00.00</span>
           <span class="dial-label">temps écoulé depuis l'ouverture de la page</span>
         </div>
         <div class="dial-sweep" aria-hidden="true"><i></i></div>
       </div>
 
-      <p class="lede">Trois modes de chronométrage, un catalogue d'exercices complet,
-        des programmes qui progressent tout seuls et un fil pour voir ce que font
-        les copains. Le tout sans compte obligatoire et sans publicité.</p>
+      <p class="lede" style="margin-bottom:2rem">Trois modes de chronométrage, un catalogue d'exercices complet, des programmes qui progressent tout seuls et un fil pour voir ce que font les copains. Sans compte obligatoire, sans publicité, hors ligne.</p>
 
       <div class="cta-row">
-        <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener">Télécharger l'APK</a>
-        <a class="btn btn-lg btn-ghost" href="app/">Ouvrir l'espace web</a>
+        <div class="cta-group">
+          <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
+          <a class="btn btn-lg btn-ghost" href="#installer">Comment installer</a>
+        </div>
+        <div class="hero-qr">
+          <div id="qrHero" class="qr-mini"></div>
+          <span class="qr-mini-label">Scanne pour installer</span>
+        </div>
+      </div>
+      <p class="fineprint hero-fine">Android 8.0 minimum · <span id="verHero">dernière version sur GitHub</span> · hors Play Store</p>
+    </div>
+
+    <div class="hero-visual">
+      <div class="phone phone-lg">
+        <img src="assets/img/screen-recuperation.jpg" alt="Écran de récupération entre deux séries dans Motio">
       </div>
     </div>
   </section>
 
+  <!-- ============ BANDEAU ============ -->
+  <div class="bandeau">
+    <span>Sans compte</span><span class="sep">/</span><span>Sans publicité</span><span class="sep">/</span><span>Hors ligne</span><span class="sep">/</span><span>Gratuit</span><span class="sep">/</span><span>Aucun pistage</span>
+  </div>
+
   <!-- ============ MODES ============ -->
-  <section class="block" id="modes" data-tc="00:20">
-    <div class="tc" aria-hidden="true">00:20</div>
+  <section class="block" id="modes" data-sect>
+    <div class="tc">00:20</div>
     <div class="block-body">
       <h2>Trois façons de compter</h2>
-      <div class="grid grid-3">
-        <article class="card">
-          <p class="card-code">01</p>
-          <h3>Chrono</h3>
-          <p>Temps qui monte, tours enregistrés au passage. Pour les tests, les
-            circuits libres et tout ce qui se mesure à la fin.</p>
-        </article>
-        <article class="card">
-          <p class="card-code">02</p>
-          <h3>Minuteur</h3>
-          <p>Temps qui descend, avec relance. Signal sonore audible écran éteint,
-            le téléphone peut rester dans la poche.</p>
-        </article>
-        <article class="card">
-          <p class="card-code">03</p>
-          <h3>Tabata</h3>
-          <p>Effort et récupération en alternance, nombre de tours et de blocs
-            réglables. Chaque transition est annoncée.</p>
-        </article>
+      <p class="lede">Le chronomètre n'est pas un accessoire posé à côté du carnet : c'est par lui qu'on entre dans l'application. Essaie-le, il tourne vraiment.</p>
+
+      <div class="demo">
+        <div class="phone-wrap demo-phone-wrap">
+          <div class="phone phone-md demo-phone">
+            <div class="demo-topbar"><span>MOTIO</span><span>▮▮▮</span></div>
+            <div class="demo-body">
+              <div id="demoDial" class="demo-dial">
+                <div class="demo-dial-face">
+                  <span id="demoPhase" class="demo-phase">prêt</span>
+                  <span id="demoDigits" class="demo-digits">00:00.00</span>
+                </div>
+              </div>
+              <span id="demoMeta" class="demo-meta">temps qui monte</span>
+              <div class="demo-laps" aria-hidden="true">
+                <div id="demoLap1" class="demo-lap"><span>—</span><span>—</span></div>
+                <div id="demoLap2" class="demo-lap"><span>—</span><span>—</span></div>
+              </div>
+            </div>
+            <div class="demo-tabbar"><span class="on">Minuteurs</span><span>Entraînement</span><span>Amis</span><span>Profil</span></div>
+          </div>
+        </div>
+
+        <div class="demo-panel">
+          <div class="mode-tabs" role="group" aria-label="Choisir un mode">
+            <button type="button" class="mode-tab on" data-mode="chrono">Chrono</button>
+            <button type="button" class="mode-tab" data-mode="minuteur">Minuteur</button>
+            <button type="button" class="mode-tab" data-mode="tabata">Tabata</button>
+          </div>
+
+          <h3 id="demoTitle" style="font-size:1.15rem;letter-spacing:.04em">Chrono</h3>
+          <p id="demoDesc" style="max-width:46ch">Temps qui monte, tours enregistrés au passage. Pour les tests, les circuits libres et tout ce qui se mesure à la fin.</p>
+
+          <div class="demo-actions">
+            <button type="button" class="btn" id="demoRun">Démarrer</button>
+            <button type="button" class="btn btn-ghost" id="demoSecond">Tour</button>
+            <button type="button" class="btn btn-ghost" id="demoReset">Remise à zéro</button>
+          </div>
+
+          <ul class="numbered">
+            <li><span class="n">01</span><span class="t"><strong>Chrono</strong> — temps qui monte, tours enregistrés au passage.</span></li>
+            <li><span class="n">02</span><span class="t"><strong>Minuteur</strong> — temps qui descend, signal audible écran éteint.</span></li>
+            <li><span class="n">03</span><span class="t"><strong>Tabata</strong> — effort et récupération en alternance, chaque transition annoncée.</span></li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- ============ CARNET ============ -->
-  <section class="block" id="carnet" data-tc="08:00">
-    <div class="tc" aria-hidden="true">08:00</div>
+  <section class="block" id="carnet" data-sect>
+    <div class="tc">08:00</div>
     <div class="block-body">
       <h2>Un carnet, pas une feuille volante</h2>
-      <div class="grid grid-2">
-        <div class="feature">
-          <h3>Séances</h3>
-          <p>Construis une séance exercice par exercice depuis le catalogue :
-            séries, répétitions, charges, temps de repos. Recherche plein texte
-            et classement par groupe musculaire.</p>
+      <p class="lede">Tout ce que tu soulèves finit archivé, comparable, réutilisable. Rien à ressaisir, rien à exporter à la main.</p>
+
+      <div class="split">
+        <div class="split-media">
+          <div class="phone phone-sm">
+            <img src="assets/img/screen-entrainement.jpg" alt="Liste des séances d'entraînement dans Motio">
+          </div>
         </div>
-        <div class="feature">
-          <h3>Historique</h3>
-          <p>Chaque séance terminée est archivée avec ses performances réelles.
-            Le résumé reste modifiable après coup, parce que rien ne se passe
-            jamais exactement comme prévu.</p>
+        <div class="split-content grid grid-2">
+          <article class="card">
+            <h3>Séances</h3>
+            <p>Construis une séance exercice par exercice depuis le catalogue : séries, répétitions, charges, temps de repos. Recherche plein texte et classement par groupe musculaire.</p>
+          </article>
+          <article class="card">
+            <h3>Références</h3>
+            <p>Pendant l'effort, Motio affiche ce que tu avais fait la dernière fois sur le même exercice. Tu sais tout de suite si tu montes.</p>
+          </article>
         </div>
-        <div class="feature">
-          <h3>Références</h3>
-          <p>Pendant l'effort, Motio affiche ce que tu avais fait la dernière
-            fois sur le même exercice. Tu sais tout de suite si tu montes.</p>
+      </div>
+
+      <div class="split">
+        <div class="split-content grid grid-2">
+          <article class="card">
+            <h3>Historique</h3>
+            <p>Chaque séance terminée est archivée avec ses performances réelles : charge déplacée, temps sous tension, muscles sollicités. Le résumé reste modifiable après coup.</p>
+          </article>
+          <article class="card">
+            <h3>Partage</h3>
+            <p>Une séance s'envoie par lien ou par QR code, et le bilan se partage en carte illustrée. Le destinataire importe la séance telle quelle, sans compte et sans ressaisie.</p>
+          </article>
         </div>
-        <div class="feature">
-          <h3>Partage</h3>
-          <p>Une séance s'envoie par lien ou par QR code. Le destinataire
-            l'importe telle quelle, sans compte et sans ressaisie.</p>
+        <div class="split-media">
+          <div class="phone phone-sm">
+            <img src="assets/img/screen-bilan.jpg" alt="Bilan d'une séance : charge déplacée et muscles sollicités">
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <img src="assets/img/preview_carte.png" alt="Carte de partage d'une séance générée par Motio">
+        <div class="callout-body">
+          <p class="callout-tag">Carte de bilan</p>
+          <h3 style="font-size:1.15rem;letter-spacing:.04em">La séance se raconte toute seule</h3>
+          <p>À la fin d'une séance, Motio génère une carte lisible : charge déplacée, durée, temps sous tension, détail par exercice. Prête à envoyer, sans capture d'écran bricolée.</p>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ============ PROGRAMMES ============ -->
-  <section class="block" id="programmes" data-tc="24:00">
-    <div class="tc" aria-hidden="true">24:00</div>
+  <section class="block" id="programmes" data-sect>
+    <div class="tc">24:00</div>
     <div class="block-body">
       <h2>Des programmes qui avancent</h2>
-      <p class="lede">Tu donnes le nombre de séances par semaine, le matériel
-        disponible et l'objectif. Motio génère le découpage, répartit les groupes
-        musculaires et fixe les charges de départ.</p>
+      <p class="lede">Tu donnes la fréquence, le matériel et l'objectif. Motio génère le découpage, répartit les groupes musculaires, fixe les charges de départ — puis fait monter les chiffres semaine après semaine.</p>
+
+      <div class="programme-box">
+        <div class="programme-head">
+          <p class="programme-eyebrow">Double progression · bloc de 8 semaines</p>
+          <p id="weekTitle" class="programme-week">Semaine 1 / 8</p>
+        </div>
+
+        <label class="week-slider">
+          <span class="week-slider-label">Faire glisser pour avancer dans le bloc</span>
+          <input type="range" id="weekRange" min="1" max="8" step="1" value="1" aria-label="Semaine du programme">
+          <span class="week-ticks"><span>S1</span><span>S2</span><span>S3</span><span>S4</span><span>S5</span><span>S6</span><span>S7</span><span>S8</span></span>
+        </label>
+
+        <div class="prog-table">
+          <div class="prog-head"><span>Exercice</span><span>Séries × reps</span><span>Charge</span></div>
+          <div id="progRows"></div>
+        </div>
+        <p id="weekNote" class="programme-note"></p>
+      </div>
+
       <ul class="listing">
-        <li><span class="li-k">Découpage</span> full body, haut/bas ou push-pull-legs selon la fréquence</li>
-        <li><span class="li-k">Double progression</span> les répétitions montent d'abord, la charge ensuite</li>
-        <li><span class="li-k">Décharge</span> une semaine allégée insérée automatiquement au bon moment</li>
-        <li><span class="li-k">Ajustement</span> le programme se recale sur tes performances réelles, pas sur le plan théorique</li>
+        <li><span class="li-k">Découpage</span>full body, haut/bas ou push-pull-legs selon la fréquence choisie</li>
+        <li><span class="li-k">Double progression</span>les répétitions montent d'abord, la charge ensuite</li>
+        <li><span class="li-k">Décharge</span>une semaine allégée insérée automatiquement au bon moment</li>
+        <li><span class="li-k">Ajustement</span>le programme se recale sur tes performances réelles, pas sur le plan théorique</li>
       </ul>
     </div>
   </section>
 
   <!-- ============ SOCIAL ============ -->
-  <section class="block" id="social" data-tc="36:00">
-    <div class="tc" aria-hidden="true">36:00</div>
+  <section class="block" id="social" data-sect>
+    <div class="tc">36:00</div>
     <div class="block-body">
       <h2>Et les copains</h2>
-      <div class="grid grid-3">
-        <article class="card">
-          <h3>Fil de séances</h3>
-          <p>Les séances terminées par les personnes que tu suis apparaissent
-            dans ton fil, avec la durée et le volume.</p>
-        </article>
-        <article class="card">
-          <h3>Abonnements</h3>
-          <p>Tu choisis qui tu suis. Pas d'algorithme, pas de suggestions, pas
-            d'inconnus.</p>
-        </article>
-        <article class="card">
-          <h3>Trophées</h3>
-          <p>Six familles, trois paliers chacune. Régularité, volume, ancienneté :
-            ce qui se mérite sur la durée.</p>
-        </article>
+      <p class="lede">Un fil minuscule, volontairement : les gens que tu suis, leurs séances, rien d'autre.</p>
+
+      <div class="split" style="align-items:flex-start">
+        <div class="split-content grid grid-3">
+          <article class="card">
+            <h3>Fil de séances</h3>
+            <p>Les séances terminées par les personnes que tu suis apparaissent avec leur durée et leur volume.</p>
+          </article>
+          <article class="card">
+            <h3>Abonnements</h3>
+            <p>Tu choisis qui tu suis. Pas d'algorithme, pas de suggestions, pas d'inconnus.</p>
+          </article>
+          <article class="card">
+            <h3 class="gold">Trophées</h3>
+            <p>Six familles, trois paliers chacune. Régularité, volume, ancienneté : ce qui se mérite sur la durée.</p>
+          </article>
+          <article class="card">
+            <h3>Depuis l'ordinateur</h3>
+            <p>L'espace web donne accès au même historique et au même fil, sur grand écran.</p>
+            <a class="go" href="app/">Ouvrir l'espace web →</a>
+          </article>
+        </div>
+        <div class="split-media">
+          <div class="phone phone-sm">
+            <div class="phone-placeholder">
+              <span class="ph-1">Emplacement libre</span>
+              <span class="ph-2">capture du fil d'amis<br>1080 × 2316</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ TELECHARGER ============ -->
-  <section class="block block-end" id="telecharger" data-tc="48:00">
-    <div class="tc" aria-hidden="true">48:00</div>
+  <!-- ============ COMPARATIF ============ -->
+  <section class="block" id="comparatif" data-sect>
+    <div class="tc">44:00</div>
+    <div class="block-body">
+      <h2>Ce que Motio fait autrement</h2>
+      <p class="lede">Comparaison honnête, sans caricature : les autres applications font très bien beaucoup de choses. Motio fait ces choix-là.</p>
+
+      <div class="table-wrap">
+        <table class="comparatif">
+          <thead>
+            <tr>
+              <th scope="col"> </th>
+              <th scope="col" class="us">Motio</th>
+              <th scope="col">Apps de carnet grand public</th>
+              <th scope="col">Minuteurs simples</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Chrono, minuteur et Tabata intégrés</th>
+              <td class="us">Les trois</td>
+              <td class="dim">Minuteur de repos</td>
+              <td class="dim">Les trois</td>
+            </tr>
+            <tr>
+              <th scope="row">Carnet complet et historique</th>
+              <td class="us">Oui</td>
+              <td class="dim">Oui</td>
+              <td class="dim">Non</td>
+            </tr>
+            <tr>
+              <th scope="row">Programmes à progression automatique</th>
+              <td class="us">Inclus</td>
+              <td class="dim">Souvent payant</td>
+              <td class="dim">Non</td>
+            </tr>
+            <tr>
+              <th scope="row">Compte obligatoire</th>
+              <td class="us">Non</td>
+              <td class="dim">Généralement oui</td>
+              <td class="dim">Non</td>
+            </tr>
+            <tr>
+              <th scope="row">Publicité et pistage</th>
+              <td class="us">Aucun</td>
+              <td class="dim">Variable</td>
+              <td class="dim">Fréquents</td>
+            </tr>
+            <tr>
+              <th scope="row">Fonctionne hors ligne</th>
+              <td class="us">Entièrement</td>
+              <td class="dim">Partiellement</td>
+              <td class="dim">Oui</td>
+            </tr>
+            <tr>
+              <th scope="row">Prix</th>
+              <td class="us">Gratuit, sans abonnement</td>
+              <td class="dim">Abonnement mensuel</td>
+              <td class="dim">Gratuit avec pub</td>
+            </tr>
+            <tr>
+              <th scope="row">Distribution</th>
+              <td style="color:var(--accent-2)">APK direct, hors Play Store</td>
+              <td class="dim">Play Store</td>
+              <td class="dim">Play Store</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fineprint" style="margin-top:1rem">Tableau indicatif, établi sur les offres constatées à la date de publication.</p>
+    </div>
+  </section>
+
+  <!-- ============ INSTALLATION ============ -->
+  <section class="block block-alt" id="installer" data-sect>
+    <div class="tc">48:00</div>
     <div class="block-body">
       <h2>Installer Motio</h2>
-      <p class="lede">Motio se distribue en direct, hors Play Store. Le fichier
-        APK s'installe comme n'importe quelle application une fois l'installation
-        depuis une source inconnue autorisée sur ton téléphone.</p>
+      <p class="lede">Deux minutes, une autorisation à donner une seule fois. Ensuite l'application se met à jour toute seule.</p>
 
-      <ol class="steps">
-        <li>Télécharge la dernière version depuis les releases GitHub.</li>
-        <li>Ouvre le fichier téléchargé, Android demande l'autorisation une fois.</li>
-        <li>Les mises à jour suivantes sont proposées directement dans l'application.</li>
-      </ol>
+      <div class="install-grid">
+        <ol class="numbered install-steps" style="list-style:none;counter-reset:s">
+          <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">01</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Télécharge le fichier</strong>Depuis les releases GitHub, ou en scannant le QR code avec ton téléphone.</span></li>
+          <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">02</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Autorise l'installation</strong>Android demande une autorisation « source inconnue » pour l'application depuis laquelle tu ouvres le fichier. Tu l'accordes une fois.</span></li>
+          <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">03</span><span class="t"><strong style="display:block;margin-bottom:.25rem">C'est fini</strong>Les versions suivantes sont détectées et proposées directement dans l'application.</span></li>
+        </ol>
 
-      <div class="cta-row">
-        <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener">Télécharger la dernière version</a>
-        <a class="btn btn-lg btn-ghost" href="app/">Ouvrir l'espace web</a>
+        <div class="qr-box">
+          <div id="qrBig" class="qr"></div>
+          <p>Scanne depuis ton téléphone<br><span>dernière release GitHub</span></p>
+        </div>
       </div>
-      <p class="fineprint">Android 8.0 minimum (API 26) · <span id="verline">dernière version sur GitHub</span></p>
+
+      <div class="why-box">
+        <p class="why-tag">Pourquoi hors Play Store</p>
+        <p class="lede-sm">Publier sur le Play Store impose une identité de développeur affichée, des frais, et un cadre qui pousse à la publicité et au suivi d'usage. Motio est distribué en direct pour éviter tout ça : <strong style="color:var(--text);font-weight:600">aucune régie publicitaire, aucun traceur, aucun compte imposé</strong>.</p>
+        <div class="why-grid">
+          <div><span class="k">Source vérifiable</span><span class="v">Chaque version est publiée publiquement sur GitHub, avec ses notes.</span></div>
+          <div><span class="k">Mise à jour intégrée</span><span class="v">L'application lit le même fichier de version que ce site. Une seule source de vérité.</span></div>
+          <div><span class="k">Désinstallation nette</span><span class="v">Tes données restent sur ton téléphone et partent avec l'application.</span></div>
+        </div>
+      </div>
+
+      <div class="cta-group" style="margin-bottom:1rem">
+        <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> Télécharger la dernière version</a>
+        <a class="btn btn-lg btn-ghost" href="confidentialite/">Politique de confidentialité</a>
+      </div>
+      <p class="fineprint">Android 8.0 minimum (API 26) · <span id="verInstall">dernière version sur GitHub</span></p>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="block" id="faq" data-sect>
+    <div class="tc">56:00</div>
+    <div class="block-body">
+      <h2 style="margin-bottom:2rem">Questions fréquentes</h2>
+
+      <div class="faq">
+        <details>
+          <summary>Installer un APK, c'est risqué ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Le risque vient de la provenance du fichier, pas du format. Ici le fichier est publié sur le dépôt GitHub officiel de Motio, sous un compte public et vérifiable, et Android vérifie à chaque mise à jour que la signature correspond bien à celle de la version déjà installée.</p>
+        </details>
+        <details>
+          <summary>Faut-il créer un compte ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Non. Le chronomètre, le carnet, les séances, les programmes et l'historique fonctionnent sans aucun compte. Un compte ne devient nécessaire que pour le volet social : suivre des amis et voir leur fil.</p>
+        </details>
+        <details>
+          <summary>Où sont stockées mes données ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Sur ton téléphone. Rien ne part vers un serveur tant que tu n'utilises pas le volet social, qui ne synchronise que ce qui est nécessaire au fil. Le détail figure dans la <a href="confidentialite/">politique de confidentialité</a>.</p>
+        </details>
+        <details>
+          <summary>Comment se passent les mises à jour ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>L'application consulte le fichier de version publié sur GitHub et te propose la mise à jour quand une nouvelle version existe. Tu n'as pas à revenir sur ce site.</p>
+        </details>
+        <details>
+          <summary>Y a-t-il une version iPhone ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Pas aujourd'hui. Motio est une application Android. L'<a href="app/">espace web</a> permet en revanche de consulter son historique et son fil depuis n'importe quel navigateur, y compris sur iPhone.</p>
+        </details>
+        <details>
+          <summary>Le minuteur fonctionne-t-il écran éteint ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Oui. Le signal sonore reste audible téléphone verrouillé et dans la poche, et chaque transition Tabata est annoncée. C'est la raison d'être du chronomètre : il doit tenir tout seul pendant que tu soulèves.</p>
+        </details>
+        <details>
+          <summary>Puis-je récupérer mon carnet en changeant de téléphone ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Oui, via l'export du carnet, et via le compte si tu utilises le volet social. Les séances individuelles se transfèrent aussi par lien ou QR code, importables telles quelles.</p>
+        </details>
+        <details>
+          <summary>Motio est-il vraiment gratuit ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Oui, entièrement, sans abonnement, sans fonction verrouillée et sans publicité. Il n'y a pas de modèle payant caché derrière.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VERSIONS ============ -->
+  <section class="block block-end" id="versions" data-sect>
+    <div class="tc">60:00</div>
+    <div class="block-body">
+      <h2>Ce qui a changé</h2>
+      <p class="lede">Les dernières versions publiées, lues en direct depuis GitHub.</p>
+
+      <div id="releasesList">
+        <p class="fineprint">Chargement des dernières versions…</p>
+      </div>
+
+      <p style="margin:1.5rem 0 0"><a href="https://github.com/Motio-training/motio-updates/releases" rel="noopener" style="font-family:var(--f-display);font-weight:700;font-size:.85rem;letter-spacing:.07em;text-transform:uppercase">Toutes les versions sur GitHub →</a></p>
     </div>
   </section>
 
 </main>
 
 <footer class="foot">
-  <p class="wordmark wordmark-sm">Motio</p>
-  <nav>
-    <a href="app/">Espace web</a>
-    <a href="https://github.com/Motio-training/motio-updates/releases" rel="noopener">Versions</a>
-    <a href="#top">Haut de page</a>
-  </nav>
+  <div class="foot-top">
+    <div class="foot-brand">
+      <img src="assets/img/logo_motio.png" alt="Motio">
+      <p>Le carnet d'entraînement qui compte le temps. Application Android, distribuée en direct.</p>
+    </div>
+    <nav class="foot-col">
+      <span class="foot-col-title">Le produit</span>
+      <a href="#modes">Chronomètre</a>
+      <a href="#carnet">Carnet</a>
+      <a href="#programmes">Programmes</a>
+      <a href="#comparatif">Comparatif</a>
+    </nav>
+    <nav class="foot-col">
+      <span class="foot-col-title">Les outils</span>
+      <a href="app/">Espace web</a>
+      <a href="partage/">Import de séance</a>
+      <a href="https://github.com/Motio-training/motio-updates/releases" rel="noopener">Versions</a>
+      <a href="confidentialite/">Confidentialité</a>
+    </nav>
+    <div class="foot-install">
+      <span class="foot-col-title">Installer</span>
+      <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> APK</a>
+    </div>
+  </div>
+  <p class="foot-bottom">Motio · <span id="verFoot">dernière version sur GitHub</span> · Android 8.0 minimum · aucun traceur sur ce site</p>
 </footer>
 
+<div id="floatbar" class="floatbar">
+  <div class="floatbar-id">
+    <img src="assets/img/logo_m.png" alt="">
+    <span id="floatbarVersion">Motio · Android 8.0+</span>
+  </div>
+  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
+</div>
+
+<script src="assets/js/vendor/qrcode.js"></script>
 <script src="assets/js/site.js"></script>
 </body>
 </html>
