@@ -1,6 +1,6 @@
 {
-  "versionCode": 102,
-  "versionName": "2.1",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.1/motio.apk",
-  "notes": "Nouvel onglet Amis : profils interactifs en plein ecran, photo de profil, programme en cours mis en avant, trophees et records visibles chez les amis, messagerie et envoi direct de seances."
+  "versionCode": 103,
+  "versionName": "2.1.1",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.1.1/motio.apk",
+  "notes": "Correctif : le bouton Message du profil ami n'ouvrait pas le chat (l'ecran de profil restait affiche par-dessus)."
 }
