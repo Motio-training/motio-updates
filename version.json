@@ -1,6 +1,6 @@
 {
-  "versionCode": 101,
-  "versionName": "2.0",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.0/motio.apk",
-  "notes": "Nouveau visuel du bilan de seance partage : meme identite graphique que le site web (cadran, olive fonce, typographies Outfit et JetBrains Mono)."
+  "versionCode": 102,
+  "versionName": "2.1",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.1/motio.apk",
+  "notes": "Nouvel onglet Amis : profils interactifs en plein ecran, photo de profil, programme en cours mis en avant, trophees et records visibles chez les amis, messagerie et envoi direct de seances."
 }
