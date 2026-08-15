@@ -1,6 +1,6 @@
 {
-  "versionCode": 118,
-  "versionName": "2.15",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.15/motio.apk",
-  "notes": "Textes agrandis sur le visuel de partage (etiquettes, tuiles, liste d'exercices, pied de page) : plus lisible sur un grand ecran. Liste d'exercices plafonnee a 6 lignes au lieu de 7 pour garder de la place."
+  "versionCode": 119,
+  "versionName": "2.16",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.16/motio.apk",
+  "notes": "Texte de la carte de partage encore agrandi (option validee, +35% sur les petits textes). Tuile CHARGE corrigee : l'unite KG est dans l'etiquette pour ne plus disparaitre. Nouveau slogan en pied de carte : Ton coach personnel, toujours dans ta poche. Liste d'exercices plafonnee a 4 lignes pour garder assez d'espace."
 }
