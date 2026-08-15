@@ -295,7 +295,7 @@ function contenuCarte(d) {
 
       <div class="foot">
         <div class="foot-brand">${imageDiv('embleme', emblemeSVG({ accentCercle: true }))}<b>MOTIO</b></div>
-        <p class="foot-tag">Le carnet d'entraînement qui compte le temps</p>
+        <p class="foot-tag">Ton coach personnel, toujours dans ta poche</p>
       </div>
     </div>
   </div>`;
