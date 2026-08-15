@@ -1,6 +1,6 @@
 {
-  "versionCode": 116,
-  "versionName": "2.13",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.13/motio.apk",
-  "notes": "Coach IA mis en avant sur la page d'accueil (bandeau en haut de l'onglet Entrainement). Ton du coach corrige : les reponses suivent maintenant la longueur du message recu (un salut a une reponse courte et naturelle, plus de reponse robotique en 3 paragraphes)."
+  "versionCode": 117,
+  "versionName": "2.14",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.14/motio.apk",
+  "notes": "Visuel de partage revu : la silhouette avec les zones travaillees remplace le grand cadran circulaire au centre de la carte. Le tonnage rejoint desormais Duree et Temps sous tension dans trois tuiles compactes. Liste des exercices inchangee."
 }
