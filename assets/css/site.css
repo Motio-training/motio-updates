@@ -254,6 +254,20 @@ p{margin:0 0 1rem}
 .callout-body{flex:1 1 18rem;min-width:0}
 .callout-tag{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);margin:0 0 .75rem}
 
+/* ---------- Moti : bulle de présentation, façon message de chat ---------- */
+.moti-intro{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:clamp(1.25rem,3vw,2rem);max-width:42rem;
+}
+.moti-intro-head{display:flex;align-items:center;gap:.65rem;margin:0 0 .85rem}
+.moti-avatar{
+  width:2.1rem;height:2.1rem;border-radius:50%;flex:0 0 auto;
+  background:radial-gradient(circle at 32% 28%,#E8D9A8,var(--accent-2) 78%);
+  box-shadow:0 0 0 1px var(--line-strong);
+}
+.moti-name{font-family:var(--f-display);font-weight:800;font-size:1rem;letter-spacing:.01em}
+.moti-intro p{margin:0;color:var(--text);font-size:1.02rem;line-height:1.65}
+
 /* ---------- démo chronomètre ---------- */
 .demo{display:flex;flex-wrap:wrap;gap:clamp(1.25rem,3vw,2.5rem);align-items:flex-start}
 .demo-phone{flex:0 1 17rem;min-width:min(100%,14rem);display:flex;flex-direction:column;background:var(--ink)}
