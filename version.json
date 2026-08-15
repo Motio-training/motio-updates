@@ -1,6 +1,6 @@
 {
-  "versionCode": 119,
-  "versionName": "2.16",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.16/motio.apk",
-  "notes": "Texte de la carte de partage encore agrandi (option validee, +35% sur les petits textes). Tuile CHARGE corrigee : l'unite KG est dans l'etiquette pour ne plus disparaitre. Nouveau slogan en pied de carte : Ton coach personnel, toujours dans ta poche. Liste d'exercices plafonnee a 4 lignes pour garder assez d'espace."
+  "versionCode": 120,
+  "versionName": "2.17",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.17/motio.apk",
+  "notes": "Carte de partage : liste d'exercices sur deux colonnes de 4 (8 exercices affiches au lieu de 4), meme hauteur de carte. Correction d'un depassement possible avec le resume + N autres. Nouveau : notification sonore quand un message arrive en pleine seance (le bip de depart de serie choisi dans les reglages, repete 3 fois a la suite), en plus de la notification visuelle deja existante."
 }
