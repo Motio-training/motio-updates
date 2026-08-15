@@ -1,6 +1,6 @@
 {
-  "versionCode": 113,
-  "versionName": "2.10",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.10/motio.apk",
-  "notes": "Apercu avant validation d'un programme genere : rien n'est plus ajoute a l'onglet Entrainement tant que tu n'as pas valide (avant, les seances apparaissaient des la generation). Suppression d'un programme : les modeles crees et jamais utilises sont maintenant nettoyes avec lui (ton historique reel n'est jamais touche). Seance isolee generee : suit desormais le meme principe, rien n'est enregistre avant que tu appuies sur Enregistrer."
+  "versionCode": 114,
+  "versionName": "2.11",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.11/motio.apk",
+  "notes": "Generation de programme par IA : depuis Programme, nouveau bouton Decrire mon objectif (IA). Decris un objectif precis en texte libre (record 1RM, explosivite, sport specifique...), l'IA construit un programme reel avec sa propre logique de periodisation par blocs, en n'utilisant que les exercices de ton catalogue. Meme ecran d'apercu et de validation que le generateur habituel - rien n'est enregistre avant validation. Necessite une cle API Anthropic configuree cote serveur (a faire une seule fois)."
 }
