@@ -1,6 +1,6 @@
 {
-  "versionCode": 125,
-  "versionName": "2.22",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.22/motio.apk",
-  "notes": "Nouveau : groupes d'entrainement. Cree un groupe (nom, description, banniere), invite par lien ou QR code, adhesion immediate. Chaque groupe a son fil (seances des membres), son classement (tonnage, seances, regularite, comme les defis existants) et son canal de discussion (texte + partage de seance). Le proprietaire peut modifier le groupe, retirer un membre, regenerer le code d'invitation, ou supprimer le groupe. Nouvel onglet Groupes dans Social."
+  "versionCode": 126,
+  "versionName": "2.23",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.23/motio.apk",
+  "notes": "Correctif : l'ecran de creation/modification d'un groupe defile desormais correctement (les champs nom et description restaient hors d'atteinte sur certains ecrans), et l'aperçu de la banniere est moins haut."
 }
