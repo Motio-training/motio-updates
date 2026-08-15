@@ -1,6 +1,6 @@
 {
-  "versionCode": 120,
-  "versionName": "2.17",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.17/motio.apk",
-  "notes": "Carte de partage : liste d'exercices sur deux colonnes de 4 (8 exercices affiches au lieu de 4), meme hauteur de carte. Correction d'un depassement possible avec le resume + N autres. Nouveau : notification sonore quand un message arrive en pleine seance (le bip de depart de serie choisi dans les reglages, repete 3 fois a la suite), en plus de la notification visuelle deja existante."
+  "versionCode": 121,
+  "versionName": "2.18",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.18/motio.apk",
+  "notes": "Carte de partage : quand le nombre d'exercices est pair, autant a gauche qu'a droite (6 exercices = 3 et 3) au lieu d'un remplissage fixe par colonnes de 4. Notification sonore de message en seance : l'espacement entre les 3 bips suit desormais la duree reelle du bip choisi (plus de chevauchement), et chaque message recu declenche sa propre serie de 3 bips."
 }
