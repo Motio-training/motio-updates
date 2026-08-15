@@ -1,6 +1,6 @@
 {
-  "versionCode": 122,
-  "versionName": "2.19",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.19/motio.apk",
-  "notes": "Coach IA : le contexte envoye au coach inclut maintenant la date/heure actuelle et des reperes relatifs (aujourd'hui, hier) pour chaque seance recente, afin qu'il ne redemande plus si tu es pret pour une seance deja faite dans la journee. Ton renforce pour coller a ton propre style, et le coach decline desormais fermement toute question qui ne concerne pas le sport. Nouveau logo Coach IA repris dans le bandeau Entrainement, le menu Profil, et une nouvelle bulle accessible directement en haut de l'ecran pendant la seance."
+  "versionCode": 123,
+  "versionName": "2.20",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.20/motio.apk",
+  "notes": "Coach IA : le clavier ne recouvre plus le bas de la conversation (meme correctif applique au fil de discussion avec un ami). Le coach peut desormais structurer une seance precise qu'il te propose (au lieu de la decrire en texte libre, parfois coupee en plein milieu) : une puce 'Voir la seance proposee' sous son message ouvre directement l'editeur existant, pre-rempli et modifiable, pour l'enregistrer et la faire maintenant ou plus tard."
 }
