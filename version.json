@@ -1,6 +1,6 @@
 {
-  "versionCode": 121,
-  "versionName": "2.18",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.18/motio.apk",
-  "notes": "Carte de partage : quand le nombre d'exercices est pair, autant a gauche qu'a droite (6 exercices = 3 et 3) au lieu d'un remplissage fixe par colonnes de 4. Notification sonore de message en seance : l'espacement entre les 3 bips suit desormais la duree reelle du bip choisi (plus de chevauchement), et chaque message recu declenche sa propre serie de 3 bips."
+  "versionCode": 122,
+  "versionName": "2.19",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.19/motio.apk",
+  "notes": "Coach IA : le contexte envoye au coach inclut maintenant la date/heure actuelle et des reperes relatifs (aujourd'hui, hier) pour chaque seance recente, afin qu'il ne redemande plus si tu es pret pour une seance deja faite dans la journee. Ton renforce pour coller a ton propre style, et le coach decline desormais fermement toute question qui ne concerne pas le sport. Nouveau logo Coach IA repris dans le bandeau Entrainement, le menu Profil, et une nouvelle bulle accessible directement en haut de l'ecran pendant la seance."
 }
