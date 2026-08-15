@@ -1,6 +1,6 @@
 {
-  "versionCode": 114,
-  "versionName": "2.11",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.11/motio.apk",
-  "notes": "Generation de programme par IA : depuis Programme, nouveau bouton Decrire mon objectif (IA). Decris un objectif precis en texte libre (record 1RM, explosivite, sport specifique...), l'IA construit un programme reel avec sa propre logique de periodisation par blocs, en n'utilisant que les exercices de ton catalogue. Meme ecran d'apercu et de validation que le generateur habituel - rien n'est enregistre avant validation. Necessite une cle API Anthropic configuree cote serveur (a faire une seule fois)."
+  "versionCode": 115,
+  "versionName": "2.12",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.12/motio.apk",
+  "notes": "Coach IA : nouvelle conversation dans Profil -> Coach IA. Le coach connait ton programme en cours, tes dernieres seances et tes records reels, et repond en s'appuyant dessus (motivation, conseils, rappel d'objectif). Conversation gardee localement sur le telephone, comme le reste du carnet."
 }
