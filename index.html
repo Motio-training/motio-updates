@@ -24,10 +24,10 @@
     <img class="word" src="assets/img/logo_motio.png" alt="Motio">
   </a>
   <nav class="topnav">
+    <a href="#moti" class="gold">Moti</a>
     <a href="#modes">Chrono</a>
     <a href="#carnet">Carnet</a>
     <a href="#programmes">Programmes</a>
-    <a href="#moti">Moti</a>
     <a href="#comparatif">Comparatif</a>
     <a href="#faq">FAQ</a>
     <a href="app/">Espace web</a>
@@ -42,7 +42,8 @@
     <img class="hero-ghost" src="assets/img/logo_m.png" alt="" aria-hidden="true">
 
     <div class="hero-main">
-      <p class="eyebrow">Application Android · chronomètre &amp; carnet</p>
+      <p class="eyebrow">Application Android · carnet, chronomètre &amp; coach</p>
+      <a class="hero-badge" href="#moti"><i aria-hidden="true"></i>Nouveau · Moti, le coach IA</a>
       <h1>Ton coach personnel, <em>toujours dans ta poche.</em></h1>
 
       <div class="dial">
@@ -53,7 +54,7 @@
         <div class="dial-sweep" aria-hidden="true"><i></i></div>
       </div>
 
-      <p class="lede" style="margin-bottom:2rem">Trois modes de chronométrage, un catalogue d'exercices complet, des programmes qui progressent tout seuls, un coach IA qui connaît vraiment tes séances, et un fil pour voir ce que font les copains. Sans compte obligatoire, sans publicité, hors ligne.</p>
+      <p class="lede" style="margin-bottom:2rem">Trois modes de chronométrage, un catalogue d'exercices complet, un historique qui garde tout — et <strong style="color:var(--accent-2);font-weight:600">Moti</strong>, un coach qui connaît tes séances, tes charges et tes records, et qui t'écrit la séance du soir ou un programme entier. Sans compte obligatoire, sans publicité.</p>
 
       <div class="cta-row">
         <div class="cta-group">
@@ -69,8 +70,18 @@
     </div>
 
     <div class="hero-visual">
-      <div class="phone phone-lg">
-        <img src="assets/img/screen-recuperation.jpg" alt="Écran de récupération entre deux séries dans Motio">
+      <div class="chat-phone">
+        <div class="chat-phone-head">
+          <img src="assets/img/logo_m.png" alt="">
+          <span class="who">Moti</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span class="meta">carnet lu</span>
+        </div>
+        <div class="chat-phone-body" id="heroChat" aria-live="polite"></div>
+        <div class="chat-phone-input">
+          <span>Écrire à Moti</span>
+          <span class="chat-caret" aria-hidden="true"></span>
+        </div>
       </div>
     </div>
   </section>
@@ -79,6 +90,51 @@
   <div class="bandeau">
     <span>Sans compte</span><span class="sep">/</span><span>Sans publicité</span><span class="sep">/</span><span>Hors ligne</span><span class="sep">/</span><span>Gratuit</span><span class="sep">/</span><span>Aucun pistage</span>
   </div>
+
+  <!-- ============ MOTI (COACH IA) ============ -->
+  <section class="block" id="moti" data-sect style="border-top:1px solid #6B5324;background:var(--ink-2)">
+    <div class="tc" style="border-top-color:#6B5324;color:var(--accent-2)">00:00</div>
+    <div class="block-body">
+      <p class="eyebrow" style="color:#8A6B33">Avant la première répétition</p>
+      <h2 style="max-width:20ch">Moti écrit la séance. <span style="color:var(--accent-2)">Toi, tu la soulèves.</span></h2>
+      <p class="lede" style="font-size:clamp(1.05rem,1rem + .4vw,1.3rem);max-width:62ch">Un coach qui a lu ton carnet en entier : tes séances, tes charges, tes records, tes jours de repos. Tu lui parles normalement, il répond avec tes chiffres à toi — et il construit la séance ou le programme qui va avec.</p>
+
+      <div class="split" style="align-items:flex-start">
+        <div class="split-content" style="flex:1 1 27rem">
+          <div class="moti-demo">
+            <div class="moti-demo-head">
+              <img src="assets/img/logo_m.png" alt="">
+              <span class="who">Moti</span>
+              <span class="meta">46 séances · 12 exercices suivis</span>
+            </div>
+            <div class="moti-demo-body" id="motiChat" aria-live="polite"></div>
+            <div class="moti-demo-foot">
+              <p>Essaie une question</p>
+              <div class="quick-qs">
+                <button type="button" class="quick-q" data-q="court">Je n'ai que 40 minutes ce soir</button>
+                <button type="button" class="quick-q" data-q="stagne">Pourquoi je stagne au développé couché ?</button>
+                <button type="button" class="quick-q" data-q="epaule">J'ai mal à l'épaule droite</button>
+              </div>
+            </div>
+          </div>
+          <p class="moti-demo-fine">Démonstration rejouable · les chiffres affichés viennent d'un carnet d'exemple</p>
+        </div>
+
+        <div class="moti-features">
+          <div class="phone-wrap">
+            <div class="phone phone-sm">
+              <img src="assets/img/screen-recuperation.jpg" alt="Moti dans l'application, pendant la récupération entre deux séries">
+            </div>
+          </div>
+          <div>
+            <div class="feature-line"><span class="k">Il connaît tes chiffres</span><p class="v">Pas de conseils génériques : Moti répond avec tes charges, tes dates et tes records réels.</p></div>
+            <div class="feature-line"><span class="k">Une séance en un tap</span><p class="v">Ce qu'il propose s'ajoute au carnet tel quel, prêt à être lancé au chronomètre.</p></div>
+            <div class="feature-line"><span class="k">Tu gardes la main</span><p class="v">Rien n'est imposé : tout ce que Moti écrit reste modifiable, exercice par exercice.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- ============ MODES ============ -->
   <section class="block" id="modes" data-sect>
@@ -192,12 +248,29 @@
   <section class="block" id="programmes" data-sect>
     <div class="tc">24:00</div>
     <div class="block-body">
-      <h2>Des programmes qui avancent</h2>
-      <p class="lede">Tu donnes la fréquence, le matériel et l'objectif. Motio génère le découpage, répartit les groupes musculaires, fixe les charges de départ — puis fait monter les chiffres semaine après semaine.</p>
+      <p class="eyebrow" style="color:var(--accent-2)">Écrit par Moti</p>
+      <h2>Une phrase suffit à écrire huit semaines</h2>
+      <p class="lede">Décris ton objectif comme tu le dirais à voix haute. Moti choisit le découpage, répartit les groupes musculaires, fixe les charges de départ à partir de ton carnet — puis fait monter les chiffres semaine après semaine.</p>
+
+      <div class="gen-box">
+        <label>
+          <span class="gen-label">Ton objectif, en une phrase</span>
+          <span class="gen-row">
+            <input type="text" id="genPhrase" class="gen-input" aria-label="Décris ton objectif">
+            <button type="button" id="genBtn" class="gen-btn">Générer</button>
+          </span>
+        </label>
+        <div class="gen-chips">
+          <button type="button" class="chip on" data-obj="muscle">Prendre du muscle</button>
+          <button type="button" class="chip" data-obj="force">Gagner en force</button>
+          <button type="button" class="chip" data-obj="temps">40 minutes maximum</button>
+        </div>
+        <div class="gen-log" id="genLog"></div>
+      </div>
 
       <div class="programme-box">
         <div class="programme-head">
-          <p class="programme-eyebrow">Double progression · bloc de 8 semaines</p>
+          <p id="progDecoupe" class="programme-eyebrow">Haut / bas · 4 séances · bloc de 8 semaines</p>
           <p id="weekTitle" class="programme-week">Semaine 1 / 8</p>
         </div>
 
@@ -215,45 +288,11 @@
       </div>
 
       <ul class="listing">
-        <li><span class="li-k">Découpage</span>full body, haut/bas ou push-pull-legs selon la fréquence choisie</li>
+        <li><span class="li-k">Découpage</span>full body, haut/bas ou push-pull-legs, choisi d'après la fréquence et le matériel que tu décris</li>
         <li><span class="li-k">Double progression</span>les répétitions montent d'abord, la charge ensuite</li>
         <li><span class="li-k">Décharge</span>une semaine allégée insérée automatiquement au bon moment</li>
         <li><span class="li-k">Ajustement</span>le programme se recale sur tes performances réelles, pas sur le plan théorique</li>
       </ul>
-    </div>
-  </section>
-
-  <!-- ============ MOTI (COACH IA) ============ -->
-  <section class="block" id="moti" data-sect>
-    <div class="tc">30:00</div>
-    <div class="block-body">
-      <h2>Moti, ton coach dans la poche</h2>
-      <p class="lede">Un vrai chat, pas un formulaire à cocher. Moti connaît ton programme, tes dernières séances et tes records, et s'en sert vraiment pour te répondre, jamais des généralités.</p>
-
-      <div class="moti-intro">
-        <div class="moti-intro-head">
-          <span class="moti-avatar" aria-hidden="true"></span>
-          <span class="moti-name">Moti</span>
-        </div>
-        <p>Salut, moi c'est Moti. Je suis le coach qui vit dans Motio : je connais ton programme, tes dernières séances, tes records, ce que tu as déjà fait aujourd'hui. Demande-moi comment tu progresses, ce que tu dois faire, ou décris-moi une séance précise, je te la structure et tu l'ajoutes direct à ton entraînement. Je reste sur le sport, tout le temps.</p>
-      </div>
-
-      <div class="split-content grid grid-3" style="margin-top:clamp(1.5rem,3.5vw,3rem)">
-        <article class="card">
-          <h3>Discussion réelle</h3>
-          <p>Tu lui parles comme à un pote d'entraînement. Il calibre sa réponse sur ce que tu lui envoies : bref pour un bonjour, concret pour une vraie question.</p>
-        </article>
-        <article class="card">
-          <h3>Programme sur mesure</h3>
-          <p>Décris ton objectif en une phrase, par exemple « record 1RM au développé couché dans 8 semaines ». Moti construit un programme complet, semaine par semaine.</p>
-        </article>
-        <article class="card">
-          <h3 class="gold">Séance proposée</h3>
-          <p>Demande-lui une séance précise : il la structure et te l'envoie directement dans l'onglet Entraînement, modifiable, à faire maintenant ou plus tard.</p>
-        </article>
-      </div>
-
-      <p class="fineprint" style="margin-top:2rem">Le coach IA est inclus gratuitement pendant la phase de test. Une version Gold, plus poussée, arrivera plus tard.</p>
     </div>
   </section>
 
@@ -324,15 +363,21 @@
               <td class="dim">Non</td>
             </tr>
             <tr>
-              <th scope="row">Programmes à progression automatique</th>
-              <td class="us">Inclus</td>
-              <td class="dim">Souvent payant</td>
+              <th scope="row">Coach conversationnel qui lit ton carnet</th>
+              <td style="color:var(--accent-2)">Moti, inclus</td>
+              <td class="dim">Non</td>
               <td class="dim">Non</td>
             </tr>
             <tr>
-              <th scope="row">Coach IA personnel</th>
+              <th scope="row">Programme généré sur mesure</th>
+              <td style="color:var(--accent-2)">En une phrase</td>
+              <td class="dim">Modèles à choisir</td>
+              <td class="dim">Non</td>
+            </tr>
+            <tr>
+              <th scope="row">Progression automatique des charges</th>
               <td class="us">Inclus</td>
-              <td class="dim">Rare, souvent payant</td>
+              <td class="dim">Souvent payant</td>
               <td class="dim">Non</td>
             </tr>
             <tr>
@@ -426,6 +471,14 @@
           <p>Non. Le chronomètre, le carnet, les séances, les programmes et l'historique fonctionnent sans aucun compte. Un compte ne devient nécessaire que pour le volet social : suivre des amis et voir leur fil.</p>
         </details>
         <details>
+          <summary>Qu'est-ce que Moti sait exactement de moi ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Ce que contient ton carnet, et rien d'autre : tes séances passées, tes charges, tes records, tes temps de repos. Pas de données de santé récupérées ailleurs, pas de profil publicitaire. C'est justement ce qui lui permet de répondre avec tes chiffres plutôt qu'avec des généralités.</p>
+        </details>
+        <details>
+          <summary>Moti fonctionne-t-il hors ligne ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Non, lui seul a besoin d'une connexion : c'est la seule partie de l'application dans ce cas. Le chronomètre, le carnet, les séances, les programmes déjà écrits et l'historique restent entièrement utilisables hors ligne, à la salle comme au sous-sol.</p>
+        </details>
+        <details>
           <summary>Où sont stockées mes données ?<span class="plus" aria-hidden="true">+</span></summary>
           <p>Sur ton téléphone. Rien ne part vers un serveur tant que tu n'utilises pas le volet social, qui ne synchronise que ce qui est nécessaire au fil. Le détail figure dans la <a href="confidentialite/">politique de confidentialité</a>.</p>
         </details>
@@ -447,7 +500,7 @@
         </details>
         <details>
           <summary>Motio est-il vraiment gratuit ?<span class="plus" aria-hidden="true">+</span></summary>
-          <p>Oui, entièrement, sans abonnement, sans fonction verrouillée et sans publicité. Il n'y a pas de modèle payant caché derrière.</p>
+          <p>Oui, et sans publicité. Le carnet, le chronomètre, l'historique et les programmes resteront gratuits — c'est le cœur de l'application. Une offre Gold viendra plus tard couvrir les usages intensifs de Moti, dont le fonctionnement a un coût réel ; d'ici là, il est ouvert à tout le monde.</p>
         </details>
       </div>
     </div>
@@ -478,10 +531,10 @@
     </div>
     <nav class="foot-col">
       <span class="foot-col-title">Le produit</span>
+      <a href="#moti" class="gold">Moti, le coach</a>
       <a href="#modes">Chronomètre</a>
       <a href="#carnet">Carnet</a>
       <a href="#programmes">Programmes</a>
-      <a href="#moti">Moti</a>
       <a href="#comparatif">Comparatif</a>
     </nav>
     <nav class="foot-col">

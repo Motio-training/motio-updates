@@ -78,6 +78,220 @@
     });
   }
 
+  /* ---------- 4b. Moti : démo de chat (héros + section dédiée) ---------- */
+  var SCRIPTS = {
+    court: {
+      turns: [
+        { who: 'u', text: "Je n'ai que 40 minutes ce soir, jambes." },
+        { who: 'm', text: "Ton dernier bas du corps remonte à 5 jours, tu étais à 80 kg au squat pour 3 × 8. En 40 minutes je garde le squat lourd et je condense le reste en superset." }
+      ],
+      card: {
+        titre: 'Bas du corps · 38 min',
+        lignes: [
+          { nom: 'Squat barre', val: '4 × 6 · 82,5 kg' },
+          { nom: 'Presse à cuisses', val: '3 × 10 · 120 kg' },
+          { nom: 'Leg curl + mollets', val: '3 × 12 · superset' }
+        ]
+      }
+    },
+    stagne: {
+      turns: [
+        { who: 'u', text: 'Pourquoi je stagne au développé couché ?' },
+        { who: 'm', text: "Sur 6 semaines tu es passé de 60 à 62,5 kg, donc tu progresses, mais lentement. Ce qui saute aux yeux : tes séances pectoraux tombent presque toujours en fin de semaine, après deux jours d'affilée. Tes dernières séries sont incomplètes une fois sur deux. C'est un problème de fraîcheur, pas de force." }
+      ],
+      card: null
+    },
+    epaule: {
+      turns: [
+        { who: 'u', text: "J'ai mal à l'épaule droite, je fais quoi pour la séance de demain ?" },
+        { who: 'm', text: "Je remplace le développé incliné barre et les élévations latérales, qui sont les deux mouvements les plus exposés de ta séance. Le reste ne bouge pas. Si la douleur persiste au-delà de quelques jours, ça relève d'un professionnel de santé, pas de moi." }
+      ],
+      card: {
+        titre: 'Haut du corps · adapté',
+        lignes: [
+          { nom: 'Développé incliné barre', val: 'remplacé' },
+          { nom: 'Développé haltères neutre', val: '4 × 10 · 22 kg' },
+          { nom: 'Tirage horizontal', val: '4 × 10 · 55 kg' }
+        ]
+      }
+    }
+  };
+
+  function createChatDemo(el, opts) {
+    opts = opts || {};
+    var timers = [];
+    function after(ms, fn) { var id = setTimeout(fn, ms); timers.push(id); return id; }
+    function clear() { timers.forEach(clearTimeout); timers = []; }
+
+    function bubble(who, big) {
+      var row = document.createElement('div');
+      row.className = 'msg-row ' + (who === 'u' ? 'mine' : 'moti');
+      var b = document.createElement('div');
+      b.className = 'msg-bubble';
+      if (big) {
+        var label = document.createElement('p');
+        label.className = 'who-label';
+        label.textContent = who === 'u' ? 'Toi' : 'Moti';
+        b.appendChild(label);
+      }
+      var p = document.createElement('p');
+      b.appendChild(p);
+      row.appendChild(b);
+      return { row: row, p: p };
+    }
+
+    function typingRow() {
+      var row = document.createElement('div');
+      row.className = 'msg-row moti';
+      var d = document.createElement('div');
+      d.className = 'typing-dots';
+      d.innerHTML = '<i></i><i></i><i></i>';
+      row.appendChild(d);
+      return row;
+    }
+
+    function workoutCard(card, big) {
+      var wrap = document.createElement('div');
+      wrap.className = 'workout-card';
+      if (big) {
+        var head = document.createElement('div');
+        head.className = 'workout-card-head';
+        head.innerHTML = '<p class="tag">Séance proposée</p><p class="titre-2">' + escapeHtml(card.titre) + '</p>';
+        wrap.appendChild(head);
+      } else {
+        var tag = document.createElement('p');
+        tag.className = 'tag'; tag.textContent = 'Séance proposée';
+        var titre = document.createElement('p');
+        titre.className = 'titre'; titre.textContent = card.titre;
+        wrap.appendChild(tag); wrap.appendChild(titre);
+      }
+      card.lignes.forEach(function (l) {
+        var r = document.createElement('div');
+        r.className = 'row';
+        r.innerHTML = '<span>' + escapeHtml(l.nom) + '</span><span>' + escapeHtml(l.val) + '</span>';
+        wrap.appendChild(r);
+      });
+      if (big) {
+        var actions = document.createElement('div');
+        actions.className = 'workout-card-actions';
+        actions.innerHTML = '<span class="add">Ajouter à mes séances</span><span class="edit">Modifier</span>';
+        wrap.appendChild(actions);
+      } else {
+        var cta = document.createElement('div');
+        cta.className = 'cta';
+        cta.textContent = 'Ajouter à mes séances';
+        wrap.appendChild(cta);
+      }
+      return wrap;
+    }
+
+    function typeOut(p, full, done) {
+      var i = 0;
+      function step() {
+        i = Math.min(full.length, i + 2);
+        p.textContent = full.slice(0, i);
+        el.scrollTop = el.scrollHeight;
+        if (i < full.length) after(16, step);
+        else if (done) done();
+      }
+      after(16, step);
+    }
+
+    function play(name) {
+      var script = SCRIPTS[name];
+      if (!script) return;
+      clear();
+      el.innerHTML = '';
+
+      if (reduced) {
+        script.turns.forEach(function (t) {
+          var m = bubble(t.who, opts.big);
+          m.p.textContent = t.text;
+          el.appendChild(m.row);
+        });
+        if (script.card) el.appendChild(workoutCard(script.card, opts.big));
+        return;
+      }
+
+      var t = 300;
+      script.turns.forEach(function (turn, i) {
+        var isLast = i === script.turns.length - 1;
+        if (turn.who === 'u') {
+          after(t, function () {
+            var m = bubble('u', opts.big);
+            m.p.textContent = turn.text;
+            el.appendChild(m.row);
+            el.scrollTop = el.scrollHeight;
+          });
+          t += 700;
+        } else {
+          (function (delay) {
+            var typeRow;
+            after(delay, function () {
+              typeRow = typingRow();
+              el.appendChild(typeRow);
+              el.scrollTop = el.scrollHeight;
+            });
+            after(delay + 950, function () {
+              if (typeRow && typeRow.parentNode) typeRow.parentNode.removeChild(typeRow);
+              var m = bubble('m', opts.big);
+              el.appendChild(m.row);
+              typeOut(m.p, turn.text, function () {
+                if (script.card && isLast) {
+                  after(450, function () {
+                    el.appendChild(workoutCard(script.card, opts.big));
+                    el.scrollTop = el.scrollHeight;
+                    if (opts.onDone) opts.onDone(true);
+                  });
+                } else if (isLast && opts.onDone) {
+                  opts.onDone(false);
+                }
+              });
+            });
+          })(t);
+          t += 950 + turn.text.length * 13 + 500;
+        }
+      });
+    }
+
+    return { play: play, stop: clear };
+  }
+
+  var heroChatEl = document.getElementById('heroChat');
+  if (heroChatEl) {
+    var heroDemo = createChatDemo(heroChatEl, {
+      big: false,
+      onDone: function (hadCard) {
+        if (reduced) return;
+        setTimeout(function () { heroDemo.play('court'); }, hadCard ? 6000 : 5000);
+      }
+    });
+    heroDemo.play('court');
+  }
+
+  var motiChatEl = document.getElementById('motiChat');
+  if (motiChatEl) {
+    var motiDemo = createChatDemo(motiChatEl, { big: true });
+    var quickQs = document.querySelectorAll('.quick-q');
+    quickQs.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        quickQs.forEach(function (b) { b.classList.toggle('on', b === btn); });
+        motiDemo.play(btn.getAttribute('data-q'));
+      });
+    });
+    var motiSection = document.getElementById('moti');
+    if (motiSection && !reduced && 'IntersectionObserver' in window) {
+      var motiIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { motiIO.disconnect(); motiDemo.play('court'); }
+        });
+      }, { threshold: 0.25 });
+      motiIO.observe(motiSection);
+    } else {
+      motiDemo.play('court');
+    }
+  }
+
   /* ---------- 5. QR codes vers la dernière release ---------- */
   (function makeQR() {
     function draw() {
@@ -232,12 +446,48 @@
 
   syncMode();
 
-  /* ---------- 7. programme : slider de semaine ---------- */
-  var EXOS = [
-    { nom: 'Développé couché barre', base: 60, inc: 2.5 },
-    { nom: 'Squat barre', base: 80, inc: 5 },
-    { nom: 'Tirage vertical poitrine', base: 52.5, inc: 2.5 }
+  /* ---------- 7. programme : générateur par objectif + slider de semaine ---------- */
+  var PROGRAMS = {
+    muscle: {
+      phrase: 'Prendre du muscle, 4 séances par semaine, salle complète',
+      decoupe: 'Haut / bas · 4 séances',
+      series: 3, repsBase: 8,
+      exos: [
+        { nom: 'Développé couché barre', base: 60, inc: 2.5 },
+        { nom: 'Squat barre', base: 80, inc: 5 },
+        { nom: 'Tirage vertical poitrine', base: 52.5, inc: 2.5 }
+      ]
+    },
+    force: {
+      phrase: 'Gagner en force sur les gros mouvements, 3 séances, barre et rack',
+      decoupe: 'Full body lourd · 3 séances',
+      series: 5, repsBase: 4,
+      exos: [
+        { nom: 'Squat barre', base: 90, inc: 5 },
+        { nom: 'Développé couché barre', base: 65, inc: 2.5 },
+        { nom: 'Soulevé de terre', base: 110, inc: 5 }
+      ]
+    },
+    temps: {
+      phrase: '40 minutes maximum, 3 séances, haltères et barre de traction',
+      decoupe: 'Full body condensé · 3 séances',
+      series: 3, repsBase: 10,
+      exos: [
+        { nom: 'Goblet squat', base: 24, inc: 2 },
+        { nom: 'Développé haltères', base: 22, inc: 2 },
+        { nom: 'Traction lestée', base: 5, inc: 2.5 }
+      ]
+    }
+  };
+  var GEN_STEPS = [
+    'lecture du carnet · 46 séances retenues',
+    'découpage et répartition des groupes musculaires',
+    'charges de départ calées sur tes derniers records',
+    'progression et décharge placées sur 8 semaines'
   ];
+  var progState = { obj: 'muscle' };
+  function currentProgram() { return PROGRAMS[progState.obj] || PROGRAMS.muscle; }
+
   var WEEK_NOTES = {
     1: "Semaine d'entrée : charges volontairement modestes, la marge de progression est gardée pour plus tard.",
     2: 'Même charge, une répétition de plus. La progression commence par le volume.',
@@ -253,17 +503,23 @@
   var weekTitleEl = document.getElementById('weekTitle');
   var weekNoteEl = document.getElementById('weekNote');
   var progRows = document.getElementById('progRows');
+  var progDecoupeEl = document.getElementById('progDecoupe');
 
   function computeRows(w) {
+    var p = currentProgram();
     var deload = w === 6;
     var idx = deload ? 4 : (w > 6 ? w - 2 : w - 1);
-    return EXOS.map(function (e) {
+    return p.exos.map(function (e) {
       var steps = Math.floor(idx / 3);
-      var reps = deload ? 6 : 8 + (idx % 3);
-      var series = deload ? 2 : 3;
+      var reps = deload ? Math.max(4, p.repsBase - 2) : p.repsBase + (idx % 3);
+      var series = deload ? Math.max(2, p.series - 2) : p.series;
       var charge = deload ? (e.base + e.inc * steps) * 0.85 : e.base + e.inc * steps;
       return { nom: e.nom, serie: series + ' × ' + reps, charge: fmtKg(Math.round(charge / (e.inc / 2)) * (e.inc / 2)) };
     });
+  }
+
+  function syncDecoupe() {
+    if (progDecoupeEl) progDecoupeEl.textContent = currentProgram().decoupe + ' · bloc de 8 semaines';
   }
 
   function paintWeek() {
@@ -287,6 +543,53 @@
     weekRange.addEventListener('input', paintWeek);
     paintWeek();
   }
+  syncDecoupe();
+
+  /* ---------- 7b. générateur : phrase, puces d'objectif, log de génération ---------- */
+  var genPhrase = document.getElementById('genPhrase');
+  var genBtn = document.getElementById('genBtn');
+  var genLog = document.getElementById('genLog');
+  var chips = document.querySelectorAll('.chip');
+  var genTimers = [];
+
+  if (genPhrase) genPhrase.value = currentProgram().phrase;
+
+  function runGeneration() {
+    genTimers.forEach(clearTimeout);
+    genTimers = [];
+    if (weekRange) weekRange.value = 1;
+    paintWeek();
+    if (!genLog) return;
+    genLog.innerHTML = '';
+    if (reduced) {
+      genLog.innerHTML = GEN_STEPS.map(function (s, i) {
+        return '<p' + (i === GEN_STEPS.length - 1 ? ' class="last"' : '') + '>· ' + escapeHtml(s) + '</p>';
+      }).join('');
+      return;
+    }
+    GEN_STEPS.forEach(function (line, i) {
+      var id = setTimeout(function () {
+        var p = document.createElement('p');
+        if (i === GEN_STEPS.length - 1) p.className = 'last';
+        p.textContent = '· ' + line;
+        genLog.appendChild(p);
+      }, 320 * (i + 1));
+      genTimers.push(id);
+    });
+  }
+
+  function setObjective(obj) {
+    progState.obj = obj;
+    if (genPhrase) genPhrase.value = currentProgram().phrase;
+    chips.forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-obj') === obj); });
+    syncDecoupe();
+    runGeneration();
+  }
+
+  chips.forEach(function (c) {
+    c.addEventListener('click', function () { setObjective(c.getAttribute('data-obj')); });
+  });
+  if (genBtn) genBtn.addEventListener('click', runGeneration);
 
   /* ---------- 8. barre de téléchargement flottante ---------- */
   var floatbar = document.getElementById('floatbar');
