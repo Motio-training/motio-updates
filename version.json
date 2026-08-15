@@ -1,6 +1,6 @@
 {
-  "versionCode": 117,
-  "versionName": "2.14",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.14/motio.apk",
-  "notes": "Visuel de partage revu : la silhouette avec les zones travaillees remplace le grand cadran circulaire au centre de la carte. Le tonnage rejoint desormais Duree et Temps sous tension dans trois tuiles compactes. Liste des exercices inchangee."
+  "versionCode": 118,
+  "versionName": "2.15",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.15/motio.apk",
+  "notes": "Textes agrandis sur le visuel de partage (etiquettes, tuiles, liste d'exercices, pied de page) : plus lisible sur un grand ecran. Liste d'exercices plafonnee a 6 lignes au lieu de 7 pour garder de la place."
 }
