@@ -1,6 +1,6 @@
 {
-  "versionCode": 115,
-  "versionName": "2.12",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.12/motio.apk",
-  "notes": "Coach IA : nouvelle conversation dans Profil -> Coach IA. Le coach connait ton programme en cours, tes dernieres seances et tes records reels, et repond en s'appuyant dessus (motivation, conseils, rappel d'objectif). Conversation gardee localement sur le telephone, comme le reste du carnet."
+  "versionCode": 116,
+  "versionName": "2.13",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.13/motio.apk",
+  "notes": "Coach IA mis en avant sur la page d'accueil (bandeau en haut de l'onglet Entrainement). Ton du coach corrige : les reponses suivent maintenant la longueur du message recu (un salut a une reponse courte et naturelle, plus de reponse robotique en 3 paragraphes)."
 }
