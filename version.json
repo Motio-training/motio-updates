@@ -1,6 +1,6 @@
 {
-  "versionCode": 126,
-  "versionName": "2.23",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.23/motio.apk",
-  "notes": "Correctif : l'ecran de creation/modification d'un groupe defile desormais correctement (les champs nom et description restaient hors d'atteinte sur certains ecrans), et l'aperçu de la banniere est moins haut."
+  "versionCode": 127,
+  "versionName": "2.24",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.24/motio.apk",
+  "notes": "Groupes : la creation/liste ne se superposent plus, le clavier ne cache plus les champs, et on peut desormais rejoindre un groupe par son nom en plus du code/lien/QR. Nouveau visuel Moti (portrait) applique partout dans l'appli."
 }

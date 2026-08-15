@@ -277,7 +277,7 @@ p{margin:0 0 1rem}
   flex:0 0 auto;display:flex;align-items:center;gap:.5rem;
   padding:.75rem .85rem;border-bottom:1px solid var(--line);
 }
-.chat-phone-head img{height:18px;width:auto;display:block}
+.chat-phone-head img{height:18px;width:18px;border-radius:50%;object-fit:cover;display:block}
 .chat-phone-head .who{font-family:var(--f-display);font-weight:600;font-size:.78rem;color:var(--text)}
 .chat-phone-head .dot{width:5px;height:5px;border-radius:50%;background:var(--accent-2);display:block}
 .chat-phone-head .meta{font-family:var(--f-mono);font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-left:auto}
@@ -322,7 +322,7 @@ p{margin:0 0 1rem}
 /* ---------- Moti : grande démo de conversation (section dédiée) ---------- */
 .moti-demo{border:1px solid #3A3016;border-radius:18px;background:var(--ink);overflow:hidden}
 .moti-demo-head{display:flex;align-items:center;gap:.6rem;padding:.85rem 1.1rem;border-bottom:1px solid var(--line);background:rgba(211,164,94,.05)}
-.moti-demo-head img{height:20px;width:auto;display:block}
+.moti-demo-head img{height:20px;width:20px;border-radius:50%;object-fit:cover;display:block}
 .moti-demo-head .who{font-family:var(--f-display);font-weight:600;font-size:.9rem;color:var(--text)}
 .moti-demo-head .meta{font-family:var(--f-mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);margin-left:auto}
 .moti-demo-body{min-height:clamp(17rem,38vw,20rem);display:flex;flex-direction:column;justify-content:flex-end;gap:.7rem;padding:1.1rem}
