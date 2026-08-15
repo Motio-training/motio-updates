@@ -1,6 +1,6 @@
 {
-  "versionCode": 124,
-  "versionName": "2.21",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.21/motio.apk",
-  "notes": "Le coach IA a maintenant un nom : Moti. Il se presente quand on le lui demande, une nouvelle page du tutoriel de decouverte le presente (revient pour tout le monde), et son en-tete/logo sont mis a jour dans toute l'appli. Site web : nouvelle section presentant Moti et ses competences (chat, programme personnalise, seance proposee), capture du fil Social ajoutee, ligne Coach IA ajoutee au comparatif."
+  "versionCode": 125,
+  "versionName": "2.22",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.22/motio.apk",
+  "notes": "Nouveau : groupes d'entrainement. Cree un groupe (nom, description, banniere), invite par lien ou QR code, adhesion immediate. Chaque groupe a son fil (seances des membres), son classement (tonnage, seances, regularite, comme les defis existants) et son canal de discussion (texte + partage de seance). Le proprietaire peut modifier le groupe, retirer un membre, regenerer le code d'invitation, ou supprimer le groupe. Nouvel onglet Groupes dans Social."
 }
