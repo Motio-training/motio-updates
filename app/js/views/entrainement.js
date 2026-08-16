@@ -69,10 +69,7 @@ export async function vueSeances() {
 
   const el = h(`
     <section class="page">
-      <div class="rangee-titre">
-        <h1 style="margin:0">ENTRAÎNEMENT</h1>
-        <button class="lien-inline" data-cats type="button">✎ Catégories</button>
-      </div>
+      <h1 style="margin:0 0 1rem">ENTRAÎNEMENT</h1>
 
       <a class="moti-card" href="#/coach">
         <img src="../assets/img/moti_avatar.jpg" alt="">
@@ -84,10 +81,6 @@ export async function vueSeances() {
     </section>`);
 
   const corps = el.querySelector('[data-corps]');
-  el.querySelector('[data-cats]').onclick = () => {
-    const cats = [...new Set(rows.map(r => r.category).filter(Boolean))];
-    toast(cats.length ? `Catégories : ${cats.join(', ')}` : 'Aucune catégorie.');
-  };
 
   if (!rows.length) {
     corps.appendChild(empty(
@@ -97,21 +90,6 @@ export async function vueSeances() {
     ));
     return render(el);
   }
-
-  const toutesCats = [...new Set(rows.map(r => r.category).filter(Boolean))];
-  let actives = new Set(toutesCats);
-
-  const zoneChips = h('<div class="rangee rangee-serree" style="margin-bottom:1rem"></div>');
-  toutesCats.forEach(c => {
-    const b = h(`<button class="chip-cat on" type="button">${esc(c)}</button>`);
-    b.onclick = () => {
-      if (actives.has(c)) actives.delete(c); else actives.add(c);
-      b.classList.toggle('on', actives.has(c));
-      dessinerListe();
-    };
-    zoneChips.appendChild(b);
-  });
-  corps.appendChild(zoneChips);
 
   const zoneListe = h('<div></div>');
   corps.appendChild(zoneListe);
@@ -139,13 +117,12 @@ export async function vueSeances() {
 
   function dessinerListe() {
     zoneListe.replaceChildren();
-    const visibles = rows.filter(s => actives.has(s.category));
-    if (!visibles.length) {
-      zoneListe.appendChild(h('<p class="etat-mono">Aucun entraînement dans cette sélection.</p>'));
+    if (!rows.length) {
+      zoneListe.appendChild(h('<p class="etat-mono">Aucun entraînement pour l\'instant.</p>'));
     } else {
       const blocs = new Map();
       const isolees = [];
-      visibles.forEach(s => {
+      rows.forEach(s => {
         const section = (s.data || {}).section;
         if (section) { if (!blocs.has(section)) blocs.set(section, []); blocs.get(section).push(s); }
         else isolees.push(s);
