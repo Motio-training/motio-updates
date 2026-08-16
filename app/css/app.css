@@ -12,19 +12,21 @@
   --olive:#4F6021;
   --olive-clair:#A9C25E;
   --bronze:#8C6B2F;
-  --dore:#C9A44A;
 
-  /* surfaces */
+  /* surfaces — valeurs exactes de motioLight (Theme.kt) */
   --creme:#F4F3EE;
-  --creme-2:#EBE9E0;
+  --creme-2:#E5E8D8;
   --carte:#FFFFFF;
   --trait:#E3E0D3;
-  --encre:#1E2317;
-  --encre-2:#6B7060;
+  --encre:#23261C;
+  --encre-2:#6E7160;
   --alerte:#8C3B24;
 
-  /* accent (bascule en thème sombre plus bas) */
+  /* accent (bascule en thème sombre plus bas) — WorkGreen/RestOrange/OverGold
+     de motioLight, mêmes tons mats qu'en clair côté natif */
   --accent:#4F6021;
+  --accent2:#8C6B2F;
+  --dore:#A8802E;
   --accent-vif:#5E7328;
   --accent-sur:#FFFFFF;
   --accent-halo:rgba(79,96,33,.16);
@@ -59,10 +61,12 @@
     --creme-2:#333A24;
     --carte:#282E1D;
     --trait:#3A4129;
-    --encre:#ECEEE2;
+    --encre:#ECEADD;
     --encre-2:#9BA084;
 
     --accent:#A9C25E;
+    --accent2:#D3A45E;
+    --dore:#C9A44A;
     --accent-vif:#BCD473;
     --accent-sur:#171A11;
     --accent-halo:rgba(169,194,94,.22);
@@ -77,10 +81,12 @@
   --creme-2:#333A24;
   --carte:#282E1D;
   --trait:#3A4129;
-  --encre:#ECEEE2;
+  --encre:#ECEADD;
   --encre-2:#9BA084;
 
   --accent:#A9C25E;
+  --accent2:#D3A45E;
+  --dore:#C9A44A;
   --accent-vif:#BCD473;
   --accent-sur:#171A11;
   --accent-halo:rgba(169,194,94,.22);

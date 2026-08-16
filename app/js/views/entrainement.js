@@ -55,7 +55,7 @@ function fmtDerniereFois(lastMs) {
 }
 /** catColor (TrainingScreens.kt) : Push=accent, Pull=second accent, Legs=doré. */
 function catColor(cat) {
-  return cat === 'Push' ? 'var(--accent)' : cat === 'Pull' ? '#D3A45E' : cat === 'Legs' ? 'var(--dore)' : 'var(--encre-2)';
+  return cat === 'Push' ? 'var(--accent)' : cat === 'Pull' ? 'var(--accent2)' : cat === 'Legs' ? 'var(--dore)' : 'var(--encre-2)';
 }
 const ICONE_HALTERE = '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>';
 

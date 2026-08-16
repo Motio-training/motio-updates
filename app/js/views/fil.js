@@ -4,7 +4,7 @@ import { feed, kudosFor, commentCounts, comments, addKudo, removeKudo,
 import { currentUser } from '../supabase.js';
 import { kg, libelleRir } from '../model.js';
 
-const COULEUR_CAT = { Push: 'var(--accent)', Pull: '#D3A45E', Legs: 'var(--dore)' };
+const COULEUR_CAT = { Push: 'var(--accent)', Pull: 'var(--accent2)', Legs: 'var(--dore)' };
 function catColor(cat) { return COULEUR_CAT[cat] || 'var(--encre-2)'; }
 
 /** whenLabel (SocialScreens.kt) : « à l'instant »/« il y a Xmin »/date courte au-delà. */
