@@ -95,4 +95,13 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
+  // Dès qu'une nouvelle version prend la main (activate + clients.claim()
+  // côté sw.js), on recharge une fois : sans ça, l'onglet déjà ouvert garde
+  // en mémoire le JS de l'ancienne version jusqu'à sa prochaine fermeture.
+  let dejaRecharge = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (dejaRecharge) return;
+    dejaRecharge = true;
+    location.reload();
+  });
 }
