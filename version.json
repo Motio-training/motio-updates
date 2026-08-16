@@ -1,6 +1,6 @@
 {
-  "versionCode": 127,
-  "versionName": "2.24",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.24/motio.apk",
-  "notes": "Groupes : la creation/liste ne se superposent plus, le clavier ne cache plus les champs, et on peut desormais rejoindre un groupe par son nom en plus du code/lien/QR. Nouveau visuel Moti (portrait) applique partout dans l'appli."
+  "versionCode": 128,
+  "versionName": "2.25",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.25/motio.apk",
+  "notes": "Correctif : le portrait de Moti etait trop dezoome (fond et anneau decoratif visibles) et illisible aux petites tailles d'icone. Recadre serre sur le visage."
 }
