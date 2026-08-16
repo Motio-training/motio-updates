@@ -602,6 +602,23 @@
     onScrollBar();
   }
 
+  /* ---------- 9. iPhone : pas d'APK, l'espace web (PWA) est l'équivalent ---------- */
+  /* navigator.platform est dépréciée mais reste le seul moyen fiable de
+     repérer un iPad récent, qui s'annonce comme "MacIntosh" avec un
+     userAgent desktop — d'où le repli sur maxTouchPoints. */
+  var estIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (estIOS) {
+    var nudge = document.getElementById('iphoneNudge');
+    if (nudge) nudge.hidden = false;
+    // Les boutons "Télécharger l'APK" ne mènent nulle part sur iOS : on les
+    // reoriente vers l'espace web plutôt que de laisser un lien mort.
+    document.querySelectorAll('a[href*="releases/latest"]').forEach(function (a) {
+      a.href = 'app/';
+      a.textContent = "Ouvrir l'espace web →";
+    });
+  }
+
   /* ---------- boucle d'animation : chrono du héros + démo ---------- */
   function tick(now) {
     if (heroChrono && !reduced) {

@@ -37,6 +37,13 @@
 
 <main id="top">
 
+  <!-- Affiché uniquement sur iPhone/iPad (assets/js/site.js) : Motio n'a pas
+       d'APK pour iOS, l'espace web installé en PWA est l'équivalent. -->
+  <div id="iphoneNudge" class="iphone-nudge" hidden>
+    <p><strong>Tu es sur iPhone.</strong> Motio n'a pas d'application iOS, mais l'espace web t'offre la même expérience : chrono en direct, coach IA, séances, messages, groupes. Ouvre-le puis ajoute-le à ton écran d'accueil (icône Partager <span aria-hidden="true">􀈂</span> → « Sur l'écran d'accueil »).</p>
+    <a class="btn btn-sm" href="app/">Ouvrir l'espace web →</a>
+  </div>
+
   <!-- ============ HÉROS ============ -->
   <section class="hero">
     <img class="hero-ghost" src="assets/img/logo_m.png" alt="" aria-hidden="true">
@@ -488,7 +495,7 @@
         </details>
         <details>
           <summary>Y a-t-il une version iPhone ?<span class="plus" aria-hidden="true">+</span></summary>
-          <p>Pas aujourd'hui. Motio est une application Android. L'<a href="app/">espace web</a> permet en revanche de consulter son historique et son fil depuis n'importe quel navigateur, y compris sur iPhone.</p>
+          <p>Pas d'application native, mais l'<a href="app/">espace web</a> offre la même expérience depuis Safari : chrono en direct avec bips, coach IA, séances, messages, groupes. Ouvre-le puis ajoute-le à ton écran d'accueil (icône Partager → « Sur l'écran d'accueil ») pour une icône et un lancement plein écran, comme une vraie application.</p>
         </details>
         <details>
           <summary>Le minuteur fonctionne-t-il écran éteint ?<span class="plus" aria-hidden="true">+</span></summary>
