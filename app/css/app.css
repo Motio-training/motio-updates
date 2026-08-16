@@ -364,6 +364,65 @@ a.ligne-titre:hover{color:var(--accent)}
 }
 
 /* ==========================================================================
+   Profil — en-tête d'identité, tonnage, trophées (IdentityHeader/TonnageCard/
+   TrophyGrid, Profile.kt)
+   ========================================================================== */
+
+.profil-panneau{
+  background:var(--creme-2);border-radius:var(--r-l);
+  padding:1.1rem 1.15rem 1.3rem;margin-bottom:1rem;
+}
+.profil-tete{display:flex;align-items:center;gap:.9rem;margin-bottom:1rem}
+.profil-avatar{
+  width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;
+  background:var(--carte);display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-display);font-weight:700;font-size:1.4rem;color:var(--encre);
+}
+.profil-identite{min-width:0}
+.profil-identite b{display:block;font-family:var(--f-display);font-weight:700;font-size:1.25rem;color:var(--encre)}
+.profil-identite span{display:block;font-family:var(--f-mono);font-size:.78rem;color:var(--encre-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profil-stats-ligne{display:flex;gap:1.6rem}
+.profil-stats-ligne div{display:flex;flex-direction:column;align-items:center;gap:.2rem}
+.profil-stats-ligne b{font-family:var(--f-display);font-weight:700;font-size:1.3rem;color:var(--encre)}
+.profil-stats-ligne span{font-family:var(--f-mono);font-size:.68rem;color:var(--encre-2)}
+
+.tonnage-rangee{display:flex;gap:.75rem;margin-bottom:1.5rem}
+.tonnage-carte{
+  flex:1;background:var(--carte);border-radius:var(--r-m);padding:.9rem 1rem;
+}
+.tonnage-carte span{display:block;font-family:var(--f-mono);font-size:.72rem;color:var(--encre-2)}
+.tonnage-carte b{display:block;margin-top:.15rem;font-family:var(--f-display);font-weight:700;font-size:1.35rem;color:var(--accent)}
+
+.trophees-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.trophee-carte{
+  background:var(--carte);border-radius:var(--r-m);padding:.75rem .4rem;
+  display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  cursor:pointer;text-align:center;
+}
+.trophee-carte.verrouille{background:var(--creme-2);opacity:.65}
+.trophee-carte .icone{font-size:1.7rem;line-height:1}
+.trophee-carte .nom{font-family:var(--f-display);font-weight:700;font-size:.72rem;color:var(--encre);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.trophee-carte.verrouille .nom{color:var(--encre-2)}
+.trophee-etoiles{font-size:.72rem;letter-spacing:.1em;color:var(--dore)}
+.trophee-etoiles .off{color:var(--encre-2);opacity:.5}
+
+.menu-groupe{background:var(--carte);border-radius:var(--r-m);overflow:hidden}
+.menu-ligne{
+  display:flex;align-items:center;gap:.75rem;width:100%;
+  padding:.85rem .9rem;text-decoration:none;background:none;border:none;
+  text-align:left;cursor:pointer;border-bottom:1px solid var(--trait);
+}
+.menu-ligne:last-child{border-bottom:none}
+.menu-ligne img.menu-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none}
+.menu-ligne .corps{flex:1;min-width:0}
+.menu-ligne .corps b{display:block;font-family:var(--f-display);font-weight:500;font-size:.94rem;color:var(--encre)}
+.menu-ligne .corps span{display:block;font-family:var(--f-mono);font-size:.72rem;color:var(--encre-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu-ligne .chevron{color:var(--encre-2);font-size:1.3rem;flex:none}
+
+/* ==========================================================================
    Bandeau de chiffres — cadran de statistiques
    ========================================================================== */
 

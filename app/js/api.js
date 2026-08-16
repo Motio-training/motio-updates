@@ -37,7 +37,7 @@ function unwrap({ data, error }) {
 
 export async function getProfile(userId) {
   return unwrap(await sb.from(T.profiles)
-    .select('id,username,display_name').eq('id', userId).maybeSingle());
+    .select('id,username,display_name,avatar_url').eq('id', userId).maybeSingle());
 }
 
 export async function setUsername(userId, username) {

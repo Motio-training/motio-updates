@@ -3,6 +3,7 @@ import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
+import { computeStatsFrom, fmtQty } from '../trophies.js';
 import { reset as reinitialiserOnboarding } from './onboarding.js';
 
 export async function vueProfil(params) {
@@ -29,22 +30,66 @@ export async function vueProfil(params) {
   const stats = calculerStats(seances);
   const jeSuis = !estMoi && (await following(moi.id)).some(p => p.id === cible);
 
+  /* Trophées : même calcul que computeProfileStats (Profile.kt), uniquement
+     pour son propre profil — l'ami n'a que ce qu'il a bien voulu partager. */
+  const trophyStats = estMoi ? computeStatsFrom(seances.map(s => ({
+    startedAtMs: new Date(s.started_at).getTime(),
+    volumeKg: s.volume_kg || 0,
+    durationMs: s.duration_ms || 0
+  }))) : null;
+  const stars = trophyStats ? trophyStats.trophies.reduce((t, x) => t + x.stars, 0) : 0;
+  const starsTot = trophyStats ? trophyStats.trophies.reduce((t, x) => t + x.levels.length, 0) : 0;
+
+  const initiale = (profil.username || '?')[0].toUpperCase();
+  const avatarHtml = profil.avatar_url
+    ? `<img class="profil-avatar" src="${esc(profil.avatar_url)}" alt="">`
+    : `<span class="profil-avatar">${esc(initiale)}</span>`;
+
   const el = h(`
     <section class="page">
-      <p class="eyebrow">${estMoi ? 'Mon compte' : 'Profil'}</p>
-      <h1 data-nom>${esc(profil.username || 'sans pseudo')}</h1>
-
-      <div class="chiffres">
-        <div><b>${stats.nb}</b><span>séances</span></div>
-        <div><b>${Math.round(stats.tonnage / 1000)}</b><span>tonnes soulevées</span></div>
-        <div><b>${stats.ceMois}</b><span>ce mois-ci</span></div>
-        <div><b>${abos.length}</b><span>abonnements</span></div>
-        <div><b>${suiveurs.length}</b><span>abonnés</span></div>
+      <div class="profil-panneau">
+        <div class="profil-tete">
+          ${avatarHtml}
+          <div class="profil-identite">
+            <b data-nom>${esc(profil.username || 'sans pseudo')}</b>
+            <span>${estMoi ? esc(moi.email || '') : 'Profil'}</span>
+          </div>
+        </div>
+        <div class="profil-stats-ligne">
+          <div><b>${stats.nb}</b><span>séances</span></div>
+          ${estMoi ? `
+            <div><b>${trophyStats.totalHours} h</b><span>sous la barre</span></div>
+            <div><b>${stars}/${starsTot}</b><span>étoiles</span></div>` : `
+            <div><b>${abos.length}</b><span>abonnements</span></div>
+            <div><b>${suiveurs.length}</b><span>abonnés</span></div>`}
+        </div>
       </div>
 
       ${estMoi ? `
+        <div class="tonnage-rangee">
+          <div class="tonnage-carte"><span>Cette semaine</span><b>${fmtQty(trophyStats.weekTonnage)} kg</b></div>
+          <div class="tonnage-carte"><span>Ce mois-ci</span><b>${fmtQty(trophyStats.monthTonnage)} kg</b></div>
+        </div>
+
+        <div class="rangee-titre" style="margin-bottom:.6rem">
+          <h2 style="margin:0">Trophées</h2>
+          <span style="color:var(--dore);font-weight:700;font-size:.85rem">${stars} / ${starsTot} ★</span>
+        </div>
+        <div class="trophees-grille" data-trophees></div>
+
         <div class="bloc">
-          <h2>Pseudo</h2>
+          <h2>Entraînement</h2>
+          <div class="menu-groupe">
+            <a class="menu-ligne" href="#/coach">
+              <img class="menu-avatar" src="../assets/img/moti_avatar.jpg" alt="">
+              <span class="corps"><b>Moti</b><span>Ton coach IA — connaît tes séances, tes records</span></span>
+              <span class="chevron">›</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="bloc">
+          <h2>Compte</h2>
           <p class="etat-mono">C'est sous ce nom que les autres te trouvent.</p>
           <label class="champ"><span>Pseudo</span>
             <input type="text" data-pseudo value="${esc(profil.username || '')}" maxlength="24"></label>
@@ -70,6 +115,21 @@ export async function vueProfil(params) {
           </div>
         </div>` : ''}
     </section>`);
+
+  /* trophées */
+  if (estMoi) {
+    const zoneTr = el.querySelector('[data-trophees]');
+    trophyStats.trophies.forEach(tr => {
+      const carte = h(`
+        <div class="trophee-carte ${tr.unlocked ? '' : 'verrouille'}">
+          <span class="icone">${tr.icon}</span>
+          <span class="nom">${esc(tr.title)}</span>
+          <span class="trophee-etoiles">${'★'.repeat(tr.stars)}<span class="off">${'★'.repeat(tr.levels.length - tr.stars)}</span></span>
+        </div>`);
+      carte.onclick = () => ouvrirTrophee(tr);
+      zoneTr.appendChild(carte);
+    });
+  }
 
   /* records */
   const zoneRec = el.querySelector('[data-records]');
@@ -142,13 +202,35 @@ export async function vueProfil(params) {
   render(el);
 }
 
+/** Détail d'un trophée — TrophyDialog (Profile.kt) : objectif en cours, avancement. */
+function ouvrirTrophee(tr) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="${esc(tr.title)}">
+      <div class="modale-boite">
+        <div class="modale-tete">
+          <h2><span style="margin-right:.5rem">${tr.icon}</span>${esc(tr.title)}</h2>
+        </div>
+        <p class="trophee-etoiles" style="font-size:1rem">${'★'.repeat(tr.stars)}<span class="off">${'★'.repeat(tr.levels.length - tr.stars)}</span></p>
+        <p>${esc(tr.desc)}</p>
+        ${tr.complete
+          ? `<p style="color:var(--accent);font-weight:700">Les trois paliers sont gagnés ✓</p>`
+          : `<p class="etat-mono">${esc(tr.progress)}</p>`}
+        <div class="modale-pied">
+          <button class="btn" data-fermer type="button">Fermer</button>
+        </div>
+      </div>
+    </div>`);
+  modale.querySelector('[data-fermer]').onclick = () => modale.remove();
+  modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+  document.body.appendChild(modale);
+}
+
 /**
  * Statistiques calculées à l'affichage, jamais stockées : elles dépendent du
  * détail des séries, que l'auteur peut avoir choisi de ne pas partager.
  * Même parti pris que Social.friendStats.
  */
 function calculerStats(seances) {
-  const debutMois = Date.now() - 30 * 24 * 3600 * 1000;
   const best = new Map();
   for (const s of seances) {
     for (const ex of (Array.isArray(s.details) ? s.details : [])) {
@@ -160,8 +242,6 @@ function calculerStats(seances) {
   }
   return {
     nb: seances.length,
-    tonnage: seances.reduce((t, s) => t + (s.volume_kg || 0), 0),
-    ceMois: seances.filter(s => new Date(s.started_at).getTime() >= debutMois).length,
     records: [...best.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
   };
 }
