@@ -1,6 +1,6 @@
 {
-  "versionCode": 129,
-  "versionName": "2.26",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.26/motio.apk",
-  "notes": "Nouveau portrait de Moti (meilleure qualite, sans l'anneau decoratif de la version precedente)."
+  "versionCode": 130,
+  "versionName": "2.27",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.27/motio.apk",
+  "notes": "Journal des nouveautes remis a jour jusqu'a la version actuelle. Espace web iPhone : le lien d'un ami ouvre directement l'appli."
 }
