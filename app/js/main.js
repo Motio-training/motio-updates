@@ -49,10 +49,31 @@ before(async (path) => {
 });
 
 /* --- barre de navigation --- */
+
+/* Regroupement des routes sous les 4 destinations de la barre du bas —
+   une section (ex. Entraînement) reste "active" même sur un sous-écran
+   (ex. /seances/xxx/lancer), exactement comme les onglets natifs. */
+const GROUPES_ROUTE = {
+  entrainement: ['/seances', '/programmes', '/historique'],
+  social: ['/fil', '/amis', '/messages', '/groupes'],
+  coach: ['/coach'],
+  profil: ['/profil']
+};
+function groupeDe(path) {
+  for (const [g, prefixes] of Object.entries(GROUPES_ROUTE)) {
+    if (prefixes.some(p => path === p || path.startsWith(p + '/'))) return g;
+  }
+  return null;
+}
+
 function majChrome(connecte, path) {
   document.body.classList.toggle('connecte', connecte);
   $$('.nav a').forEach(a => {
     a.setAttribute('aria-current', a.getAttribute('href') === '#' + path ? 'page' : 'false');
+  });
+  const groupe = groupeDe(path);
+  $$('.bottombar a').forEach(a => {
+    a.setAttribute('aria-current', a.dataset.groupe === groupe ? 'page' : 'false');
   });
 }
 

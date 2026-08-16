@@ -194,6 +194,32 @@ body{
 .page{max-width:58rem}
 .page-etroite{max-width:30rem}
 
+/* ==========================================================================
+   Barre du bas — mêmes 4 destinations que la barre Android (Minuteurs,
+   Entraînement, Social, Profil ; "Minuteurs" devient "Moti" côté web, le
+   chrono en direct se lance depuis une séance plutôt que d'un onglet dédié).
+   Cachée en desktop (règle de base ci-dessous), où la colonne de gauche
+   suffit ; réactivée en mobile par la media query plus bas — DOIT rester
+   avant cette media query dans le fichier, sinon elle l'emporte sur elle.
+   ========================================================================== */
+
+.bottombar{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;
+  padding:.35rem .5rem calc(.35rem + env(safe-area-inset-bottom));
+  background:var(--charbon);
+  border-top:1px solid rgba(244,243,238,.08);
+  box-shadow:0 -8px 22px -14px rgba(0,0,0,.6);
+}
+.bottombar a{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:.2rem;
+  padding:.35rem 0;border-radius:var(--r-s);
+  font-family:var(--f-display);font-size:.64rem;font-weight:500;letter-spacing:.01em;
+  text-decoration:none;color:rgba(244,243,238,.55);
+  transition:color .18s ease;
+}
+.bb-ico{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bottombar a[aria-current="page"]{color:var(--olive-clair)}
+
 @media (max-width:820px){
   .coque{grid-template-columns:1fr}
   .menu-btn{display:flex}
@@ -205,6 +231,8 @@ body{
     transition:max-height .32s var(--ressort),opacity .25s ease,padding .32s var(--ressort);
   }
   body.menu-ouvert .nav{max-height:30rem;padding-top:1rem;padding-bottom:1.25rem;opacity:1}
+  body.connecte{padding-bottom:4.4rem}   /* place pour la barre du bas */
+  .bottombar{display:flex}
 }
 
 /* ==========================================================================
@@ -625,6 +653,7 @@ a.ligne-titre:hover{color:var(--accent)}
 
 body:not(.connecte) .nav,
 body:not(.connecte) .menu-btn,
+body:not(.connecte) .bottombar,
 body:not(.connecte) .lien-txt{display:none}
 body:not(.connecte) .coque{grid-template-columns:minmax(0,1fr)}
 body:not(.connecte) #vue{
