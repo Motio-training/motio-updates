@@ -177,151 +177,190 @@ export async function vueSeanceEdition(params) {
   const moi = await currentUser();
   const neuve = params.id === 'nouvelle';
 
-  let seance;
+  let seance, autres = [];
   if (neuve) {
     seance = nouvelleSeance('', CATEGORIES_DEFAUT[0]);
+    try { autres = await listWorkouts(moi.id); } catch { /* pas bloquant */ }
   } else {
     render(loading('Chargement de la séance'));
     try {
-      const row = await getWorkout(moi.id, params.id);
+      const [row, mine] = await Promise.all([getWorkout(moi.id, params.id), listWorkouts(moi.id)]);
       if (!row) return render(empty('Séance introuvable', 'Elle a peut-être été supprimée.',
         { href: '#/seances', label: 'Retour aux séances' }));
       seance = row.data;
+      autres = mine;
     } catch (e) { return render(failure(e, "La séance n'a pas pu être chargée")); }
   }
+  if (!seance.section) seance.section = '';
+
+  const cats = [...new Set([...CATEGORIES_DEFAUT, ...autres.map(w => w.category).filter(Boolean)])];
+  const sections = [...new Set(autres.map(w => (w.data || {}).section).filter(Boolean))];
 
   const el = h(`
     <section class="page">
-      <p class="eyebrow">Entraînement</p>
-      <div class="rangee-titre">
-        <h1>${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
-        ${!neuve ? `<a class="btn" href="#/seances/${esc(params.id)}/lancer">Lancer la séance</a>` : ''}
-      </div>
+      <h1 style="text-transform:uppercase">${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
 
-      <div class="rangee">
-        <label class="champ"><span>Nom</span>
-          <input type="text" data-nom maxlength="60" placeholder="Push A"></label>
-        <label class="champ"><span>Catégorie</span>
-          <select data-cat>${CATEGORIES_DEFAUT.map(c =>
-            `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></label>
-      </div>
+      <label class="champ"><span>Nom</span>
+        <input type="text" data-nom maxlength="60" placeholder="Push A" value="${esc(seance.name || '')}"></label>
 
-      <p class="estimation">Durée estimée <b data-estim>—</b></p>
+      <p class="champ-label">Catégorie</p>
+      <div class="rangee rangee-serree" data-cats style="margin-bottom:1rem"></div>
+
+      <p class="champ-label">Bloc d'entraînement</p>
+      <div class="rangee rangee-serree" data-sections style="margin-bottom:.5rem"></div>
+      <label class="champ" data-champ-section hidden><span>Nom du bloc</span>
+        <input type="text" data-section-nom maxlength="40" placeholder="Force + hypertrophie"></label>
 
       <div class="bloc">
         <h2>Exercices</h2>
-        <div data-exos></div>
-        <button class="btn" data-ajouter>Ajouter un exercice</button>
+        <div class="exos-liste" data-exos></div>
+        <button class="btn btn-ghost" data-ajouter style="width:100%">＋ Ajouter un exercice</button>
       </div>
 
-      <div class="barre-action">
-        <button class="btn btn-lg" data-enregistrer>Enregistrer la séance</button>
-        <a class="btn btn-lg btn-ghost" href="#/seances">Annuler</a>
+      <div class="estim-panel">
+        <span>Durée estimée de la séance</span>
+        <b data-estim>—</b>
+      </div>
+
+      <div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
+        <a class="btn btn-ghost" href="#/seances" style="flex:1;text-align:center">Annuler</a>
+        <button class="btn btn-ghost" data-enregistrer style="flex:1">Enregistrer</button>
+        <button class="btn" data-demarrer style="flex:1">Démarrer</button>
       </div>
     </section>`);
 
-  el.querySelector('[data-nom]').value = seance.name || '';
-  el.querySelector('[data-cat]').value = seance.category || CATEGORIES_DEFAUT[0];
+  let newSection = false;
+  const zoneCats = el.querySelector('[data-cats]');
+  const zoneSections = el.querySelector('[data-sections]');
+  const champSection = el.querySelector('[data-champ-section]');
+  const inputSection = el.querySelector('[data-section-nom]');
+
+  function dessinerCats() {
+    zoneCats.replaceChildren();
+    cats.forEach(c => {
+      const b = h(`<button class="chip-cat ${seance.category === c ? 'on' : ''}" type="button">${esc(c)}</button>`);
+      b.onclick = () => { seance.category = c; dessinerCats(); };
+      zoneCats.appendChild(b);
+    });
+  }
+  function dessinerSections() {
+    zoneSections.replaceChildren();
+    const bAucun = h(`<button class="chip-cat ${!seance.section ? 'on' : ''}" type="button">Aucun</button>`);
+    bAucun.onclick = () => { seance.section = ''; newSection = false; dessinerSections(); };
+    zoneSections.appendChild(bAucun);
+    sections.forEach(s => {
+      const b = h(`<button class="chip-cat ${seance.section === s && !newSection ? 'on' : ''}" type="button">${esc(s)}</button>`);
+      b.onclick = () => { seance.section = s; newSection = false; dessinerSections(); };
+      zoneSections.appendChild(b);
+    });
+    const bNouveau = h(`<button class="chip-cat ${newSection ? 'on' : ''}" type="button">＋ Nouveau</button>`);
+    bNouveau.onclick = () => {
+      newSection = true;
+      if (sections.includes(seance.section)) seance.section = '';
+      dessinerSections();
+    };
+    zoneSections.appendChild(bNouveau);
+    champSection.hidden = !newSection;
+    if (newSection) inputSection.value = seance.section;
+  }
+  inputSection.addEventListener('input', () => { seance.section = inputSection.value; });
+  dessinerCats();
+  dessinerSections();
 
   const zone = el.querySelector('[data-exos]');
   const estim = el.querySelector('[data-estim]');
 
   function redessiner() {
     zone.replaceChildren();
-    if (!seance.exercises.length) {
-      zone.appendChild(h(`<p class="etat-mono">Aucun exercice. Ajoute le premier.</p>`));
-    } else {
-      seance.exercises.forEach((ex, i) => zone.appendChild(carteExercice(ex, i)));
-    }
-    estim.textContent = duree(dureeSeance(seance.exercises));
+    seance.exercises.forEach((ex, i) => {
+      zone.appendChild(carteExercice(ex, i));
+      if (i < seance.exercises.length - 1) zone.appendChild(lienEnchainer(i));
+    });
+    estim.textContent = 'environ ' + fmtEstimate(estimatedSec(seance));
+  }
+
+  function lienEnchainer(i) {
+    const ex = seance.exercises[i], suivant = seance.exercises[i + 1];
+    const linked = ex.groupId !== 0 && ex.groupId === suivant.groupId;
+    const b = h(`<button class="lien-enchainer ${linked ? 'on' : ''}" type="button">${linked ? '⌐ enchaîné sans repos' : '＋ enchaîner'}</button>`);
+    b.onclick = () => {
+      if (linked) {
+        const g = suivant.groupId;
+        const encoreLie = i + 2 <= seance.exercises.length - 1 && seance.exercises[i + 2].groupId === g;
+        ex.groupId = (i > 0 && seance.exercises[i - 1].groupId === g) ? g : 0;
+        if (!encoreLie) suivant.groupId = 0;
+      } else {
+        const g = (ex.groupId !== 0 ? ex.groupId : null) ?? (suivant.groupId !== 0 ? suivant.groupId : null) ?? prochainGroupId(seance.exercises);
+        ex.groupId = g; suivant.groupId = g;
+      }
+      redessiner();
+    };
+    return b;
   }
 
   function carteExercice(ex, i) {
     const [a, b] = etendueBloc(seance.exercises, i);
     const etiquette = libelleBloc(b - a + 1);
-    const tabata = ex.mode === 'TABATA';
-    const minuteur = ex.mode === 'MINUTEUR';
 
     const c = h(`
       <div class="exo-edit">
         <div class="exo-edit-tete">
-          <span class="exo-edit-nom">${esc(ex.name || 'Sans nom')}
-            ${etiquette ? `<span class="etiquette">${esc(etiquette)}</span>` : ''}</span>
-          <span class="ligne-meta">${esc(GEARS[devineMateriel(ex.name)].short)} ·
-            environ ${esc(duree(dureeExercice(ex)))}</span>
+          <span class="exo-edit-poignee">⠿</span>
+          <span class="exo-edit-nom">${i + 1}.  ${esc(ex.name || `Exercice ${i + 1}`)}</span>
+          <span class="exo-edit-suppr">✕</span>
         </div>
+        <p class="exo-edit-meta">${ex.plannedSets} séries${ex.targetReps ? ` × ${ex.targetReps} reps` : ''} · ${esc(labelMode(ex))}
+          ${etiquette && b - a + 1 > 1 ? `<span class="etiquette">${esc(etiquette)}</span>` : ''}</p>
 
-        <div class="rangee rangee-serree">
-          <label class="champ champ-mini"><span>Mode</span>
-            <select data-mode>${MODES.map(m =>
-              `<option value="${m}"${m === ex.mode ? ' selected' : ''}>${MODE_LABELS[m]}</option>`).join('')}</select></label>
-
-          <label class="champ champ-mini"${tabata ? ' hidden' : ''}><span>Séries</span>
-            <input type="number" min="1" max="20" data-series value="${ex.plannedSets}"></label>
-
-          <label class="champ champ-mini"${tabata ? ' hidden' : ''}><span>Répétitions</span>
-            <input type="number" min="0" max="100" data-reps value="${ex.targetReps}"></label>
-
-          <label class="champ champ-mini"${minuteur ? '' : ' hidden'}><span>Récup (s)</span>
-            <input type="number" min="0" max="600" step="15" data-recup value="${ex.recupSec}"></label>
-
-          <label class="champ champ-mini"${tabata ? '' : ' hidden'}><span>Travail (s)</span>
-            <input type="number" min="5" max="300" data-work value="${ex.workSec}"></label>
-          <label class="champ champ-mini"${tabata ? '' : ' hidden'}><span>Repos (s)</span>
-            <input type="number" min="0" max="300" data-rest value="${ex.restSec}"></label>
-          <label class="champ champ-mini"${tabata ? '' : ' hidden'}><span>Blocs</span>
-            <input type="number" min="1" max="30" data-blocs value="${ex.tabataSeries}"></label>
-        </div>
-
-        <div class="exo-edit-actions">
-          <button class="lien-inline" data-haut ${i === 0 ? 'disabled' : ''}>Monter</button>
-          <button class="lien-inline" data-bas ${i === seance.exercises.length - 1 ? 'disabled' : ''}>Descendre</button>
-          <button class="lien-inline" data-groupe>${ex.groupId ? 'Détacher du bloc' : 'Grouper avec le suivant'}</button>
-          <button class="lien-inline" data-suppr>Retirer</button>
-        </div>
-        ${minuteur ? `<p class="etat-mono">Repos ${esc(fmtRecup(ex.recupSec))} entre les séries.</p>` : ''}
+        <div class="rangee rangee-serree" data-champs></div>
+        <button class="lien-inline" data-deplier type="button">Régler ce mode</button>
       </div>`);
 
-    const lie = (sel, champ, entier = true) => {
+    const champs = c.querySelector('[data-champs]');
+    champs.hidden = true;
+    const tabata = ex.mode === 'TABATA';
+    const minuteur = ex.mode === 'MINUTEUR';
+    champs.appendChild(h(`
+      <label class="champ champ-mini"><span>Mode</span>
+        <select data-mode>${MODES.map(m => `<option value="${m}"${m === ex.mode ? ' selected' : ''}>${MODE_LABELS[m]}</option>`).join('')}</select></label>`));
+    if (!tabata) {
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Séries</span><input type="number" min="1" max="20" data-series value="${ex.plannedSets}"></label>`));
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Répétitions</span><input type="number" min="0" max="100" data-reps value="${ex.targetReps}"></label>`));
+    }
+    if (minuteur) champs.appendChild(h(`<label class="champ champ-mini"><span>Récup (s)</span><input type="number" min="0" max="600" step="15" data-recup value="${ex.recupSec}"></label>`));
+    if (tabata) {
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Travail (s)</span><input type="number" min="5" max="300" data-work value="${ex.workSec}"></label>`));
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Repos (s)</span><input type="number" min="0" max="300" data-rest value="${ex.restSec}"></label>`));
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Blocs</span><input type="number" min="1" max="30" data-blocs value="${ex.tabataSeries}"></label>`));
+    }
+
+    c.querySelector('[data-deplier]').onclick = (e) => {
+      champs.hidden = !champs.hidden;
+      e.target.textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
+    };
+
+    const lie = (sel, champ) => {
       c.querySelector(sel)?.addEventListener('change', (e) => {
-        const v = entier ? parseInt(e.target.value, 10) : e.target.value;
+        const v = parseInt(e.target.value, 10);
         ex[champ] = Number.isNaN(v) ? 0 : v;
         redessiner();
       });
     };
-    c.querySelector('[data-mode]').addEventListener('change', (e) => {
-      ex.mode = e.target.value; redessiner();
-    });
-    lie('[data-series]', 'plannedSets');
-    lie('[data-reps]', 'targetReps');
-    lie('[data-recup]', 'recupSec');
-    lie('[data-work]', 'workSec');
-    lie('[data-rest]', 'restSec');
-    lie('[data-blocs]', 'tabataSeries');
+    c.querySelector('[data-mode]').addEventListener('change', (e) => { ex.mode = e.target.value; redessiner(); });
+    lie('[data-series]', 'plannedSets'); lie('[data-reps]', 'targetReps'); lie('[data-recup]', 'recupSec');
+    lie('[data-work]', 'workSec'); lie('[data-rest]', 'restSec'); lie('[data-blocs]', 'tabataSeries');
 
-    c.querySelector('[data-haut]').onclick = () => {
-      [seance.exercises[i - 1], seance.exercises[i]] = [seance.exercises[i], seance.exercises[i - 1]];
-      redessiner();
-    };
-    c.querySelector('[data-bas]').onclick = () => {
-      [seance.exercises[i + 1], seance.exercises[i]] = [seance.exercises[i], seance.exercises[i + 1]];
-      redessiner();
-    };
-    c.querySelector('[data-suppr]').onclick = () => {
-      seance.exercises.splice(i, 1); redessiner();
-    };
-    c.querySelector('[data-groupe]').onclick = () => {
-      if (ex.groupId) { ex.groupId = 0; }
-      else if (i < seance.exercises.length - 1) {
-        const suivant = seance.exercises[i + 1];
-        const g = suivant.groupId || prochainGroupId(seance.exercises);
-        ex.groupId = g; suivant.groupId = g;
-      } else {
-        toast('Rien à grouper : cet exercice est le dernier.');
-      }
-      redessiner();
+    c.querySelector('.exo-edit-suppr').onclick = () => { seance.exercises.splice(i, 1); redessiner(); };
+    c.querySelector('.exo-edit-poignee').onclick = () => {
+      if (i > 0) { [seance.exercises[i - 1], seance.exercises[i]] = [seance.exercises[i], seance.exercises[i - 1]]; redessiner(); }
     };
     return c;
+  }
+
+  function labelMode(ex) {
+    if (ex.mode === 'MINUTEUR') return 'Minuteur ' + fmtRecup(ex.recupSec);
+    if (ex.mode === 'TABATA') return `Tabata ${ex.workSec}/${ex.restSec}×${ex.tabataSeries}`;
+    return 'Chrono';
   }
 
   el.querySelector('[data-ajouter]').onclick = () => {
@@ -331,16 +370,27 @@ export async function vueSeanceEdition(params) {
     });
   };
 
-  el.querySelector('[data-enregistrer]').onclick = async (e) => {
+  async function sauvegarder() {
     seance.name = el.querySelector('[data-nom]').value.trim();
-    seance.category = el.querySelector('[data-cat]').value;
-    if (!seance.name) return toast('Donne un nom à la séance.');
-    if (!seance.exercises.length) return toast('Ajoute au moins un exercice.');
+    if (!seance.name) { toast('Donne un nom à la séance.'); return false; }
+    if (!seance.exercises.length) { toast('Ajoute au moins un exercice.'); return false; }
+    await saveWorkout(moi.id, seance);
+    return true;
+  }
+
+  el.querySelector('[data-demarrer]').onclick = async (e) => {
     e.target.disabled = true;
     try {
-      await saveWorkout(moi.id, seance);
-      toast('Séance enregistrée.');
-      location.hash = '#/seances';
+      if (await sauvegarder()) location.hash = `#/seances/${seance.id}/lancer`;
+      else e.target.disabled = false;
+    } catch (err) { toast(err.message); e.target.disabled = false; }
+  };
+
+  el.querySelector('[data-enregistrer]').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      if (await sauvegarder()) { toast('Séance enregistrée.'); location.hash = '#/seances'; }
+      else e.target.disabled = false;
     } catch (err) { toast(err.message); e.target.disabled = false; }
   };
 

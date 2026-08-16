@@ -544,21 +544,41 @@ a.ligne-titre:hover{color:var(--accent)}
 .com-saisie{display:flex;gap:.6rem;align-items:flex-end;padding-top:.9rem;flex-wrap:wrap}
 .com-saisie .champ{flex:1 1 16rem;margin:0}
 
-/* éditeur d'exercice */
+/* éditeur d'exercice — reprend CreateWorkout (TrainingScreens.kt) */
+.champ-label{color:var(--encre-2);font-size:.86rem;margin:0 0 .4rem}
+.exos-liste{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.75rem}
+
 .exo-edit{
-  padding:1.15rem 1.25rem;margin-bottom:.75rem;
+  padding:.85rem 1rem;margin-bottom:0;
   background:var(--carte);
-  border:1px solid var(--trait);border-radius:var(--r-m);
+  border:1px solid var(--trait);border-radius:var(--r-s);
   box-shadow:var(--ombre-1);
 }
-.exo-edit-tete{
-  display:flex;align-items:baseline;justify-content:space-between;
-  gap:1rem;flex-wrap:wrap;margin-bottom:.9rem;
-}
-.exo-edit-nom{font-family:var(--f-display);font-weight:600;font-size:1.02rem}
-.exo-edit-actions{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.6rem}
+.exo-edit-tete{display:flex;align-items:center;gap:.7rem}
+.exo-edit-poignee{color:var(--encre-2);font-size:1.1rem;cursor:pointer;flex:none}
+.exo-edit-nom{flex:1;font-family:var(--f-display);font-weight:700;font-size:1rem;color:var(--encre)}
+.exo-edit-suppr{color:var(--encre-2);font-size:1.05rem;cursor:pointer;flex:none;padding:.2rem}
+.exo-edit-meta{margin:.3rem 0 0;color:var(--encre-2);font-size:.8rem}
+.exo-edit-meta .etiquette{margin-left:.5rem}
+.exo-edit [data-champs]{margin-top:.75rem}
 .exo-edit .champ{margin-bottom:.5rem}
 .exo-edit .etat-mono{margin:.5rem 0 0}
+
+.lien-enchainer{
+  display:block;margin:.35rem auto;padding:.2rem .7rem;
+  background:none;border:0;cursor:pointer;
+  font-family:var(--f-display);font-weight:700;font-size:.72rem;
+  color:var(--encre-2);
+}
+.lien-enchainer.on{color:var(--dore)}
+
+.estim-panel{
+  display:flex;flex-direction:column;gap:.25rem;
+  margin-top:1.25rem;padding:.85rem 1rem;
+  background:var(--creme-2);border-radius:var(--r-m);
+}
+.estim-panel span{color:var(--encre-2);font-size:.82rem}
+.estim-panel b{color:var(--dore);font-family:var(--f-display);font-weight:700;font-size:1.6rem}
 
 /* ==========================================================================
    Modale du catalogue
