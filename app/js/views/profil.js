@@ -3,6 +3,7 @@ import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
+import { reset as reinitialiserOnboarding } from './onboarding.js';
 
 export async function vueProfil(params) {
   render(loading('Chargement du profil'));
@@ -63,7 +64,10 @@ export async function vueProfil(params) {
 
       ${estMoi ? `
         <div class="bloc">
-          <button class="btn btn-ghost" data-deconnexion type="button">Se déconnecter</button>
+          <button class="lien-inline" data-tuto type="button">Revoir le tutoriel</button>
+          <div style="margin-top:1rem">
+            <button class="btn btn-ghost" data-deconnexion type="button">Se déconnecter</button>
+          </div>
         </div>` : ''}
     </section>`);
 
@@ -130,6 +134,10 @@ export async function vueProfil(params) {
   }
 
   el.querySelector('[data-deconnexion]')?.addEventListener('click', signOut);
+  el.querySelector('[data-tuto]')?.addEventListener('click', () => {
+    reinitialiserOnboarding();
+    location.hash = '#/onboarding';
+  });
 
   render(el);
 }

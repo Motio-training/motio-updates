@@ -12,12 +12,14 @@ import { vueCoach } from './views/coach.js';
 import { vueMessages, vueMessageThread } from './views/messages.js';
 import { vueGroupes, vueGroupeDetail } from './views/groupes.js';
 import { vueMinuteurs } from './views/minuteurs.js';
+import { vueOnboarding, pending as onboardingPending } from './views/onboarding.js';
 
 const PUBLIQUES = ['/connexion'];
 
 /* --- routes --- */
-route('/', () => { location.hash = '#/fil'; });
+route('/', () => { location.hash = '#/seances'; });
 route('/connexion', vueConnexion);
+route('/onboarding', vueOnboarding);
 route('/minuteurs', vueMinuteurs);
 route('/fil', vueFil);
 route('/amis', vueAmis);
@@ -38,15 +40,18 @@ route('/historique', vueHistorique);
 setNotFound(() => render(empty(
   'Page introuvable',
   'Ce lien ne mène nulle part.',
-  { href: '#/fil', label: 'Retour au fil' }
+  { href: '#/seances', label: 'Retour à Entraînement' }
 )));
 
 /* --- garde : pas de session, pas d'espace web --- */
 before(async (path) => {
   const session = await currentSession();
   if (!session && !PUBLIQUES.includes(path)) return '/connexion';
-  if (session && path === '/connexion') return '/fil';
-  majChrome(!!session, path);
+  if (session && path === '/connexion') return '/seances';
+  // Tutoriel de première ouverture : passe devant tout le reste, comme côté
+  // natif (OnboardingScreen s'affiche par-dessus l'app tant qu'il est dû).
+  if (session && path !== '/onboarding' && onboardingPending()) return '/onboarding';
+  majChrome(!!session && path !== '/onboarding', path);
   return null;
 });
 

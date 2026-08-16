@@ -765,6 +765,33 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .wcard-sec a{color:var(--dore);text-decoration:none;font-size:.72rem}
 
 /* ==========================================================================
+   Tutoriel de première ouverture — portage d'OnboardingScreen (Onboarding.kt)
+   ========================================================================== */
+
+body:not(.connecte) #vue:has(.onb){
+  display:block;padding-top:0;width:100%;
+}
+.onb{
+  display:flex;flex-direction:column;
+  min-height:100vh;max-width:32rem;margin:0 auto;
+  padding:1.5rem clamp(1.25rem,4vw,2rem) 2rem;
+}
+.onb-haut{display:flex;justify-content:flex-end}
+.onb-corps{flex:1;display:flex;flex-direction:column;justify-content:center;padding:2rem 0}
+.onb-corps h1{font-size:1.7rem;margin:0 0 1rem}
+.onb-texte{color:var(--encre-2);font-size:1rem;line-height:1.6;margin:0 0 1.25rem;white-space:pre-line}
+.onb-astuce{
+  background:var(--carte);color:var(--dore);font-weight:700;font-size:.84rem;
+  padding:.65rem .85rem;border-radius:var(--r-m);margin:0;
+}
+.onb-points{display:flex;justify-content:center;gap:.4rem;padding:1rem 0}
+.onb-point{width:7px;height:7px;padding:0;border:0;border-radius:99px;background:var(--creme-2);cursor:pointer}
+.onb-point.on{width:10px;height:10px;background:var(--accent)}
+.onb-boutons{display:flex;gap:.65rem}
+.onb-boutons .btn{flex:1}
+.onb-page{text-align:center;color:var(--encre-2);font-size:.7rem;margin:.6rem 0 0}
+
+/* ==========================================================================
    Coach IA
    ========================================================================== */
 
