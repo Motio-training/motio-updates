@@ -46,24 +46,48 @@
   --ressort:cubic-bezier(.22,.72,.28,1);
 }
 
+/* Palette sombre "motio", éclaircie (Theme.kt) : le fond quasi noir d'origine
+   (#171A11/#181C12) rendait l'appli plus sombre que voulu, encore aggravé
+   côté web où --creme/--creme-2 étaient même plus foncés que leurs
+   équivalents natifs (BgDark/Panel). Alignés ici sur les mêmes valeurs.
+   Deux déclencheurs : le système (media query) et le réglage explicite de
+   l'utilisateur (data-theme, voir applyTheme() dans main.js) — le second
+   l'emporte toujours sur le premier. */
 @media (prefers-color-scheme:dark){
-  :root{
-    --creme:#12150E;
-    --creme-2:#181C12;
-    --carte:#1E2317;
-    --trait:#303724;
+  :root:not([data-theme="light"]){
+    --creme:#1E2216;
+    --creme-2:#333A24;
+    --carte:#282E1D;
+    --trait:#3A4129;
     --encre:#ECEEE2;
-    --encre-2:#98A084;
+    --encre-2:#9BA084;
 
     --accent:#A9C25E;
     --accent-vif:#BCD473;
     --accent-sur:#171A11;
     --accent-halo:rgba(169,194,94,.22);
-    --accent-voile:#252C19;
+    --accent-voile:#333A24;
 
     --ombre-1:0 1px 2px rgba(0,0,0,.3), 0 6px 16px -10px rgba(0,0,0,.6);
     --ombre-2:0 2px 4px rgba(0,0,0,.35), 0 18px 34px -18px rgba(0,0,0,.75);
   }
+}
+:root[data-theme="dark"]{
+  --creme:#1E2216;
+  --creme-2:#333A24;
+  --carte:#282E1D;
+  --trait:#3A4129;
+  --encre:#ECEEE2;
+  --encre-2:#9BA084;
+
+  --accent:#A9C25E;
+  --accent-vif:#BCD473;
+  --accent-sur:#171A11;
+  --accent-halo:rgba(169,194,94,.22);
+  --accent-voile:#333A24;
+
+  --ombre-1:0 1px 2px rgba(0,0,0,.3), 0 6px 16px -10px rgba(0,0,0,.6);
+  --ombre-2:0 2px 4px rgba(0,0,0,.35), 0 18px 34px -18px rgba(0,0,0,.75);
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -112,6 +136,17 @@ body{
 }
 .menu-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .menu-btn:hover{background:rgba(244,243,238,.16)}
+
+.appbar-actions{display:flex;align-items:center;gap:.4rem}
+.icon-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:2.25rem;height:2.25rem;padding:0;flex:none;
+  background:rgba(244,243,238,.08);border:0;border-radius:var(--r-s);
+  color:#F4F3EE;cursor:pointer;
+}
+.icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.icon-btn:hover{background:rgba(244,243,238,.16)}
+body:not(.connecte) .icon-btn{display:none}
 
 .lien-txt{
   background:rgba(244,243,238,.08);border:1px solid rgba(244,243,238,.14);

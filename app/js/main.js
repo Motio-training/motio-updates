@@ -1,6 +1,12 @@
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
 import { currentSession, onAuthChange } from './supabase.js';
 import { $, $$, h, render, empty } from './ui.js';
+import { appliquerTheme, ouvrirTheme, ouvrirReglagesBips } from './reglages.js';
+import * as beeper from './beeper.js';
+
+/* Avant tout le reste : évite un flash du mauvais thème au premier rendu. */
+appliquerTheme();
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change', appliquerTheme);
 
 import { vueConnexion } from './views/connexion.js';
 import { vueFil } from './views/fil.js';
@@ -89,6 +95,8 @@ function majChrome(connecte, path) {
 $('#menu')?.addEventListener('click', () => {
   document.body.classList.toggle('menu-ouvert');
 });
+$('#btn-theme')?.addEventListener('click', ouvrirTheme);
+$('#btn-bips')?.addEventListener('click', () => ouvrirReglagesBips(beeper));
 $('#vue')?.addEventListener('click', () => {
   document.body.classList.remove('menu-ouvert');
 });
