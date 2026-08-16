@@ -72,13 +72,13 @@ export async function vueProfil(params) {
         </div>
 
         <div class="rangee-titre" style="margin-bottom:.6rem">
-          <h2 style="margin:0">Trophées</h2>
+          <p class="bloc-titre" style="margin:0">Trophées</p>
           <span style="color:var(--dore);font-weight:700;font-size:.85rem">${stars} / ${starsTot} ★</span>
         </div>
         <div class="trophees-grille" data-trophees></div>
 
         <div class="bloc">
-          <h2>Entraînement</h2>
+          <p class="bloc-titre">Entraînement</p>
           <div class="menu-groupe">
             <a class="menu-ligne" href="#/coach">
               <img class="menu-avatar" src="../assets/img/moti_avatar.jpg" alt="">
@@ -89,7 +89,7 @@ export async function vueProfil(params) {
         </div>
 
         <div class="bloc">
-          <h2>Compte</h2>
+          <p class="bloc-titre">Compte</p>
           <p class="etat-mono">C'est sous ce nom que les autres te trouvent.</p>
           <label class="champ"><span>Pseudo</span>
             <input type="text" data-pseudo value="${esc(profil.username || '')}" maxlength="24"></label>
@@ -98,12 +98,12 @@ export async function vueProfil(params) {
         <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>`}
 
       <div class="bloc">
-        <h2>Records estimés</h2>
+        <p class="bloc-titre">Records estimés</p>
         <div data-records></div>
       </div>
 
       <div class="bloc">
-        <h2>Séances récentes</h2>
+        <p class="bloc-titre">Séances récentes</p>
         <div data-seances></div>
       </div>
 
@@ -120,9 +120,10 @@ export async function vueProfil(params) {
   if (estMoi) {
     const zoneTr = el.querySelector('[data-trophees]');
     trophyStats.trophies.forEach(tr => {
+      const etat = tr.complete ? 'complet' : tr.unlocked ? 'encours' : 'verrouille';
       const carte = h(`
-        <div class="trophee-carte ${tr.unlocked ? '' : 'verrouille'}">
-          <span class="icone">${tr.icon}</span>
+        <div class="trophee-carte ${etat}">
+          <span class="trophee-badge">${tr.icon}</span>
           <span class="nom">${esc(tr.title)}</span>
           <span class="trophee-etoiles">${'★'.repeat(tr.stars)}<span class="off">${'★'.repeat(tr.levels.length - tr.stars)}</span></span>
         </div>`);

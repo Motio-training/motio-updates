@@ -9,6 +9,8 @@
    ========================================================================== */
 
 import { h, esc, toast, duree } from './ui.js';
+import { muscleLoadOf } from './muscle-lexicon.js';
+import { drawMuscleMap, CANVAS_W, CANVAS_H } from './muscle-map.js';
 
 const CARTE_L = 1080;
 const CARTE_H = 1920;
@@ -22,9 +24,13 @@ let policesEnCache = null;
 /* Palette figée de la carte — dupliquée en couleurs littérales (et non en
    var() CSS) partout où elle sert à composer des images SVG autonomes : une
    fois passées en data URI (background-image), ces images n'ont plus accès
-   aux propriétés personnalisées de la feuille de style hôte. */
+   aux propriétés personnalisées de la feuille de style hôte. Même palette
+   que SummaryImage.kt (Sharing.kt), FIXE quel que soit le thème choisi dans
+   l'appli — l'image partagée doit toujours rendre pareil. */
 const CREME = '#EEEFE4';
 const OLIVE_CLAIR = '#B7CE6A';
+const DORE = '#D8B24C';
+const MUSCLE_COLD = '#232A17';
 const TRAIT = 'rgba(48,57,33,.47)';
 const TICK_MINEUR = '#4A5433';
 
@@ -85,7 +91,7 @@ function resumerExercice(sets) {
   };
 }
 
-const MAX_EXERCICES_AFFICHES = 7;
+const MAX_EXERCICES_AFFICHES = 8;
 
 /** Transforme une ligne shared_sessions (voir api.js) en données prêtes à
  *  injecter dans le gabarit de la carte. */
@@ -113,39 +119,23 @@ export function normaliserSeance(s) {
 
 /* ------------------------------------------------------------------ svg */
 
-/** Graduations + arc balayé du cadran, en unités du viewBox (0–200). */
-function cadranSVG({ taille = 200, n = 60, majeureTous = 5, arcDeg = 252 } = {}) {
-  const c = taille / 2;
-  const rExt = taille * 0.5 - 2;
-  const rIntMineur = rExt - taille * 0.028;
-  const rIntMajeur = rExt - taille * 0.06;
-  let lignes = '';
-  for (let i = 0; i < n; i++) {
-    const angle = ((360 / n) * i - 90) * Math.PI / 180;
-    const majeure = i % majeureTous === 0;
-    const rInt = majeure ? rIntMajeur : rIntMineur;
-    const x1 = c + rInt * Math.cos(angle), y1 = c + rInt * Math.sin(angle);
-    const x2 = c + rExt * Math.cos(angle), y2 = c + rExt * Math.sin(angle);
-    lignes += `<line class="${majeure ? 'tick-major' : 'tick-minor'}" x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}"/>`;
-  }
-  const rArc = rExt + taille * 0.018;
-  const debut = -90 * Math.PI / 180;
-  const fin = (-90 + arcDeg) * Math.PI / 180;
-  const x1 = c + rArc * Math.cos(debut), y1 = c + rArc * Math.sin(debut);
-  const x2 = c + rArc * Math.cos(fin), y2 = c + rArc * Math.sin(fin);
-  const grand = arcDeg > 180 ? 1 : 0;
-  const chemin = `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${rArc.toFixed(2)} ${rArc.toFixed(2)} 0 ${grand} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${taille} ${taille}" fill="none">
-    <style>
-      .tick-minor{stroke:${TICK_MINEUR};stroke-width:1.1;stroke-linecap:round}
-      .tick-major{stroke:${OLIVE_CLAIR};stroke-width:2;stroke-linecap:round;opacity:.95}
-      .dial-rim{stroke:${TRAIT};stroke-width:1}
-      .dial-arc{stroke:${OLIVE_CLAIR};stroke-width:2.4;stroke-linecap:round;opacity:.65}
-    </style>
-    <circle class="dial-rim" cx="${c}" cy="${c}" r="${(rExt + taille * 0.018).toFixed(2)}"/>
-    <path class="dial-arc" d="${chemin}"/>
-    ${lignes}
-  </svg>`;
+/** Carte musculaire de la séance, dessinée hors écran puis exportée en PNG —
+ *  remplace l'ancien grand cadran circulaire (SummaryImage.kt : « le
+ *  tonnage qu'il affichait rejoint les tuiles, cette place devient la vraie
+ *  pièce centrale de la carte »). Palette FIXE (pas les variables CSS du
+ *  thème courant), pour que l'image partagée rende toujours pareil. */
+async function silhouetteDataURL(session) {
+  const brut = Array.isArray(session.details) ? session.details : [];
+  const sessionLike = {
+    exercises: brut.map(ex => ({ name: ex.n, sets: (ex.s || []).map(s => ({ reps: s.r })) }))
+  };
+  const { zones } = await muscleLoadOf(sessionLike);
+  /* Canvas jamais posé dans le document : clientWidth vaut alors 0, et
+     drawMuscleMap retombe sur CANVAS_W (792) via son `|| CANVAS_W` — la
+     taille native de la planche, exportée telle quelle. */
+  const off = document.createElement('canvas');
+  await drawMuscleMap(off, zones, 6, { cold: MUSCLE_COLD, warm: OLIVE_CLAIR, hot: DORE, line: CREME });
+  return off.toDataURL('image/png');
 }
 
 function emblemeSVG({ accentCercle = false } = {}) {
@@ -206,38 +196,33 @@ h1{
 .rule{width:150px;height:9px;margin-top:22px;
   background:repeating-linear-gradient(90deg, var(--olive-clair) 0 3px, transparent 3px 16px);opacity:.85}
 
-.dial-wrap{position:relative;margin:30px auto 0;width:560px;height:560px;display:flex;align-items:center;justify-content:center;flex:none}
-.dial-svg{position:absolute;inset:0;width:100%;height:100%;background-size:100% 100%;background-repeat:no-repeat}
-.dial-face{
-  position:relative;width:432px;height:432px;border-radius:50%;
-  background:radial-gradient(circle at 34% 28%, #232a17 0%, #12150d 72%, #0c0f08 100%);
-  border:1px solid var(--trait);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+.zones-head{margin-top:32px;font-size:15px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:var(--olive-clair)}
+.muscle-img{
+  width:100%;aspect-ratio:792/545;margin-top:14px;
+  background-size:contain;background-position:center;background-repeat:no-repeat;
 }
-.dial-label{font-size:13.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--creme-dim)}
-.dial-value{margin-top:10px;font-family:"Outfit Var",sans-serif;font-weight:650;font-size:96px;line-height:.92;letter-spacing:-.02em;color:var(--olive-clair)}
-.dial-unit{margin-top:6px;font-size:20px;font-weight:600;letter-spacing:.1em;color:var(--creme-dim)}
 
-.stats{display:flex;gap:14px;margin-top:34px}
+.stats{display:flex;gap:14px;margin-top:36px}
 .stat{position:relative;flex:1;padding:20px 22px 18px 24px;
   background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,0));
   border:1px solid var(--trait);border-radius:16px;overflow:hidden}
 .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rail, var(--olive-clair))}
-.stat.b::before{--rail:var(--dore)}
+.stat.charge::before{--rail:var(--dore)}
 .stat span{display:block;font-size:12.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--creme-dim)}
-.stat b{display:block;margin-top:8px;font-family:"Outfit Var",sans-serif;font-size:46px;font-weight:600;letter-spacing:-.01em}
+.stat b{display:block;margin-top:8px;font-family:"Outfit Var",sans-serif;font-size:38px;font-weight:600;letter-spacing:-.01em}
 
 .exo-head{display:flex;align-items:baseline;justify-content:space-between;margin-top:38px}
 .exo-head span{font-size:13.5px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--olive-clair)}
 .exo-head em{font-style:normal;font-size:12.5px;letter-spacing:.05em;color:var(--creme-dim)}
 
-.exo-list{list-style:none;margin-top:6px}
-.exo-row{display:flex;align-items:baseline;gap:10px;padding:15px 0;border-bottom:1px solid var(--trait);font-family:"Outfit Var",sans-serif}
-.exo-row:last-child{border-bottom:0}
-.exo-nom{flex:0 1 auto;font-size:21px;font-weight:500;color:var(--creme);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.exo-fil{flex:1 1 auto;border-bottom:1px dotted #4a533280;margin-bottom:6px;min-width:14px}
-.exo-data{flex:0 0 auto;display:flex;align-items:baseline;gap:8px;font-family:"JetBrains Mono Var",monospace;white-space:nowrap}
-.exo-data b{font-size:20px;font-weight:600;color:var(--creme)}
-.exo-data i{font-style:normal;font-size:16px;color:var(--creme-dim)}
+.exo-list{list-style:none;margin-top:6px;column-count:2;column-gap:28px}
+.exo-row{display:flex;align-items:baseline;gap:10px;padding:15px 0;border-bottom:1px solid var(--trait);
+  font-family:"Outfit Var",sans-serif;break-inside:avoid}
+.exo-nom{flex:0 1 auto;font-size:19px;font-weight:500;color:var(--creme);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exo-fil{flex:1 1 auto;border-bottom:1px dotted #4a533280;margin-bottom:6px;min-width:8px}
+.exo-data{flex:0 0 auto;display:flex;align-items:baseline;gap:6px;font-family:"JetBrains Mono Var",monospace;white-space:nowrap}
+.exo-data b{font-size:18px;font-weight:600;color:var(--creme)}
+.exo-data i{font-style:normal;font-size:14px;color:var(--creme-dim)}
 
 .foot{margin-top:auto;padding-top:34px;border-top:1px solid var(--trait);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
 .foot-brand{display:flex;align-items:center;gap:16px}
@@ -275,18 +260,13 @@ function contenuCarte(d) {
       <h1>${esc(d.titre)}</h1>
       <div class="rule"></div>
 
-      <div class="dial-wrap">
-        ${imageDiv('dial-svg', cadranSVG())}
-        <div class="dial-face">
-          <span class="dial-label">Charge déplacée</span>
-          <span class="dial-value">${esc(d.tonnage)}</span>
-          <span class="dial-unit">KILOGRAMMES</span>
-        </div>
-      </div>
+      <p class="zones-head">Zones travaillées</p>
+      <div class="muscle-img" style="background-image:url('${d.silhouetteURL}')"></div>
 
       <div class="stats">
-        <div class="stat a"><span>Durée</span><b>${esc(d.dureeTxt)}</b></div>
-        <div class="stat b"><span>Temps sous tension</span><b>${esc(d.tensionTxt)}</b></div>
+        <div class="stat charge"><span>Charge (kg)</span><b>${esc(d.tonnage)}</b></div>
+        <div class="stat"><span>Durée</span><b>${esc(d.dureeTxt)}</b></div>
+        <div class="stat"><span>Tension</span><b>${esc(d.tensionTxt)}</b></div>
       </div>
 
       ${d.exercices.length ? `
@@ -343,6 +323,7 @@ async function chargerImage(svgMarkup) {
 /** Génère l'image PNG (data URL) du bilan de la séance donnée. */
 export async function genererImageSeance(session) {
   const d = normaliserSeance(session);
+  d.silhouetteURL = await silhouetteDataURL(session);
   const { outfitURI, monoURI } = await chargerPolices();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CARTE_L}" height="${CARTE_H}" viewBox="0 0 ${CARTE_L} ${CARTE_H}">
 <foreignObject x="0" y="0" width="${CARTE_L}" height="${CARTE_H}">

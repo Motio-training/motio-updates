@@ -92,14 +92,18 @@ function parseRgb(s) {
  * Dessine la carte musculaire dans `canvas` (déjà dimensionné en CSS,
  * dessiné à sa résolution réelle en pixels pour rester net).
  * `load` : { zone: séries pondérées }. `fullScale` : plafond de l'échelle
- * (MuscleScale.SESSION ou .WEEK).
+ * (MuscleScale.SESSION ou .WEEK). `colors` : palette figée optionnelle
+ * ({cold,warm,hot,line}) — sert à la carte de partage, dont l'image doit
+ * toujours rendre pareil quel que soit le thème choisi dans l'appli
+ * (SummaryImage.kt, palette FIXE plutôt que le thème dynamique). Sans elle,
+ * les couleurs suivent le thème courant via les variables CSS.
  */
-export async function drawMuscleMap(canvas, load, fullScale = MuscleScale.SESSION) {
+export async function drawMuscleMap(canvas, load, fullScale = MuscleScale.SESSION, colors = null) {
   const cs = getComputedStyle(document.documentElement);
-  const cold = cs.getPropertyValue('--creme-2').trim() || '#333A24';
-  const warm = cs.getPropertyValue('--accent').trim() || '#A9C25E';
-  const hot = cs.getPropertyValue('--dore').trim() || '#C9A44A';
-  const lineColor = cs.getPropertyValue('--encre').trim() || '#ECEADD';
+  const cold = colors?.cold || cs.getPropertyValue('--creme-2').trim() || '#333A24';
+  const warm = colors?.warm || cs.getPropertyValue('--accent').trim() || '#A9C25E';
+  const hot = colors?.hot || cs.getPropertyValue('--dore').trim() || '#C9A44A';
+  const lineColor = colors?.line || cs.getPropertyValue('--encre').trim() || '#ECEADD';
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const cssW = canvas.clientWidth || CANVAS_W;

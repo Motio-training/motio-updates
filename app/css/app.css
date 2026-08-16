@@ -439,14 +439,38 @@ a.ligne-titre:hover{color:var(--accent)}
 .tonnage-carte span{display:block;font-family:var(--f-mono);font-size:.72rem;color:var(--encre-2)}
 .tonnage-carte b{display:block;margin-top:.15rem;font-family:var(--f-display);font-weight:700;font-size:1.35rem;color:var(--accent)}
 
-.trophees-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+/** Étiquette de section — TROPHÉES/ENTRAÎNEMENT/COMPTE (Profile.kt) : petit
+ *  label mono capitales, pas un gros titre noir. Réutilisé partout où une
+ *  page se découpe en sections nommées (même esprit que .eyebrow/.cat-nom). */
+.bloc-titre{
+  margin:0 0 .7rem;font-family:var(--f-mono);font-size:.7rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--encre-2);
+}
+
+.trophees-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem .6rem}
 .trophee-carte{
-  background:var(--carte);border-radius:var(--r-m);padding:.75rem .4rem;
-  display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  display:flex;flex-direction:column;align-items:center;gap:.4rem;
   cursor:pointer;text-align:center;
 }
-.trophee-carte.verrouille{background:var(--creme-2);opacity:.65}
-.trophee-carte .icone{font-size:1.7rem;line-height:1}
+/* Badge hexagonal (Profile.kt : icône + anneau coloré selon l'état) plutôt
+   qu'une carte blanche neutre — verrouillé = gris terne, en cours = anneau
+   olive, complet = anneau doré avec léger halo. */
+.trophee-badge{
+  width:58px;height:58px;margin:0 auto;
+  display:flex;align-items:center;justify-content:center;font-size:1.65rem;line-height:1;
+  clip-path:polygon(50% 2%, 95% 26%, 95% 74%, 50% 98%, 5% 74%, 5% 26%);
+  background:linear-gradient(150deg,var(--creme-2),var(--carte));
+  border:2px solid var(--trait);
+}
+.trophee-carte.verrouille .trophee-badge{filter:grayscale(1);opacity:.55}
+.trophee-carte.encours .trophee-badge{
+  background:linear-gradient(150deg,var(--accent-voile),var(--creme-2));
+  border-color:var(--accent);
+}
+.trophee-carte.complet .trophee-badge{
+  background:linear-gradient(150deg,var(--dore),var(--accent2));
+  border-color:var(--dore);box-shadow:0 0 14px var(--accent-halo);
+}
 .trophee-carte .nom{font-family:var(--f-display);font-weight:700;font-size:.72rem;color:var(--encre);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .trophee-carte.verrouille .nom{color:var(--encre-2)}
