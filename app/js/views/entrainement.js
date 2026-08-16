@@ -319,7 +319,7 @@ export async function vueSeanceEdition(params) {
         <input type="text" data-section-nom maxlength="40" placeholder="Force + hypertrophie"></label>
 
       <div class="bloc">
-        <h2>Exercices</h2>
+        <p class="bloc-titre">Exercices</p>
         <div class="exos-liste" data-exos></div>
         <button class="btn btn-ghost" data-ajouter style="width:100%">＋ Ajouter un exercice</button>
       </div>

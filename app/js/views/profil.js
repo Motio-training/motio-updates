@@ -260,7 +260,7 @@ export async function vueAmis() {
       <ul class="liste" data-resultats></ul>
 
       <div class="bloc">
-        <h2>Abonnements</h2>
+        <p class="bloc-titre">Abonnements</p>
         <div data-abos></div>
       </div>
     </section>`);
