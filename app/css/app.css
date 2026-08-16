@@ -704,3 +704,42 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 }
 
 .run-bas{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+
+/* ==========================================================================
+   Coach IA
+   ========================================================================== */
+
+.coach-fil,.msg-fil{
+  display:flex;flex-direction:column;gap:.85rem;
+  min-height:20rem;max-height:60vh;overflow-y:auto;
+  margin:1.5rem 0;padding:.25rem;
+}
+.msg-actions{margin-bottom:.75rem}
+.coach-vide{padding:1rem 0}
+.coach-ligne{display:flex}
+.coach-ligne.mine{justify-content:flex-end}
+.coach-bulle{
+  max-width:80%;padding:.75rem 1rem;border-radius:var(--r-m);
+  background:var(--carte);border:1px solid var(--trait);box-shadow:var(--ombre-1);
+}
+.coach-ligne.mine .coach-bulle{background:var(--accent);border-color:var(--accent);color:var(--accent-sur)}
+.coach-bulle p{margin:0;font-size:.94rem;line-height:1.5}
+.coach-attente{font-family:var(--f-mono);color:var(--encre-2);padding:.6rem 1rem}
+
+.coach-seance{
+  margin-top:.75rem;padding:.85rem 1rem;border-radius:var(--r-s);
+  background:var(--accent-voile);border:1px solid var(--accent-halo);
+}
+.coach-seance .tag{
+  margin:0 0 .3rem;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);
+}
+.coach-seance-nom{margin:0;font-family:var(--f-display);font-weight:600;font-size:1rem;color:var(--encre)}
+.coach-seance .btn{margin-top:.6rem}
+
+.coach-saisie{display:flex;gap:.6rem;position:sticky;bottom:1rem}
+.coach-saisie input{
+  flex:1;padding:.72rem .9rem;font-family:var(--f-body);font-size:.94rem;
+  background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-pill);color:var(--encre);
+}
+.coach-saisie input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-halo)}

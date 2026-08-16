@@ -250,6 +250,188 @@ export async function deleteProgram(userId, localId) {
 }
 
 /* ==========================================================================
+   Messages 1-à-1 — même table que l'app (`messages`), pas de temps réel côté
+   serveur ici non plus : l'écran de fil relance un léger sondage tant qu'il
+   reste ouvert, comme ChatScreens.kt. Réactions emoji omises (le web reste
+   volontairement plus simple que le natif sur ce point).
+   ========================================================================== */
+
+export async function conversations(moiId) {
+  const rows = unwrap(await sb.from(T.messages)
+    .select('id,sender_id,recipient_id,body,workout_name,created_at,read_at')
+    .order('created_at', { ascending: false }).limit(500));
+  const byFriend = new Map();
+  for (const r of rows) {
+    const other = r.sender_id === moiId ? r.recipient_id : r.sender_id;
+    const preview = r.workout_name ? `🏋 ${r.workout_name}` : (r.body || 'Séance envoyée');
+    const unread = r.recipient_id === moiId && !r.read_at;
+    const cur = byFriend.get(other);
+    if (!cur) byFriend.set(other, { body: preview, at: r.created_at, unread: unread ? 1 : 0 });
+    else if (unread) cur.unread++;
+  }
+  if (!byFriend.size) return [];
+  const noms = await usernamesFor([...byFriend.keys()]);
+  return [...byFriend.entries()]
+    .map(([id, last]) => ({ id, username: noms[id] || '?', ...last }))
+    .sort((a, b) => new Date(b.at) - new Date(a.at));
+}
+
+export async function messageThread(moiId, friendId) {
+  return unwrap(await sb.from(T.messages)
+    .select('id,sender_id,recipient_id,body,workout_name,workout_data,created_at,read_at')
+    .or(`and(sender_id.eq.${moiId},recipient_id.eq.${friendId}),and(sender_id.eq.${friendId},recipient_id.eq.${moiId})`)
+    .order('created_at', { ascending: true }).limit(300));
+}
+
+export async function sendText(moiId, friendId, texte) {
+  const clean = texte.trim();
+  if (!clean) throw new Error('Message vide.');
+  if (clean.length > 1000) throw new Error('Message trop long (1000 caractères maximum).');
+  return unwrap(await sb.from(T.messages)
+    .insert({ sender_id: moiId, recipient_id: friendId, body: clean }).select().single());
+}
+
+export async function sendWorkoutMessage(moiId, friendId, name, code) {
+  return unwrap(await sb.from(T.messages)
+    .insert({ sender_id: moiId, recipient_id: friendId, workout_name: name, workout_data: code }).select().single());
+}
+
+export async function markThreadRead(messageIds) {
+  for (const id of messageIds) {
+    try { await sb.rpc('mark_message_read', { mid: id }); } catch { /* pas bloquant */ }
+  }
+}
+
+/* ==========================================================================
+   Groupes d'entraînement — même tables/RPC que Groups.kt côté Android
+   (`groups`, `group_members`, `group_messages`, RPC create_group/join_group/
+   get_group_preview/regenerate_invite_code). Fil et classement filtrés par
+   membres du groupe, même principe que le fil général plus haut.
+   ========================================================================== */
+
+async function memberIdsOf(groupId) {
+  const rows = unwrap(await sb.from(T.groupMembers).select('user_id').eq('group_id', groupId));
+  return rows.map(r => r.user_id);
+}
+
+async function memberCounts(groupIds) {
+  if (!groupIds.length) return {};
+  const rows = unwrap(await sb.from(T.groupMembers).select('group_id').in('group_id', groupIds));
+  const out = {};
+  for (const r of rows) out[r.group_id] = (out[r.group_id] || 0) + 1;
+  return out;
+}
+
+export async function groupsMine(moiId) {
+  const rows = unwrap(await sb.from(T.groupMembers)
+    .select('groups(id,name,description,banner_url,owner_id,invite_code,created_at)')
+    .eq('user_id', moiId));
+  const groupes = rows.map(r => r.groups).filter(Boolean);
+  const counts = await memberCounts(groupes.map(g => g.id));
+  return groupes.map(g => ({ ...g, memberCount: counts[g.id] || 0, mine: g.owner_id === moiId }));
+}
+
+export async function groupsSearch(nom) {
+  const q = nom.trim();
+  if (q.length < 2) return [];
+  const rows = unwrap(await sb.from(T.groups)
+    .select('id,name,description,banner_url,invite_code')
+    .ilike('name', `%${q}%`).limit(20));
+  const counts = await memberCounts(rows.map(r => r.id));
+  return rows.map(r => ({ ...r, memberCount: counts[r.id] || 0 }));
+}
+
+export async function groupCreate(name, description) {
+  return unwrap(await sb.rpc('create_group', { p_name: name.trim(), p_description: description.trim() }));
+}
+
+export async function groupPreviewByCode(code) {
+  const rows = unwrap(await sb.rpc('get_group_preview', { p_code: code.trim() }));
+  return rows?.[0] || null;
+}
+
+export async function groupJoin(code) {
+  return unwrap(await sb.rpc('join_group', { p_code: code.trim() }));
+}
+
+export async function groupLeave(groupId, moiId) {
+  return unwrap(await sb.from(T.groupMembers).delete().eq('group_id', groupId).eq('user_id', moiId).select());
+}
+
+export async function groupDelete(groupId) {
+  return unwrap(await sb.from(T.groups).delete().eq('id', groupId).select());
+}
+
+export async function groupMembersList(groupId) {
+  const rows = unwrap(await sb.from(T.groupMembers)
+    .select('user_id,role,joined_at').eq('group_id', groupId).order('joined_at', { ascending: true }));
+  const noms = await usernamesFor(rows.map(r => r.user_id));
+  return rows.map(r => ({ ...r, username: noms[r.user_id] || '?', isOwner: r.role === 'owner' }));
+}
+
+export async function groupRemoveMember(groupId, userId) {
+  return unwrap(await sb.from(T.groupMembers).delete().eq('group_id', groupId).eq('user_id', userId).select());
+}
+
+export async function groupUpdateInfo(groupId, name, description) {
+  return unwrap(await sb.from(T.groups)
+    .update({ name: name.trim(), description: description.trim() }).eq('id', groupId).select().single());
+}
+
+export async function groupRegenerateCode(groupId) {
+  return unwrap(await sb.rpc('regenerate_invite_code', { p_group_id: groupId }));
+}
+
+export async function groupFeed(groupId, limit = 60) {
+  const memberIds = await memberIdsOf(groupId);
+  if (!memberIds.length) return [];
+  const rows = unwrap(await sb.from(T.sharedSessions).select(CHAMPS_SESSION)
+    .in('user_id', memberIds).order('started_at', { ascending: false }).limit(limit));
+  const noms = await usernamesFor(rows.map(r => r.user_id));
+  return rows.map(r => ({ ...r, username: noms[r.user_id] || '?' }));
+}
+
+export async function groupStandings(groupId, days) {
+  const memberIds = await memberIdsOf(groupId);
+  if (!memberIds.length) return [];
+  const since = new Date(Date.now() - (days - 1) * 86400000);
+  since.setHours(0, 0, 0, 0);
+  const rows = unwrap(await sb.from(T.sharedSessions).select('user_id,started_at,volume_kg')
+    .in('user_id', memberIds).gte('started_at', since.toISOString())
+    .order('started_at', { ascending: false }).limit(2000));
+  const sessions = {}, volume = {}, jours = {};
+  for (const r of rows) {
+    sessions[r.user_id] = (sessions[r.user_id] || 0) + 1;
+    volume[r.user_id] = (volume[r.user_id] || 0) + (r.volume_kg || 0);
+    (jours[r.user_id] || (jours[r.user_id] = new Set())).add(new Date(r.started_at).toDateString());
+  }
+  const ids = Object.keys(sessions);
+  if (!ids.length) return [];
+  const noms = await usernamesFor(ids);
+  return ids.map(id => ({
+    userId: id, username: noms[id] || '?',
+    sessions: sessions[id], volume: volume[id], activeDays: jours[id].size
+  }));
+}
+
+export async function groupMessageThread(groupId, limit = 200) {
+  const rows = unwrap(await sb.from(T.groupMessages)
+    .select('id,sender_id,body,workout_name,workout_data,created_at')
+    .eq('group_id', groupId).order('created_at', { ascending: true }).limit(limit));
+  const noms = await usernamesFor(rows.map(r => r.sender_id));
+  return rows.map(r => ({ ...r, username: noms[r.sender_id] || '?' }));
+}
+
+export async function groupSendText(groupId, moiId, body) {
+  return unwrap(await sb.from(T.groupMessages).insert({ group_id: groupId, sender_id: moiId, body }).select());
+}
+
+export async function groupSendWorkout(groupId, moiId, name, code) {
+  return unwrap(await sb.from(T.groupMessages)
+    .insert({ group_id: groupId, sender_id: moiId, workout_name: name, workout_data: code }).select());
+}
+
+/* ==========================================================================
    Séance en direct — écriture dans `shared_sessions`, même forme que
    Social.push (Kotlin) : upsert sur (user_id, local_id), mêmes noms de
    colonnes, même format compact pour `details` (n = nom, s = séries

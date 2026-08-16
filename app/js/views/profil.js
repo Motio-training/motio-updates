@@ -209,6 +209,7 @@ function lignePersonne(p, moi, suivi0) {
   const li = h(`
     <li class="ligne ligne-action">
       <a class="ligne-titre" href="#/profil/${esc(p.id)}">${esc(p.username || 'sans pseudo')}</a>
+      <a class="btn btn-sm btn-ghost" href="#/messages/${esc(p.id)}">Message</a>
       <button class="btn btn-sm ${suivi ? 'btn-ghost' : ''}">${suivi ? 'Ne plus suivre' : 'Suivre'}</button>
     </li>`);
   const b = li.querySelector('button');

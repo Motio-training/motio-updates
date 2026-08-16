@@ -17,8 +17,8 @@ export const CONFIG = {
 
   DOWNLOAD_URL: 'https://github.com/Motio-training/motio-updates/releases/latest',
 
-  /* Tables. Les cinq premières existent déjà et sont utilisées par l'app.
-     Les deux dernières sont à créer (sql/01_schema.sql). */
+  /* Tables. Toutes existent déjà côté Android sauf synced_workouts/
+     synced_programs (sql/01_schema.sql). */
   TABLES: {
     profiles: 'profiles',
     follows: 'follows',
@@ -26,6 +26,10 @@ export const CONFIG = {
     kudos: 'kudos',
     comments: 'comments',
     workouts: 'synced_workouts',
-    programs: 'synced_programs'
+    programs: 'synced_programs',
+    messages: 'messages',
+    groups: 'groups',
+    groupMembers: 'group_members',
+    groupMessages: 'group_messages'
   }
 };

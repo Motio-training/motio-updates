@@ -8,6 +8,9 @@ import { vueProfil, vueAmis } from './views/profil.js';
 import { vueSeances, vueSeanceEdition, vueProgrammes,
          vueProgrammeNouveau, vueHistorique } from './views/entrainement.js';
 import { vueLancerSeance } from './views/lancer.js';
+import { vueCoach } from './views/coach.js';
+import { vueMessages, vueMessageThread } from './views/messages.js';
+import { vueGroupes, vueGroupeDetail } from './views/groupes.js';
 
 const PUBLIQUES = ['/connexion'];
 
@@ -18,6 +21,11 @@ route('/fil', vueFil);
 route('/amis', vueAmis);
 route('/profil', vueProfil);
 route('/profil/:id', vueProfil);
+route('/coach', vueCoach);
+route('/messages', vueMessages);
+route('/messages/:id', vueMessageThread);
+route('/groupes', vueGroupes);
+route('/groupes/:id', vueGroupeDetail);
 route('/seances', vueSeances);
 route('/seances/:id', vueSeanceEdition);
 route('/seances/:id/lancer', vueLancerSeance);
