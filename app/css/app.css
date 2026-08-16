@@ -99,8 +99,7 @@ body{
   text-decoration:none;color:inherit;
 }
 .wordmark img{display:block}
-.wordmark-mark{height:26px;width:auto}
-.wordmark-word{height:16px;width:auto;filter:brightness(0) invert(1)}
+.wordmark-word{height:24px;width:auto;filter:brightness(0) invert(1)}
 
 .menu-btn{
   display:none;align-items:center;justify-content:center;
@@ -879,6 +878,7 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   display:flex;align-items:center;gap:.75rem;padding:.75rem;
   border-radius:var(--r-m);background:var(--carte);cursor:pointer;
   box-shadow:var(--ombre-1);margin-bottom:.6rem;
+  text-decoration:none;
 }
 .wcard-ico{width:44px;height:44px;border-radius:var(--r-m);display:flex;align-items:center;justify-content:center;flex:none}
 .wcard-ico svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
