@@ -5,13 +5,13 @@
    reprend les mêmes RPC/tables que l'app.
    ========================================================================== */
 
-import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { currentUser } from '../supabase.js';
 import {
   groupsMine, groupsSearch, groupCreate, groupJoin, groupLeave, groupDelete,
   groupMembersList, groupRemoveMember, groupUpdateInfo, groupRegenerateCode,
   groupFeed, groupStandings, groupMessageThread, groupSendText, groupSendWorkout,
-  listWorkouts
+  listWorkouts, unreadMessagesCount
 } from '../api.js';
 import { kg } from '../model.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
@@ -21,15 +21,17 @@ export async function vueGroupes() {
   render(loading('Chargement des groupes'));
   const moi = await currentUser();
 
-  let groupes;
-  try { groupes = await groupsMine(moi.id); }
+  let groupes, unread = 0;
+  try {
+    [groupes, unread] = await Promise.all([
+      groupsMine(moi.id),
+      unreadMessagesCount(moi.id).catch(() => 0)
+    ]);
+  }
   catch (e) { return render(failure(e, "Les groupes n'ont pas pu être chargés")); }
 
   const el = h(`
     <section class="page">
-      <p class="eyebrow">Social</p>
-      <h1>Groupes</h1>
-
       <button class="btn" data-creer type="button">Créer un groupe</button>
 
       <div class="rangee" style="margin-top:1rem">
@@ -44,6 +46,7 @@ export async function vueGroupes() {
 
       <div class="bloc" data-liste-groupes></div>
     </section>`);
+  el.insertBefore(socialHeader('Groupes', 'groupes', unread), el.firstChild);
 
   const zone = el.querySelector('[data-liste-groupes]');
   function dessinerListe() {

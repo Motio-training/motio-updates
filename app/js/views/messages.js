@@ -4,7 +4,7 @@
    (même idée que le fil d'activité et le canal de groupe).
    ========================================================================== */
 
-import { h, render, loading, empty, failure, esc, toast, dateCourte } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, dateCourte, socialHeader } from '../ui.js';
 import { conversations, messageThread, sendText, sendWorkoutMessage,
          markThreadRead, listWorkouts, usernamesFor } from '../api.js';
 import { currentUser } from '../supabase.js';
@@ -19,20 +19,19 @@ export async function vueMessages() {
   try { convs = await conversations(moi.id); }
   catch (e) { return render(failure(e, "Les messages n'ont pas pu être chargés")); }
 
+  const unread = convs.reduce((t, c) => t + (c.unread || 0), 0);
+  const el = h(`<section class="page"></section>`);
+  el.appendChild(socialHeader('Messages', 'messages', unread));
+
   if (!convs.length) {
-    return render(empty('Aucun message',
+    el.appendChild(empty('Aucun message',
       'Écris à un ami depuis son profil, ou cherche un pseudo dans Amis.',
       { href: '#/amis', label: 'Voir mes amis' }));
+    return render(el);
   }
 
-  const el = h(`
-    <section class="page">
-      <p class="eyebrow">Social</p>
-      <h1>Messages</h1>
-      <ul class="liste" data-liste></ul>
-    </section>`);
-
-  const ul = el.querySelector('[data-liste]');
+  const ul = h('<ul class="liste" data-liste></ul>');
+  el.appendChild(ul);
   for (const c of convs) {
     ul.appendChild(h(`
       <li class="ligne ligne-action">

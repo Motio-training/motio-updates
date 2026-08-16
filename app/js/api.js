@@ -172,6 +172,41 @@ export async function deleteComment(id) {
   return unwrap(await sb.from(T.comments).delete().eq('id', id).select());
 }
 
+/* ------------------------------------------------------------------ défis */
+
+/**
+ * Classement sur [jours] jours — une seule requête, agrégée ici. Même
+ * principe que Social.standings (Social.kt) : la RLS de shared_sessions ne
+ * renvoie déjà que mes séances et celles des gens que je suis, donc aucun
+ * filtre par abonnement à écrire côté client.
+ */
+export async function standings(jours) {
+  const depuis = new Date();
+  depuis.setHours(0, 0, 0, 0);
+  depuis.setDate(depuis.getDate() - (jours - 1));
+  const rows = unwrap(await sb.from(T.sharedSessions)
+    .select('user_id,started_at,volume_kg')
+    .gte('started_at', depuis.toISOString())
+    .order('started_at', { ascending: false }).limit(2000));
+
+  const sessions = {}, volume = {}, jourSet = {};
+  for (const r of rows) {
+    const uid = r.user_id;
+    if (!uid) continue;
+    sessions[uid] = (sessions[uid] || 0) + 1;
+    volume[uid] = (volume[uid] || 0) + (r.volume_kg || 0);
+    const j = new Date(r.started_at); j.setHours(0, 0, 0, 0);
+    (jourSet[uid] || (jourSet[uid] = new Set())).add(j.getTime());
+  }
+  const ids = Object.keys(sessions);
+  if (!ids.length) return [];
+  const noms = await usernamesFor(ids);
+  return ids.map(uid => ({
+    userId: uid, username: noms[uid] || '?',
+    sessions: sessions[uid], volume: volume[uid], activeDays: jourSet[uid].size
+  }));
+}
+
 /* ==========================================================================
    Modèles de séance et programmes — tables à créer.
 
@@ -274,6 +309,12 @@ export async function conversations(moiId) {
   return [...byFriend.entries()]
     .map(([id, last]) => ({ id, username: noms[id] || '?', ...last }))
     .sort((a, b) => new Date(b.at) - new Date(a.at));
+}
+
+/** Total des messages non lus, tous correspondants confondus — pour le badge de l'onglet Messages. */
+export async function unreadMessagesCount(moiId) {
+  const convs = await conversations(moiId);
+  return convs.reduce((t, c) => t + (c.unread || 0), 0);
 }
 
 export async function messageThread(moiId, friendId) {

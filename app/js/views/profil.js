@@ -1,6 +1,6 @@
-import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
-         searchProfiles, follow, unfollow } from '../api.js';
+         searchProfiles, follow, unfollow, unreadMessagesCount } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { reset as reinitialiserOnboarding } from './onboarding.js';
@@ -170,11 +170,10 @@ function calculerStats(seances) {
 
 export async function vueAmis() {
   const moi = await currentUser();
+  const unread = await unreadMessagesCount(moi.id).catch(() => 0);
 
   const el = h(`
     <section class="page">
-      <p class="eyebrow">Social</p>
-      <h1>Amis</h1>
       <label class="champ"><span>Chercher un pseudo</span>
         <input type="search" data-q placeholder="deux lettres minimum"></label>
       <ul class="liste" data-resultats></ul>
@@ -184,6 +183,7 @@ export async function vueAmis() {
         <div data-abos></div>
       </div>
     </section>`);
+  el.insertBefore(socialHeader('Amis', 'amis', unread), el.firstChild);
 
   const res = el.querySelector('[data-resultats]');
   let t;

@@ -84,3 +84,32 @@ export function duree(secondes) {
   const p = n => String(n).padStart(2, '0');
   return h_ ? `${h_}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
 }
+
+/* ------------------------------------------------------------ onglets Social */
+
+/**
+ * Fil → Messages → Défis → Groupes → Amis : mêmes 5 destinations, dans le
+ * même ordre, que SMode/PresetChip (SocialScreens.kt). Natif : un seul écran
+ * à onglets. Ici : 5 routes séparées, mais ce bandeau les rend commutables
+ * en un appui au lieu d'être caché dans le menu ✎.
+ */
+const SOCIAL_TABS = [
+  ['fil', 'Fil', '#/fil'],
+  ['messages', 'Messages', '#/messages'],
+  ['defis', 'Défis', '#/defis'],
+  ['groupes', 'Groupes', '#/groupes'],
+  ['amis', 'Amis', '#/amis']
+];
+
+export function socialHeader(titre, actif, unread = 0) {
+  const chips = SOCIAL_TABS.map(([id, label, href]) => {
+    const texte = id === 'messages' && unread ? `${label} (${unread})` : label;
+    return `<a class="chip-cat social-tab ${id === actif ? 'on' : ''}" href="${href}">${esc(texte)}</a>`;
+  }).join('');
+  return h(`
+    <div class="social-entete">
+      <p class="eyebrow">Social</p>
+      <h1>${esc(titre)}</h1>
+      <div class="social-tabs">${chips}</div>
+    </div>`);
+}

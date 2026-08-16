@@ -15,7 +15,7 @@
    par le cache.
    ========================================================================== */
 
-const CACHE = 'motio-app-v2';
+const CACHE = 'motio-app-v3';
 
 const COQUILLE = [
   './',
@@ -28,6 +28,7 @@ const COQUILLE = [
   'js/views/connexion.js', 'js/views/fil.js', 'js/views/profil.js',
   'js/views/entrainement.js', 'js/views/lancer.js', 'js/views/minuteurs.js',
   'js/views/coach.js', 'js/views/messages.js', 'js/views/groupes.js',
+  'js/views/defis.js', 'js/views/onboarding.js',
   'icons/icon-192.png', 'icons/icon-512.png',
   'fonts/outfit-variable.woff2', 'fonts/jbmono-variable.woff2'
 ];
