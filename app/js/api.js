@@ -46,6 +46,14 @@ export async function setUsername(userId, username) {
     .update({ username: clean }).eq('id', userId).select().single());
 }
 
+/** delete_my_account (RPC SECURITY DEFINER) : efface profil, abonnements et
+ *  séances envoyées au serveur. Le carnet local (natif) n'est pas concerné —
+ *  côté web il n'y a pas de copie locale distincte à effacer en plus. */
+export async function deleteMyAccount() {
+  const { error } = await sb.rpc('delete_my_account');
+  if (error) throw error;
+}
+
 export async function searchProfiles(terme) {
   const q = terme.trim().toLowerCase();
   if (q.length < 2) return [];

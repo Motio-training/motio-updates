@@ -10,7 +10,8 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change', appliquerTh
 
 import { vueConnexion } from './views/connexion.js';
 import { vueFil } from './views/fil.js';
-import { vueProfil, vueAmis } from './views/profil.js';
+import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte,
+         vueProfilMaj, vueProfilNouveautes } from './views/profil.js';
 import { vueSeances, vueSeanceEdition, vueProgrammes,
          vueProgrammeNouveau, vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
 import { vueLancerSeance } from './views/lancer.js';
@@ -31,6 +32,10 @@ route('/minuteurs', vueMinuteurs);
 route('/fil', vueFil);
 route('/amis', vueAmis);
 route('/profil', vueProfil);
+route('/profil/analyse', vueProfilAnalyse);
+route('/profil/compte', vueProfilCompte);
+route('/profil/maj', vueProfilMaj);
+route('/profil/nouveautes', vueProfilNouveautes);
 route('/profil/:id', vueProfil);
 route('/coach', vueCoach);
 route('/messages', vueMessages);

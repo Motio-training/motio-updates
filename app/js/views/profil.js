@@ -1,10 +1,13 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
-         searchProfiles, follow, unfollow, unreadMessagesCount } from '../api.js';
+         searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
 import { reset as reinitialiserOnboarding } from './onboarding.js';
+import { muscleLoadOf } from '../muscle-lexicon.js';
+import { drawMuscleMap, drawLegend, MuscleScale } from '../muscle-map.js';
+import { CHANGELOG } from '../changelog.js';
 
 export async function vueProfil(params) {
   render(loading('Chargement du profil'));
@@ -80,6 +83,10 @@ export async function vueProfil(params) {
         <div class="bloc">
           <p class="bloc-titre">Entraînement</p>
           <div class="menu-groupe">
+            <a class="menu-ligne" href="#/profil/analyse">
+              <span class="corps"><b>Analyse et records</b><span>Volume par groupe, courbes, records</span></span>
+              <span class="chevron">›</span>
+            </a>
             <a class="menu-ligne" href="#/coach">
               <img class="menu-avatar" src="../assets/img/moti_avatar.jpg" alt="">
               <span class="corps"><b>Moti</b><span>Ton coach IA — connaît tes séances, tes records</span></span>
@@ -90,30 +97,46 @@ export async function vueProfil(params) {
 
         <div class="bloc">
           <p class="bloc-titre">Compte</p>
-          <p class="etat-mono">C'est sous ce nom que les autres te trouvent.</p>
-          <label class="champ"><span>Pseudo</span>
-            <input type="text" data-pseudo value="${esc(profil.username || '')}" maxlength="24"></label>
-          <button class="btn" data-enregistrer>Enregistrer</button>
-        </div>` : `
-        <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>`}
-
-      <div class="bloc">
-        <p class="bloc-titre">Records estimés</p>
-        <div data-records></div>
-      </div>
-
-      <div class="bloc">
-        <p class="bloc-titre">Séances récentes</p>
-        <div data-seances></div>
-      </div>
-
-      ${estMoi ? `
-        <div class="bloc">
-          <button class="lien-inline" data-tuto type="button">Revoir le tutoriel</button>
-          <div style="margin-top:1rem">
-            <button class="btn btn-ghost" data-deconnexion type="button">Se déconnecter</button>
+          <div class="menu-groupe">
+            <a class="menu-ligne" href="#/profil/compte">
+              <span class="corps"><b>Compte et données</b><span>Connecté · ${esc(profil.username || moi.email || '')}</span></span>
+              <span class="chevron">›</span>
+            </a>
           </div>
-        </div>` : ''}
+        </div>
+
+        <div class="bloc">
+          <p class="bloc-titre">Application</p>
+          <div class="menu-groupe">
+            <a class="menu-ligne" href="#/profil/maj">
+              <span class="corps"><b>Mise à jour</b><span>Espace web — toujours à jour</span></span>
+              <span class="chevron">›</span>
+            </a>
+            <a class="menu-ligne" href="#/profil/nouveautes">
+              <span class="corps"><b>Nouveautés</b><span>Ce qui a changé, version par version</span></span>
+              <span class="chevron">›</span>
+            </a>
+            <button class="menu-ligne" data-tuto type="button">
+              <span class="corps"><b>Revoir le tutoriel</b></span>
+              <span class="chevron">›</span>
+            </button>
+            <a class="menu-ligne" href="../confidentialite/index.html" target="_blank" rel="noopener">
+              <span class="corps"><b>Confidentialité</b></span>
+              <span class="chevron">›</span>
+            </a>
+          </div>
+        </div>` : `
+        <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>
+
+        <div class="bloc">
+          <p class="bloc-titre">Records estimés</p>
+          <div data-records></div>
+        </div>
+
+        <div class="bloc">
+          <p class="bloc-titre">Séances récentes</p>
+          <div data-seances></div>
+        </div>`}
     </section>`);
 
   /* trophées */
@@ -132,53 +155,45 @@ export async function vueProfil(params) {
     });
   }
 
-  /* records */
+  /* records / séances : uniquement sur le profil d'un ami — le mien vit
+     maintenant dans « Analyse et records » (#/profil/analyse). */
   const zoneRec = el.querySelector('[data-records]');
-  if (!stats.records.length) {
-    zoneRec.appendChild(h(`<p class="etat-mono">Aucun détail de séries partagé.</p>`));
-  } else {
-    const ul = h('<ul class="liste"></ul>');
-    for (const [nom, rm] of stats.records) {
-      ul.appendChild(h(`<li class="ligne ligne-action">
-        <span class="ligne-titre">${esc(nom)}</span>
-        <span class="ligne-meta">${esc(kg(rm))} · 1RM estimé</span></li>`));
+  if (zoneRec) {
+    if (!stats.records.length) {
+      zoneRec.appendChild(h(`<p class="etat-mono">Aucun détail de séries partagé.</p>`));
+    } else {
+      const ul = h('<ul class="liste"></ul>');
+      for (const [nom, rm] of stats.records) {
+        ul.appendChild(h(`<li class="ligne ligne-action">
+          <span class="ligne-titre">${esc(nom)}</span>
+          <span class="ligne-meta">${esc(kg(rm))} · 1RM estimé</span></li>`));
+      }
+      zoneRec.appendChild(ul);
     }
-    zoneRec.appendChild(ul);
   }
 
-  /* séances */
   const zoneS = el.querySelector('[data-seances]');
-  if (!seances.length) {
-    zoneS.appendChild(h(`<p class="etat-mono">Aucune séance partagée.</p>`));
-  } else {
-    const ul = h('<ul class="liste"></ul>');
-    for (const s of seances.slice(0, 15)) {
-      ul.appendChild(h(`
-        <li class="ligne">
-          <div class="ligne-tete">
-            <span class="ligne-titre">${esc(s.workout_name || 'Séance')}</span>
-            <span class="ligne-meta">${esc(dateCourte(s.started_at))}</span>
-          </div>
-          <p class="ligne-stats">
-            <span>${esc(duree((s.duration_ms || 0) / 1000))}</span>
-            <span>${esc(kg(s.volume_kg))}</span>
-          </p>
-        </li>`));
+  if (zoneS) {
+    if (!seances.length) {
+      zoneS.appendChild(h(`<p class="etat-mono">Aucune séance partagée.</p>`));
+    } else {
+      const ul = h('<ul class="liste"></ul>');
+      for (const s of seances.slice(0, 15)) {
+        ul.appendChild(h(`
+          <li class="ligne">
+            <div class="ligne-tete">
+              <span class="ligne-titre">${esc(s.workout_name || 'Séance')}</span>
+              <span class="ligne-meta">${esc(dateCourte(s.started_at))}</span>
+            </div>
+            <p class="ligne-stats">
+              <span>${esc(duree((s.duration_ms || 0) / 1000))}</span>
+              <span>${esc(kg(s.volume_kg))}</span>
+            </p>
+          </li>`));
+      }
+      zoneS.appendChild(ul);
     }
-    zoneS.appendChild(ul);
   }
-
-  el.querySelector('[data-enregistrer]')?.addEventListener('click', async (e) => {
-    const pseudo = el.querySelector('[data-pseudo]').value.trim();
-    if (pseudo.length < 3) return toast('Le pseudo fait 3 caractères minimum.');
-    e.target.disabled = true;
-    try {
-      await setUsername(moi.id, pseudo);
-      el.querySelector('[data-nom]').textContent = pseudo.toLowerCase();
-      toast('Pseudo enregistré.');
-    } catch (err) { toast(err.message); }
-    finally { e.target.disabled = false; }
-  });
 
   const btnSuivre = el.querySelector('[data-suivre]');
   if (btnSuivre) {
@@ -194,10 +209,224 @@ export async function vueProfil(params) {
     };
   }
 
-  el.querySelector('[data-deconnexion]')?.addEventListener('click', signOut);
   el.querySelector('[data-tuto]')?.addEventListener('click', () => {
     reinitialiserOnboarding();
     location.hash = '#/onboarding';
+  });
+
+  render(el);
+}
+
+/* ============================================================ sous-écrans
+   Même arborescence que le Profil natif (Profile.kt) : Entraînement/Compte/
+   Application, chacun avec ses propres pages plutôt que tout empilé sur
+   l'écran principal. */
+
+function enTete(titre) {
+  return `
+    <p class="eyebrow"><a class="lien-inline" href="#/profil">‹ Profil</a></p>
+    <h1>${esc(titre)}</h1>`;
+}
+
+/** Analyse et records (StatsScreens.kt) : répartition musculaire de la
+ *  semaine + records estimés — vivaient avant en vrac sur l'écran principal. */
+export async function vueProfilAnalyse() {
+  render(loading('Chargement'));
+  const moi = await currentUser();
+
+  let seances;
+  try { seances = await sessionsOf(moi.id, { limit: 200 }); }
+  catch (e) { return render(failure(e, "L'analyse n'a pas pu être chargée")); }
+
+  const septJours = Date.now() - 7 * 86400000;
+  const recentes = seances.filter(s => new Date(s.started_at).getTime() >= septJours);
+  const sessionLike = {
+    exercises: recentes.flatMap(s => Array.isArray(s.details) ? s.details : [])
+      .map(ex => ({ name: ex.n, sets: (ex.s || []).map(st => ({ reps: st.r })) }))
+  };
+  const { zones, unknown, isEmpty } = await muscleLoadOf(sessionLike);
+  const stats = calculerStats(seances);
+
+  const el = h(`
+    <section class="page">
+      ${enTete('Analyse et records')}
+
+      <p class="bloc-titre" style="margin-top:1.5rem">Répartition musculaire — 7 derniers jours</p>
+      <div data-muscles></div>
+
+      <div class="bloc">
+        <p class="bloc-titre">Records estimés</p>
+        <div data-records></div>
+      </div>
+    </section>`);
+
+  const zoneMuscles = el.querySelector('[data-muscles]');
+  if (isEmpty && !unknown.length) {
+    zoneMuscles.appendChild(h('<p class="etat-mono">Aucune séance sur les 7 derniers jours.</p>'));
+  } else {
+    const bloc = h(`
+      <div>
+        ${!isEmpty ? `
+          <canvas class="bilan-canvas" data-canvas></canvas>
+          <div class="bilan-faces"><span>Face</span><span>Dos</span></div>
+          <div class="bilan-degrade-row"><span>0</span><canvas class="bilan-degrade" data-legende></canvas><span>${MuscleScale.WEEK}+ séries</span></div>` : ''}
+        ${unknown.length ? `<p class="bilan-inconnus">${unknown.length === 1 ? '1 exercice non reconnu' : unknown.length + ' exercices non reconnus'} : ${esc([...new Set(unknown)].join(', '))}</p>` : ''}
+      </div>`);
+    zoneMuscles.appendChild(bloc);
+    if (!isEmpty) {
+      await drawMuscleMap(bloc.querySelector('[data-canvas]'), zones, MuscleScale.WEEK);
+      drawLegend(bloc.querySelector('[data-legende]'), MuscleScale.WEEK);
+    }
+  }
+
+  const zoneRec = el.querySelector('[data-records]');
+  if (!stats.records.length) {
+    zoneRec.appendChild(h('<p class="etat-mono">Aucun détail de séries partagé.</p>'));
+  } else {
+    const ul = h('<ul class="liste"></ul>');
+    for (const [nom, rm] of stats.records) {
+      ul.appendChild(h(`<li class="ligne ligne-action">
+        <span class="ligne-titre">${esc(nom)}</span>
+        <span class="ligne-meta">${esc(kg(rm))} · 1RM estimé</span></li>`));
+    }
+    zoneRec.appendChild(ul);
+  }
+
+  render(el);
+}
+
+/** Compte et données (AccountScreens.kt) : identité, pseudo, déconnexion,
+ *  suppression du compte. Écarts assumés face au natif : pas de copie sur
+ *  fichier (le carnet web n'existe que dans Supabase, il n'y a rien de
+ *  local à sauvegarder en plus), pas de niveau/objectif d'entraînement ni
+ *  de notification « ami en direct » (réglages locaux/FCM, sans équivalent
+ *  web pour l'instant). */
+export async function vueProfilCompte() {
+  render(loading('Chargement'));
+  const moi = await currentUser();
+
+  let profil;
+  try { profil = await getProfile(moi.id); }
+  catch (e) { return render(failure(e, "Le compte n'a pas pu être chargé")); }
+
+  const el = h(`
+    <section class="page page-etroite">
+      ${enTete('Compte et données')}
+
+      <div class="menu-groupe" style="margin-top:1.5rem">
+        <div class="menu-ligne" style="cursor:default">
+          <span class="corps"><b data-nom>${esc(profil.username || 'sans pseudo')}</b><span>${esc(moi.email || '')}</span></span>
+          <button class="lien-inline" data-pseudo type="button">Pseudo</button>
+        </div>
+      </div>
+
+      <div class="bloc" style="display:flex;gap:.6rem">
+        <button class="btn btn-ghost" data-deconnexion type="button" style="flex:1">Se déconnecter</button>
+        <button class="btn btn-ghost" data-supprimer type="button" style="flex:1;color:var(--accent2);border-color:var(--accent2)">Supprimer</button>
+      </div>
+    </section>`);
+
+  el.querySelector('[data-pseudo]').onclick = () => {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Changer de pseudo">
+        <div class="modale-boite">
+          <div class="modale-tete"><h2>Changer de pseudo</h2></div>
+          <label class="champ"><span>Pseudo</span>
+            <input type="text" data-nouveau value="${esc(profil.username || '')}" maxlength="24"></label>
+          <p class="etat-mono">C'est le nom que tes amis verront, et celui par lequel ils te trouveront.</p>
+          <div class="modale-pied">
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+            <button class="btn" data-valider type="button">Valider</button>
+          </div>
+        </div>
+      </div>`);
+    modale.querySelector('[data-valider]').onclick = async () => {
+      const pseudo = modale.querySelector('[data-nouveau]').value.trim();
+      if (pseudo.length < 3) return toast('Le pseudo fait 3 caractères minimum.');
+      try {
+        await setUsername(moi.id, pseudo);
+        el.querySelector('[data-nom]').textContent = pseudo.toLowerCase();
+        modale.remove();
+        toast('Pseudo mis à jour ✓');
+      } catch (err) { toast(err.message); }
+    };
+    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+    document.body.appendChild(modale);
+  };
+
+  el.querySelector('[data-deconnexion]').onclick = signOut;
+
+  el.querySelector('[data-supprimer]').onclick = () => {
+    if (!confirm("Ton profil, tes abonnements et les séances envoyées au serveur seront effacés définitivement. Continuer ?")) return;
+    (async () => {
+      try {
+        await deleteMyAccount();
+        await signOut();
+      } catch (err) { toast(err.message); }
+    })();
+  };
+
+  render(el);
+}
+
+/** Mise à jour (UpdatePage, TrainingScreens.kt) : le natif vérifie un
+ *  version.json et propose d'installer un APK — sans objet ici, une PWA se
+ *  met à jour toute seule (service worker, réseau d'abord). Le bouton force
+ *  quand même une vérification, pour la même idée de contrôle immédiat. */
+export async function vueProfilMaj() {
+  const el = h(`
+    <section class="page page-etroite">
+      ${enTete('Mise à jour')}
+
+      <div class="tonnage-carte" style="margin-top:1.5rem">
+        <span>Espace web</span>
+        <b style="color:var(--accent)">Toujours à jour</b>
+      </div>
+      <p class="etat-mono" style="margin-top:.8rem">
+        Contrairement à l'application Android, cet espace web n'a pas de version à installer :
+        chaque page rechargée avec une connexion récupère automatiquement la dernière mise à jour.
+      </p>
+
+      <button class="btn" data-verifier type="button" style="width:100%;margin-top:1rem">Vérifier maintenant</button>
+      <p class="etat-mono" data-msg style="margin-top:.6rem"></p>
+
+      <a class="btn btn-ghost" href="#/profil/nouveautes" style="display:block;text-align:center;margin-top:1.5rem">Nouveautés</a>
+    </section>`);
+
+  el.querySelector('[data-verifier]').onclick = async () => {
+    const msg = el.querySelector('[data-msg]');
+    msg.textContent = 'Vérification…';
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      await reg?.update();
+      msg.textContent = 'À jour — la page se recharge…';
+      setTimeout(() => location.reload(), 700);
+    } catch {
+      msg.textContent = 'Déjà à jour.';
+    }
+  };
+
+  render(el);
+}
+
+/** Nouveautés (ChangelogDialog, Changelog.kt) : le plus récent en premier. */
+export async function vueProfilNouveautes() {
+  const el = h(`
+    <section class="page">
+      ${enTete('Nouveautés')}
+      <div class="menu-groupe" data-liste style="margin-top:1.5rem;background:none"></div>
+    </section>`);
+
+  const zone = el.querySelector('[data-liste]');
+  [...CHANGELOG].reverse().forEach(entree => {
+    zone.appendChild(h(`
+      <div class="bloc" style="margin-top:1.4rem;padding-top:0;border-top:none">
+        <p class="bloc-titre" style="margin-bottom:.3rem">${esc(entree.versions)} · ${esc(entree.date)}</p>
+        <ul class="liste" style="gap:.4rem">
+          ${entree.items.map(it => `<li class="ligne" style="padding:.6rem .8rem">${esc(it)}</li>`).join('')}
+        </ul>
+      </div>`));
   });
 
   render(el);
