@@ -126,7 +126,7 @@ body{
   text-decoration:none;color:inherit;
 }
 .wordmark img{display:block}
-.wordmark-word{height:24px;width:auto;filter:brightness(0) invert(1)}
+.wordmark-word{height:30px;width:auto;filter:brightness(0) invert(1)}
 
 .menu-btn{
   display:none;align-items:center;justify-content:center;

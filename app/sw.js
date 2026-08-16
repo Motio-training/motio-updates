@@ -9,13 +9,20 @@
    serveur. CACHE doit être incrémenté à chaque changement notable de
    l'appli : ça force le nettoyage de l'ancien cache à l'activation.
 
+   « Réseau d'abord » ne suffit pas à lui seul : fetch(e.request) tel quel
+   respecte encore le cache HTTP normal du navigateur (Cache-Control de
+   GitHub Pages), donc « réseau d'abord » pouvait renvoyer une réponse
+   déjà en cache côté navigateur sans jamais recontacter le serveur. D'où
+   { cache: 'no-store' } explicite ci-dessous — la seule façon de garantir
+   qu'une requête en ligne touche vraiment le réseau.
+
    Ne touche JAMAIS aux requêtes vers Supabase ou esm.sh (le client Supabase
    et l'authentification doivent toujours parler au réseau réel) : seuls les
    fichiers de la coquille (HTML/CSS/JS/icônes/polices de CE dossier) passent
    par le cache.
    ========================================================================== */
 
-const CACHE = 'motio-app-v5';
+const CACHE = 'motio-app-v6';
 
 const COQUILLE = [
   './',
@@ -58,7 +65,7 @@ self.addEventListener('fetch', (e) => {
   if (estDistant(url)) return;   // laisse passer tel quel : jamais de cache pour l'API
 
   e.respondWith(
-    fetch(e.request).then((rep) => {
+    fetch(e.request, { cache: 'no-store' }).then((rep) => {
       if (rep.ok) caches.open(CACHE).then((c) => c.put(e.request, rep.clone()));
       return rep;
     }).catch(() => caches.match(e.request))
