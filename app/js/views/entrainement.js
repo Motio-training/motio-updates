@@ -7,6 +7,7 @@ import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          prochainGroupId, etendueBloc, libelleBloc, GOALS, LEVELS } from '../model.js';
 import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '../catalog.js';
 import { ouvrirPartage } from '../partage.js';
+import { encode as encoderSeance } from '../workout-share.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -97,7 +98,7 @@ export async function vueSeances() {
   function carteSeance(s, dansBloc, aFaire) {
     const w = s.data || {};
     const a = h(`
-      <a class="wcard" href="#/seances/${esc(s.local_id)}">
+      <button class="wcard" type="button">
         <span class="wcard-ico" style="background:${catColor(s.category)}">
           <svg viewBox="0 0 24 24" aria-hidden="true">${ICONE_HALTERE}</svg>
         </span>
@@ -111,8 +112,90 @@ export async function vueSeances() {
           <span class="duree">⏱ ${durationIsMeasured(w) ? fmtEstimate(displaySec(w)) + ' en moyenne' : 'environ ' + fmtEstimate(displaySec(w))}</span>
         </span>
         <span class="chevron">›</span>
-      </a>`);
+      </button>`);
+    a.onclick = () => ouvrirMenuAction(s);
     return a;
+  }
+
+  /** Menu d'action sur une carte de séance — reprend l'AlertDialog natif
+   *  (TrainingScreens.kt ~510-573) : aperçu, Détacher/Partager, Démarrer,
+   *  Modifier/Voir l'historique/Supprimer/Annuler. Auparavant la carte
+   *  menait directement à l'écran d'édition, sans jamais passer par ici. */
+  function ouvrirMenuAction(s) {
+    const w = s.data || {};
+    const nom = w.name || `Séance ${s.category}`;
+    const dureeTxt = durationIsMeasured(w)
+      ? `Durée moyenne constatée : ${fmtEstimate(displaySec(w))}`
+      : `Durée estimée : environ ${fmtEstimate(displaySec(w))}`;
+
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Actions séance">
+        <div class="modale-boite modale-boite-etroite menu-action">
+          <p class="menu-action-titre">${esc(nom)}</p>
+          <p class="menu-action-sous">${esc(s.category)} · ${(w.exercises || []).length} exos · fait ${w.timesDone || 0}×</p>
+          <p class="menu-action-duree">${esc(dureeTxt)}</p>
+
+          <div class="menu-action-icones">
+            <button class="menu-action-icone ${w.pinned ? 'on' : ''}" data-pin type="button">
+              <span>📌</span><span>${w.pinned ? 'Détacher' : 'Épingler'}</span>
+            </button>
+            <button class="menu-action-icone" data-partager type="button">
+              <span>📤</span><span>Partager</span>
+            </button>
+          </div>
+
+          <button class="btn btn-lg menu-action-demarrer" data-demarrer type="button">Démarrer la séance</button>
+
+          <div class="menu-action-lignes">
+            <button class="menu-action-ligne" data-modifier type="button">Modifier</button>
+            ${(w.timesDone || 0) > 0 ? '<button class="menu-action-ligne" data-historique type="button">Voir l\'historique</button>' : ''}
+            <button class="menu-action-ligne menu-action-ligne-danger" data-supprimer type="button">Supprimer</button>
+          </div>
+
+          <button class="lien-inline menu-action-annuler" data-fermer type="button">Annuler</button>
+        </div>
+      </div>`);
+
+    const fermer = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    modale.querySelector('[data-fermer]').onclick = fermer;
+
+    modale.querySelector('[data-pin]').onclick = async () => {
+      fermer();
+      w.pinned = !w.pinned;
+      try { await saveWorkout(moi.id, w); dessinerListe(); }
+      catch (err) { toast(err.message); w.pinned = !w.pinned; }
+    };
+
+    modale.querySelector('[data-partager]').onclick = async () => {
+      fermer();
+      try {
+        const code = await encoderSeance(w);
+        const url = `${location.origin}${location.pathname}#/seances/importer/${code}`;
+        if (navigator.share) {
+          await navigator.share({ title: nom, text: `Découvre ma séance « ${nom} » sur Motio`, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          toast('Lien de la séance copié.');
+        }
+      } catch (err) { if (err.name !== 'AbortError') toast(err.message || 'Le partage a échoué.'); }
+    };
+
+    modale.querySelector('[data-demarrer]').onclick = () => { fermer(); location.hash = `#/seances/${s.local_id}/lancer`; };
+    modale.querySelector('[data-modifier]').onclick = () => { fermer(); location.hash = `#/seances/${s.local_id}`; };
+    modale.querySelector('[data-historique]')?.addEventListener('click', () => { fermer(); location.hash = '#/historique'; });
+    modale.querySelector('[data-supprimer]').onclick = async () => {
+      fermer();
+      if (!confirm(`« ${nom} » et tout son historique seront supprimés. C'est définitif.`)) return;
+      try {
+        await deleteWorkout(moi.id, s.local_id);
+        rows = rows.filter(r => r.local_id !== s.local_id);
+        dessinerListe();
+        toast('Séance supprimée.');
+      } catch (err) { toast(err.message); }
+    };
+
+    document.body.appendChild(modale);
   }
 
   function dessinerListe() {
@@ -145,6 +228,48 @@ export async function vueSeances() {
   }
 
   dessinerListe();
+  render(el);
+}
+
+/* ================================================== import par lien/code */
+
+/** Reçu depuis « Partager » (ouvrirMenuAction, ci-dessus) : décode le code
+ *  et propose d'ajouter la séance à ses propres entraînements, sans jamais
+ *  écraser une séance existante (nouvel id, historique vide). */
+export async function vueImporterSeance(params) {
+  render(loading('Lecture de la séance'));
+  const moi = await currentUser();
+
+  const { decode } = await import('../workout-share.js');
+  const w = await decode(params.code);
+  if (!w) {
+    return render(empty(
+      'Séance illisible',
+      "Ce lien de séance est invalide ou corrompu.",
+      { href: '#/seances', label: 'Retour à Entraînement' }
+    ));
+  }
+
+  const el = h(`
+    <section class="page page-etroite">
+      <p class="eyebrow">Séance reçue</p>
+      <h1>${esc(w.name || `Séance ${w.category}`)}</h1>
+      <p class="meta">${esc(w.category)} · ${w.exercises.length} exos</p>
+      <ul class="liste" style="margin-top:1.25rem">
+        ${w.exercises.map(ex => `<li class="ligne"><span class="ligne-titre">${esc(ex.name)}</span></li>`).join('')}
+      </ul>
+      <button class="btn btn-lg" data-importer type="button" style="width:100%;margin-top:1.5rem">Importer cette séance</button>
+    </section>`);
+
+  el.querySelector('[data-importer]').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      await saveWorkout(moi.id, w);
+      toast('Séance importée.');
+      location.hash = '#/seances';
+    } catch (err) { toast(err.message); e.target.disabled = false; }
+  };
+
   render(el);
 }
 

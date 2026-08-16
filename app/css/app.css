@@ -721,6 +721,34 @@ a.ligne-titre:hover{color:var(--accent)}
 @keyframes voile{from{opacity:0}to{opacity:1}}
 @keyframes boite{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
 
+/* Menu d'action sur une carte de séance — AlertDialog natif
+   (TrainingScreens.kt ~510-573) : aperçu centré, deux gestes fréquents en
+   icônes, action principale pleine largeur, puis lignes de texte. */
+.modale-boite-etroite{width:min(23rem,100%);text-align:center}
+.menu-action-titre{margin:0 0 .3rem;font-family:var(--f-display);font-weight:700;font-size:1.15rem;color:var(--encre)}
+.menu-action-sous{margin:0;color:var(--encre-2);font-size:.82rem}
+.menu-action-duree{margin:.35rem 0 0;color:var(--dore);font-weight:700;font-size:.82rem}
+.menu-action-icones{display:flex;justify-content:center;gap:1.6rem;margin:1.1rem 0}
+.menu-action-icone{
+  display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  background:none;border:none;cursor:pointer;color:var(--encre-2);
+  font-family:var(--f-body);font-size:.72rem;padding:.2rem;
+}
+.menu-action-icone span:first-child{font-size:1.3rem;line-height:1}
+.menu-action-icone:hover{color:var(--encre)}
+.menu-action-icone.on{color:var(--dore)}
+.menu-action-demarrer{width:100%;margin-top:.15rem}
+.menu-action-lignes{display:flex;flex-direction:column;margin-top:.7rem}
+.menu-action-ligne{
+  background:none;border:none;border-top:1px solid var(--trait);
+  padding:.75rem 0;font-size:.95rem;color:var(--encre);cursor:pointer;
+  font-family:var(--f-body);width:100%;
+}
+.menu-action-ligne:hover{color:var(--accent)}
+.menu-action-ligne-danger{color:var(--accent2)}
+.menu-action-ligne-danger:hover{opacity:.8;color:var(--accent2)}
+.menu-action-annuler{display:block;margin:.9rem auto 0}
+
 .cat-nom{
   font-family:var(--f-mono);font-size:.66rem;font-weight:500;
   letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
@@ -986,7 +1014,9 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   border-radius:var(--r-m);background:var(--carte);cursor:pointer;
   box-shadow:var(--ombre-1);margin-bottom:.6rem;
   text-decoration:none;
+  width:100%;border:none;text-align:left;font:inherit;color:inherit;
 }
+.wcard:hover{box-shadow:var(--ombre-2)}
 .wcard-ico{width:44px;height:44px;border-radius:var(--r-m);display:flex;align-items:center;justify-content:center;flex:none}
 .wcard-ico svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
 .wcard .corps{flex:1;min-width:0}
