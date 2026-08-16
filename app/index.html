@@ -20,23 +20,14 @@
 <body>
 
 <header class="appbar">
-  <button id="menu" class="menu-btn" aria-label="Ouvrir le menu">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-  </button>
-
-  <a class="wordmark" href="../index.html">
-    <svg class="emb" viewBox="0 0 32 32" aria-hidden="true">
-      <rect class="emb-couronne" x="14.4" y="1" width="3.2" height="3.6" rx="1.4"/>
-      <path class="emb-anse" d="M12.6 4.4h6.8"/>
-      <circle class="emb-cercle" cx="16" cy="18" r="11.2"/>
-      <path class="emb-tic" d="M16 8.4v1.8M25.6 18h-1.8M16 27.6v-1.8M6.4 18h1.8"/>
-      <path class="emb-aiguille" d="M16 18V10.6"/>
-      <circle class="emb-axe" cx="16" cy="18" r="1.5"/>
-    </svg>
-    <span>Motio</span>
+  <a class="wordmark" href="#/fil">
+    <img class="wordmark-mark" src="../assets/img/logo_m.png" alt="">
+    <img class="wordmark-word" src="../assets/img/logo_motio.png" alt="Motio">
   </a>
 
-  <button id="deconnexion" class="lien-txt">Se déconnecter</button>
+  <button id="menu" class="menu-btn" aria-label="Plus d'options">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+  </button>
 </header>
 
 <div class="coque">
@@ -62,6 +53,9 @@
       <span>Moti, ton coach</span></a>
 
     <p class="nav-groupe">Entraînement</p>
+    <a href="#/minuteurs">
+      <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8.5"/><path d="M12 9v4l2.5 1.5M10 1.5h4M17.5 4.5l1.3-1.3"/></svg>
+      <span>Minuteurs</span></a>
     <a href="#/seances">
       <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
       <span>Séances</span></a>
@@ -83,15 +77,15 @@
      reste le chemin vers les sections secondaires (Amis, Messages, Groupes,
      Programmes, Historique). -->
 <nav class="bottombar" aria-label="Navigation principale">
+  <a href="#/minuteurs" data-groupe="minuteurs">
+    <svg class="bb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8.5"/><path d="M12 9v4l2.5 1.5M10 1.5h4M17.5 4.5l1.3-1.3"/></svg>
+    <span>Minuteurs</span></a>
   <a href="#/seances" data-groupe="entrainement">
     <svg class="bb-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
     <span>Entraînement</span></a>
   <a href="#/fil" data-groupe="social">
-    <svg class="bb-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
+    <svg class="bb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16.5 5.4a3.2 3.2 0 0 1 0 5.6M18 13.4a5.5 5.5 0 0 1 3 5.6"/></svg>
     <span>Social</span></a>
-  <a href="#/coach" data-groupe="coach">
-    <svg class="bb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10.5c.3-1.6 3.4-1.6 3.7 0 .2 1.2-1.85 1.3-1.85 3M12 16.2v.1"/></svg>
-    <span>Moti</span></a>
   <a href="#/profil" data-groupe="profil">
     <svg class="bb-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
     <span>Profil</span></a>

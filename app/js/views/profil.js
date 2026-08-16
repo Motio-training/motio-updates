@@ -1,7 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow } from '../api.js';
-import { currentUser } from '../supabase.js';
+import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 
 export async function vueProfil(params) {
@@ -60,6 +60,11 @@ export async function vueProfil(params) {
         <h2>Séances récentes</h2>
         <div data-seances></div>
       </div>
+
+      ${estMoi ? `
+        <div class="bloc">
+          <button class="btn btn-ghost" data-deconnexion type="button">Se déconnecter</button>
+        </div>` : ''}
     </section>`);
 
   /* records */
@@ -123,6 +128,8 @@ export async function vueProfil(params) {
       finally { btnSuivre.disabled = false; }
     };
   }
+
+  el.querySelector('[data-deconnexion]')?.addEventListener('click', signOut);
 
   render(el);
 }

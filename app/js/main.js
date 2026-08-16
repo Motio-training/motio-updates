@@ -1,5 +1,5 @@
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
-import { currentSession, onAuthChange, signOut } from './supabase.js';
+import { currentSession, onAuthChange } from './supabase.js';
 import { $, $$, h, render, empty } from './ui.js';
 
 import { vueConnexion } from './views/connexion.js';
@@ -11,12 +11,14 @@ import { vueLancerSeance } from './views/lancer.js';
 import { vueCoach } from './views/coach.js';
 import { vueMessages, vueMessageThread } from './views/messages.js';
 import { vueGroupes, vueGroupeDetail } from './views/groupes.js';
+import { vueMinuteurs } from './views/minuteurs.js';
 
 const PUBLIQUES = ['/connexion'];
 
 /* --- routes --- */
 route('/', () => { location.hash = '#/fil'; });
 route('/connexion', vueConnexion);
+route('/minuteurs', vueMinuteurs);
 route('/fil', vueFil);
 route('/amis', vueAmis);
 route('/profil', vueProfil);
@@ -54,9 +56,9 @@ before(async (path) => {
    une section (ex. Entraînement) reste "active" même sur un sous-écran
    (ex. /seances/xxx/lancer), exactement comme les onglets natifs. */
 const GROUPES_ROUTE = {
+  minuteurs: ['/minuteurs'],
   entrainement: ['/seances', '/programmes', '/historique'],
   social: ['/fil', '/amis', '/messages', '/groupes'],
-  coach: ['/coach'],
   profil: ['/profil']
 };
 function groupeDe(path) {
@@ -76,8 +78,6 @@ function majChrome(connecte, path) {
     a.setAttribute('aria-current', a.dataset.groupe === groupe ? 'page' : 'false');
   });
 }
-
-$('#deconnexion')?.addEventListener('click', signOut);
 
 $('#menu')?.addEventListener('click', () => {
   document.body.classList.toggle('menu-ouvert');

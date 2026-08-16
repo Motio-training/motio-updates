@@ -8,53 +8,166 @@ import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
 import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '../catalog.js';
 import { ouvrirPartage } from '../partage.js';
 
-/* ======================================================== liste des séances */
+/* ======================================================== liste des séances
+   Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
+   Moti, puces de catégorie, cartes colorées par catégorie, groupement par
+   bloc. La gestion des catégories et la mise en avant d'un bloc restent
+   plus simples ici (pas de dialogue dédié) — le reste est fidèle. */
+
+const WARMUP_SEC = 600;
+
+/** estimateSec (TrainingScreens.kt) : le modèle brut est systématiquement
+ *  trop généreux, le facteur 0,9 rapproche l'estimation du terrain. */
+function estimatedSec(w) {
+  return Math.round((WARMUP_SEC + (w.exercises || []).reduce((t, e) => t + dureeExercice(e), 0)) * 0.9);
+}
+function displaySec(w) {
+  const reelles = (w.history || [])
+    .map(s => (s.endedAt || 0) - (s.startedAt || 0))
+    .filter(ms => ms >= 60000 && ms <= 4 * 3600000);
+  if (!reelles.length) return estimatedSec(w);
+  return Math.round(reelles.reduce((a, b) => a + b, 0) / reelles.length / 1000);
+}
+function durationIsMeasured(w) {
+  return (w.history || []).some(s => { const ms = (s.endedAt || 0) - (s.startedAt || 0); return ms >= 60000 && ms <= 4 * 3600000; });
+}
+function lastDoneAt(w) {
+  const h2 = w.history || [];
+  return h2.length ? Math.max(...h2.map(s => s.startedAt || 0)) : null;
+}
+/** fmtEstimate (TrainingScreens.kt) : « 1 h 13 » ou « 45 min ». */
+function fmtEstimate(sec) {
+  const totalMin = Math.round(sec / 60);
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  return hh > 0 ? `${hh} h ${String(mm).padStart(2, '0')}` : `${mm} min`;
+}
+function minuit(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+/** fmtDerniereFois (TrainingScreens.kt). */
+function fmtDerniereFois(lastMs) {
+  if (!lastMs) return 'jamais faite';
+  const jours = Math.round((minuit(Date.now()) - minuit(lastMs)) / 86400000);
+  if (jours <= 0) return "aujourd'hui";
+  if (jours === 1) return 'hier';
+  if (jours < 7) return `il y a ${jours} jours`;
+  if (jours < 14) return 'il y a 1 semaine';
+  if (jours < 60) return `il y a ${Math.floor(jours / 7)} semaines`;
+  return `il y a ${Math.floor(jours / 30)} mois`;
+}
+/** catColor (TrainingScreens.kt) : Push=accent, Pull=second accent, Legs=doré. */
+function catColor(cat) {
+  return cat === 'Push' ? 'var(--accent)' : cat === 'Pull' ? '#D3A45E' : cat === 'Legs' ? 'var(--dore)' : 'var(--encre-2)';
+}
+const ICONE_HALTERE = '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>';
 
 export async function vueSeances() {
   render(loading('Chargement des séances'));
   const moi = await currentUser();
 
-  let seances;
-  try { seances = await listWorkouts(moi.id); }
+  let rows;
+  try { rows = await listWorkouts(moi.id); }
   catch (e) { return render(failure(e, "Les séances n'ont pas pu être chargées")); }
 
-  if (!seances.length) {
-    return render(empty(
+  const el = h(`
+    <section class="page">
+      <div class="rangee-titre">
+        <h1 style="margin:0">ENTRAÎNEMENT</h1>
+        <button class="lien-inline" data-cats type="button">✎ Catégories</button>
+      </div>
+
+      <a class="moti-card" href="#/coach">
+        <img src="../assets/img/moti_avatar.jpg" alt="">
+        <span class="corps"><b>Moti</b><span>Ton coach IA — motivation, conseils, où tu en es</span></span>
+        <span class="chevron">›</span>
+      </a>
+
+      <div data-corps></div>
+    </section>`);
+
+  const corps = el.querySelector('[data-corps]');
+  el.querySelector('[data-cats]').onclick = () => {
+    const cats = [...new Set(rows.map(r => r.category).filter(Boolean))];
+    toast(cats.length ? `Catégories : ${cats.join(', ')}` : 'Aucune catégorie.');
+  };
+
+  if (!rows.length) {
+    corps.appendChild(empty(
       'Aucune séance',
       'Une séance est un modèle : des exercices, des séries et des temps de repos, à relancer autant de fois que tu veux.',
       { href: '#/seances/nouvelle', label: 'Créer une séance' }
     ));
+    return render(el);
   }
 
-  const el = h(`
-    <section class="page">
-      <p class="eyebrow">Entraînement</p>
-      <h1>Séances</h1>
-      <a class="btn" href="#/seances/nouvelle">Créer une séance</a>
-      <ul class="liste" data-liste></ul>
-    </section>`);
+  const toutesCats = [...new Set(rows.map(r => r.category).filter(Boolean))];
+  let actives = new Set(toutesCats);
 
-  const ul = el.querySelector('[data-liste]');
-  for (const s of seances) {
-    const d = s.data || {};
-    const nbEx = (d.exercises || []).length;
-    const li = h(`
-      <li class="ligne ligne-action">
-        <div>
-          <a class="ligne-titre" href="#/seances/${esc(s.local_id)}">${esc(s.name)}</a>
-          <span class="ligne-meta">${esc(s.category || '')} · ${nbEx} exercices ·
-            environ ${esc(duree(dureeSeance(d.exercises || [])))}</span>
-        </div>
-        <a class="btn btn-sm" href="#/seances/${esc(s.local_id)}/lancer">Lancer</a>
-        <button class="btn btn-sm btn-ghost">Supprimer</button>
-      </li>`);
-    li.querySelector('button').onclick = async (e) => {
-      e.target.disabled = true;
-      try { await deleteWorkout(moi.id, s.local_id); li.remove(); toast('Séance supprimée.'); }
-      catch (err) { toast(err.message); e.target.disabled = false; }
+  const zoneChips = h('<div class="rangee rangee-serree" style="margin-bottom:1rem"></div>');
+  toutesCats.forEach(c => {
+    const b = h(`<button class="chip-cat on" type="button">${esc(c)}</button>`);
+    b.onclick = () => {
+      if (actives.has(c)) actives.delete(c); else actives.add(c);
+      b.classList.toggle('on', actives.has(c));
+      dessinerListe();
     };
-    ul.appendChild(li);
+    zoneChips.appendChild(b);
+  });
+  corps.appendChild(zoneChips);
+
+  const zoneListe = h('<div></div>');
+  corps.appendChild(zoneListe);
+
+  function carteSeance(s, dansBloc, aFaire) {
+    const w = s.data || {};
+    const a = h(`
+      <a class="wcard" href="#/seances/${esc(s.local_id)}">
+        <span class="wcard-ico" style="background:${catColor(s.category)}">
+          <svg viewBox="0 0 24 24" aria-hidden="true">${ICONE_HALTERE}</svg>
+        </span>
+        <span class="corps">
+          <span class="titre-row">
+            ${w.pinned ? '<span class="pin">📌</span>' : ''}
+            <b>${esc(dansBloc ? s.category : (s.name || `Séance ${s.category}`))}</b>
+            ${aFaire ? '<span class="badge-faire">à faire</span>' : ''}
+          </span>
+          <span class="meta">${dansBloc ? '' : esc(s.category) + ' · '}${(w.exercises || []).length} exos · ${fmtDerniereFois(lastDoneAt(w))}</span>
+          <span class="duree">⏱ ${durationIsMeasured(w) ? fmtEstimate(displaySec(w)) + ' en moyenne' : 'environ ' + fmtEstimate(displaySec(w))}</span>
+        </span>
+        <span class="chevron">›</span>
+      </a>`);
+    return a;
   }
+
+  function dessinerListe() {
+    zoneListe.replaceChildren();
+    const visibles = rows.filter(s => actives.has(s.category));
+    if (!visibles.length) {
+      zoneListe.appendChild(h('<p class="etat-mono">Aucun entraînement dans cette sélection.</p>'));
+    } else {
+      const blocs = new Map();
+      const isolees = [];
+      visibles.forEach(s => {
+        const section = (s.data || {}).section;
+        if (section) { if (!blocs.has(section)) blocs.set(section, []); blocs.get(section).push(s); }
+        else isolees.push(s);
+      });
+      for (const [nom, seances] of blocs) {
+        const triees = [...seances].sort((a, b) => (lastDoneAt(a.data || {}) || 0) - (lastDoneAt(b.data || {}) || 0));
+        zoneListe.appendChild(h(`<p class="wcard-sec">${esc(nom)}</p>`));
+        triees.forEach((s, i) => zoneListe.appendChild(carteSeance(s, true, i === 0 && triees.length > 1)));
+      }
+      if (isolees.length) {
+        if (blocs.size) zoneListe.appendChild(h('<p class="wcard-sec">HORS BLOC</p>'));
+        isolees.forEach(s => zoneListe.appendChild(carteSeance(s, false, false)));
+      }
+    }
+    const pied = h(`
+      <div style="margin-top:1.5rem">
+        <a class="btn btn-lg" href="#/seances/nouvelle" style="display:block;text-align:center">＋ Nouvel entraînement</a>
+      </div>`);
+    zoneListe.appendChild(pied);
+  }
+
+  dessinerListe();
   render(el);
 }
 
