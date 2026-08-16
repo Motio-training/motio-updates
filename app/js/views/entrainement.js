@@ -124,6 +124,10 @@ export async function vueSeances() {
   function ouvrirMenuAction(s) {
     const w = s.data || {};
     const nom = w.name || `Séance ${s.category}`;
+    /* timesDone (Workout.kt) est un getter calculé (history.size), jamais
+       sérialisé dans le JSON synchronisé — il faut le recalculer ici,
+       comme le font déjà durationIsMeasured/lastDoneAt plus haut. */
+    const fois = (w.history || []).length;
     const dureeTxt = durationIsMeasured(w)
       ? `Durée moyenne constatée : ${fmtEstimate(displaySec(w))}`
       : `Durée estimée : environ ${fmtEstimate(displaySec(w))}`;
@@ -132,7 +136,7 @@ export async function vueSeances() {
       <div class="modale" role="dialog" aria-label="Actions séance">
         <div class="modale-boite modale-boite-etroite menu-action">
           <p class="menu-action-titre">${esc(nom)}</p>
-          <p class="menu-action-sous">${esc(s.category)} · ${(w.exercises || []).length} exos · fait ${w.timesDone || 0}×</p>
+          <p class="menu-action-sous">${esc(s.category)} · ${(w.exercises || []).length} exos · fait ${fois}×</p>
           <p class="menu-action-duree">${esc(dureeTxt)}</p>
 
           <div class="menu-action-icones">
@@ -148,7 +152,7 @@ export async function vueSeances() {
 
           <div class="menu-action-lignes">
             <button class="menu-action-ligne" data-modifier type="button">Modifier</button>
-            ${(w.timesDone || 0) > 0 ? '<button class="menu-action-ligne" data-historique type="button">Voir l\'historique</button>' : ''}
+            ${fois > 0 ? '<button class="menu-action-ligne" data-historique type="button">Voir l\'historique</button>' : ''}
             <button class="menu-action-ligne menu-action-ligne-danger" data-supprimer type="button">Supprimer</button>
           </div>
 
