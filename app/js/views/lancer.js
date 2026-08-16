@@ -1,26 +1,27 @@
 /* ==========================================================================
-   Séance en direct — reprend le comportement ET le vocabulaire de
-   RunWorkout (TrainingScreens.kt) : écran ÉCHAUFFEMENT avant chaque
-   exercice, libellés SÉRIE/RÉCUPÉRATION, chrono global de séance, bilan de
-   fin avec ressenti et note.
+   Séance en direct — reprend RunWorkout (TrainingScreens.kt ~ligne 1409),
+   revu pixel pour pixel d'après de vraies captures du natif (2026-08-16) :
+   pas de carte autour du chrono (texte nu sur le fond), en-tête sur 2 lignes
+   (SÉANCE + chrono à gauche, titre au centre, avatar Moti + pause + croix à
+   droite, « reste ~Xh » sous les icônes), ÉCHAUFFEMENT en gros texte doré
+   seul (pas de libellé séparé), rappel LA DERNIÈRE FOIS pendant l'échauffe-
+   ment, cellules Poids/Reps (grande valeur + repère de la dernière fois en
+   dessous), bouton unique « Exercice suivant ▶ » + rond « ‹ » précédent,
+   croix = dialogue unique (terminer avec bilan / quitter sans enregistrer).
 
-   Écarts assumés (pavé numérique dédié, glissement pour corriger une série
-   déjà faite, suggestion de charge du coach, suivi en direct, remplacement
-   d'exercice en cours de route) : le natif y consacre plusieurs centaines
-   de lignes rien que pour ça. Ici : champs numériques classiques au lieu du
-   pavé, navigation précédent/suivant simple au lieu du glissement.
-
-   SessionEngine.kt : le décompte de mise en place (SETUP_SEC, 10 s) précède
-   la toute première série d'un exercice, la récupération configurée
-   précède les suivantes — les deux se comportent pareil côté moteur
-   (minuteurStart), seul le libellé « Mise en place »/« Récupération »
-   change.
+   Écarts encore assumés (le natif y consacre plusieurs centaines de lignes
+   rien que pour ça) : pas de pavé numérique dédié (NumPadDialog), pas de
+   glissement pour corriger une série déjà faite, pas de suggestion de charge
+   complète (Coaching.kt — ici juste « comme la dernière fois »), pas de
+   suivi en direct (LiveSessions), pas de remplacement d'exercice en cours de
+   route, pas de bannière de record. Chacun représente un chantier à part —
+   à reprendre un par un si Nicolas les demande.
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast, duree } from '../ui.js';
 import { getWorkout, saveWorkout, finishSession } from '../api.js';
 import { currentUser } from '../supabase.js';
-import { libelleRir, kg } from '../model.js';
+import { libelleRir, kg, dureeSeance } from '../model.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
 
@@ -60,50 +61,76 @@ export async function vueLancerSeance(params) {
   let termine = false;
   let enregistrement = false;
 
+  const totalEstimeSec = dureeSeance(modele.exercises);
   const engine = new Engine((snap) => majCadran(snap));
 
   const el = h(`
     <section class="page run">
       <div class="run-tete">
-        <span class="run-chrono-global" data-chrono-global>0:00</span>
-        <span class="run-progress" data-progress></span>
-        <span class="run-fermer" data-quitter>✕</span>
+        <div class="run-tete-gauche">
+          <span class="run-tete-label">SÉANCE</span>
+          <span class="run-chrono-global" data-chrono-global>0:00</span>
+        </div>
+        <h1 class="run-titre" data-titre></h1>
+        <div class="run-tete-droite">
+          <div class="run-tete-icones">
+            <img class="run-avatar" src="../assets/img/moti_avatar.jpg" alt="">
+            <button class="run-icone" data-pause type="button" hidden aria-label="Pause">❚❚</button>
+            <button class="run-icone" data-quitter type="button" aria-label="Fermer">✕</button>
+          </div>
+          <span class="run-reste" data-reste></span>
+        </div>
       </div>
+      <p class="run-sousligne" data-sousligne></p>
       <div data-corps></div>
-      <div class="run-bas-fixe">
-        <button class="lien-inline" data-terminer type="button">Terminer la séance</button>
-      </div>
     </section>`);
 
   const corps = el.querySelector('[data-corps]');
-  const progress = el.querySelector('[data-progress]');
+  const titreEl = el.querySelector('[data-titre]');
+  const sousligneEl = el.querySelector('[data-sousligne]');
   const chronoGlobal = el.querySelector('[data-chrono-global]');
+  const resteEl = el.querySelector('[data-reste]');
+  const pauseBtn = el.querySelector('[data-pause]');
 
   /* Chrono global de séance — tourne du "Démarrer" au "Terminer", même hors
      de tout exercice précis (RunWorkout.kt : globalMs). */
-  const tickGlobal = setInterval(() => {
-    if (termine) { clearInterval(tickGlobal); return; }
-    chronoGlobal.textContent = fmtClock(Math.floor((Date.now() - session.startedAt) / 1000));
-  }, 1000);
+  function ticGlobal() {
+    if (termine) return;
+    const ecoule = Math.floor((Date.now() - session.startedAt) / 1000);
+    chronoGlobal.textContent = fmtClock(ecoule);
+    resteEl.textContent = `reste ~${fmtReste(Math.max(0, totalEstimeSec - ecoule))}`;
+  }
+  ticGlobal();
+  const tickGlobal = setInterval(() => { if (termine) clearInterval(tickGlobal); else ticGlobal(); }, 1000);
 
-  el.querySelector('[data-quitter]').onclick = () => {
-    const fait = session.exercises.some(e => e.sets.length);
-    if (fait && !confirm("Quitter sans terminer ? Rien ne sera enregistré.")) return;
-    location.hash = '#/seances';
-  };
-  el.querySelector('[data-terminer]').onclick = () => ouvrirBilan();
+  el.querySelector('[data-quitter]').onclick = () => ouvrirFin();
+  pauseBtn.onclick = () => engine.minuteurTogglePause();
 
   function majCadran(snap) {
     const cadran = corps.querySelector('[data-cadran]');
     if (!cadran) return;
-    cadran.className = `run-cadran run-${snap.colorKey}`;
+    const label = cadran.querySelector('[data-label]');
+    const valeur = cadran.querySelector('[data-value]');
     const enTension = engine.tensionActive || (engine.mode === 'CHRONO' && engine.chronoStart != null);
-    cadran.querySelector('[data-label]').textContent = enTension ? 'SÉRIE' : (snap.phase === 'COUNTDOWN' ? 'MISE EN PLACE' : 'RÉCUPÉRATION');
-    cadran.querySelector('[data-value]').textContent = snap.value;
+    const etat = enTension ? 'serie' : (snap.phase === 'COUNTDOWN' ? 'place' : 'recup');
+    cadran.className = `run-cadran run-cad-${etat}`;
+    label.hidden = false;
+    label.textContent = etat === 'serie' ? 'SÉRIE' : etat === 'place' ? 'MISE EN PLACE' : 'RÉCUPÉRATION';
+    valeur.textContent = snap.value;
+
+    if (snap.mode === 'MINUTEUR' && snap.phase !== 'DONE') {
+      pauseBtn.hidden = false;
+      pauseBtn.textContent = snap.phase === 'PAUSED' ? '▶' : '❚❚';
+    } else {
+      pauseBtn.hidden = true;
+    }
 
     /* MINUTEUR : la fin du décompte démarre la tension toute seule (moteur) —
        on fait juste suivre l'UI sans action de l'utilisateur. */
-    if (snap.mode === 'MINUTEUR' && snap.phase === 'OVERFLOW') afficherSaisie(true);
+    if (snap.mode === 'MINUTEUR' && snap.phase === 'OVERFLOW') {
+      corps.querySelector('[data-derniere]').hidden = true;
+      prepareSaisie(session.exercises[exIndex]);
+    }
   }
 
   function afficherSaisie(visible) {
@@ -111,30 +138,84 @@ export async function vueLancerSeance(params) {
     if (zone) zone.hidden = !visible;
   }
 
+  /** Dernières séries connues pour cet exercice (dernière session l'ayant contenu). */
+  function dernieresSeries(nom) {
+    const historique = modele.history || [];
+    for (let i = historique.length - 1; i >= 0; i--) {
+      const ex = (historique[i].exercises || []).find(e => e.name === nom && e.sets?.length);
+      if (ex) return ex.sets;
+    }
+    return null;
+  }
+
+  /** Pré-remplit poids/reps avec la dernière fois — pas de coach de charge complet, juste un repère. */
+  function prepareSaisie(ex) {
+    const sets = dernieresSeries(ex.name);
+    const dernier = sets ? sets[sets.length - 1] : null;
+    const poidsInput = corps.querySelector('[data-poids]');
+    const repsInput = corps.querySelector('[data-reps]');
+    const poidsRef = corps.querySelector('[data-poids-ref]');
+    const repsRef = corps.querySelector('[data-reps-ref]');
+    if (dernier) {
+      if (!poidsInput.value) poidsInput.value = dernier.weight || '';
+      if (!repsInput.value) repsInput.value = dernier.reps || ex.targetReps || '';
+      poidsRef.textContent = kg(dernier.weight);
+      repsRef.textContent = `${dernier.reps} reps`;
+    } else {
+      if (!repsInput.value && ex.targetReps) repsInput.value = ex.targetReps;
+      poidsRef.textContent = ''; repsRef.textContent = '';
+    }
+    afficherSaisie(true);
+  }
+
+  function dessinerDerniereFois(ex) {
+    const zone = corps.querySelector('[data-derniere]');
+    const sets = warmup ? dernieresSeries(ex.name) : null;
+    if (!sets || !sets.length) { zone.hidden = true; return; }
+    zone.hidden = false;
+    const liste = zone.querySelector('[data-derniere-liste]');
+    liste.replaceChildren();
+    sets.forEach((s, i) => liste.appendChild(h(
+      `<li>${i + 1}. ${esc(kg(s.weight))} × ${s.reps}${s.rir >= 0 ? ' · RIR ' + s.rir : ''}</li>`)));
+    const dernier = sets[sets.length - 1];
+    zone.querySelector('[data-conseil]').textContent =
+      `→ ${esc(kg(dernier.weight))} conseillés · comme la dernière fois`;
+  }
+
   function dessinerExercice() {
     const ex = session.exercises[exIndex];
     warmup = ex.sets.length === 0;
 
-    progress.textContent = `Exo ${exIndex + 1}/${session.exercises.length}`;
+    titreEl.textContent = ex.name;
+    pauseBtn.hidden = true;
 
     corps.replaceChildren(h(`
       <div>
-        <h1 class="run-titre">${esc(ex.name)}</h1>
-        <p class="run-sousligne" data-sousligne></p>
+        <div class="run-derniere" data-derniere hidden>
+          <p class="run-derniere-label">LA DERNIÈRE FOIS</p>
+          <ol class="run-derniere-liste" data-derniere-liste></ol>
+          <p class="run-conseil" data-conseil></p>
+        </div>
 
-        <div class="run-cadran run-neutral" data-cadran>
-          <span class="run-cadran-label" data-label>ÉCHAUFFEMENT</span>
-          <span class="run-cadran-value" data-value>—</span>
+        <div class="run-cadran run-cad-warmup" data-cadran>
+          <span class="run-cadran-label" data-label hidden>ÉCHAUFFEMENT</span>
+          <span class="run-cadran-value" data-value>ÉCHAUFFEMENT</span>
         </div>
 
         <div class="run-controles" data-controles></div>
 
         <div class="run-saisie" data-saisie hidden>
-          <div class="rangee rangee-serree">
-            <label class="champ champ-mini"><span>Poids (kg)</span>
-              <input type="number" inputmode="decimal" min="0" step="0.5" data-poids></label>
-            <label class="champ champ-mini"><span>Répétitions</span>
-              <input type="number" inputmode="numeric" min="0" data-reps value="${ex.targetReps || ''}"></label>
+          <div class="run-cellules">
+            <label class="run-cellule">
+              <span class="run-cellule-label">Poids</span>
+              <input type="number" inputmode="decimal" min="0" step="0.5" data-poids class="run-cellule-valeur">
+              <span class="run-cellule-ref" data-poids-ref></span>
+            </label>
+            <label class="run-cellule">
+              <span class="run-cellule-label">Reps</span>
+              <input type="number" inputmode="numeric" min="0" data-reps class="run-cellule-valeur">
+              <span class="run-cellule-ref" data-reps-ref></span>
+            </label>
           </div>
           <p class="run-rir-label">RIR (facultatif, répétitions en réserve)</p>
           <div class="run-rir" data-rir>
@@ -146,23 +227,22 @@ export async function vueLancerSeance(params) {
         <ul class="liste run-series" data-liste-series></ul>
 
         <div class="run-bas">
-          <button class="run-fleche" data-precedent type="button" ${exIndex === 0 ? 'disabled' : ''}>‹</button>
-          <button class="btn btn-ghost" data-suivant type="button" style="flex:1">Exercice suivant</button>
-          <button class="run-fleche" data-suivant-fleche type="button" ${exIndex >= session.exercises.length - 1 ? 'disabled' : ''}>›</button>
+          <button class="run-fleche-ronde" data-precedent type="button" ${exIndex === 0 ? 'disabled' : ''}>‹</button>
+          <button class="btn btn-lg run-suivant" data-suivant type="button">Exercice suivant ▶</button>
         </div>
       </div>`));
 
     dessinerSousligne();
+    dessinerDerniereFois(ex);
     redessinerSeries();
     dessinerControles();
 
     corps.querySelector('[data-precedent]').onclick = () => {
       engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
+      pauseBtn.hidden = true;
       exIndex--; dessinerExercice();
     };
-    const allerSuivant = () => passerExercice();
-    corps.querySelector('[data-suivant]').onclick = allerSuivant;
-    corps.querySelector('[data-suivant-fleche]').onclick = allerSuivant;
+    corps.querySelector('[data-suivant]').onclick = () => passerExercice();
 
     let rirChoisi = -1;
     corps.querySelectorAll('[data-rir-val]').forEach(b => {
@@ -187,29 +267,21 @@ export async function vueLancerSeance(params) {
       afficherSaisie(false);
       redessinerSeries();
       dessinerSousligne();
-
-      if (ex.sets.length >= ex.plannedSets) {
-        dessinerControles();
-      } else if (ex.mode === 'MINUTEUR') {
-        engine.mode = 'MINUTEUR';
-        engine.minuteurStart(ex.recupSec);
-        dessinerControles();
-      } else {
-        dessinerControles();
-      }
+      dessinerControles();
     };
   }
 
   /** Sous-ligne « Exo X/Y · série X/Y · cible Xreps · r X:XX » — RunWorkout.kt. */
   function dessinerSousligne() {
     const ex = session.exercises[exIndex];
-    const s = corps.querySelector('[data-sousligne]');
-    if (!s) return;
     const numSerie = Math.min(ex.sets.length + (warmup ? 0 : 1), ex.mode === 'TABATA' ? 1 : ex.plannedSets);
-    const bits = [`série ${numSerie || 1}/${ex.mode === 'TABATA' ? 1 : ex.plannedSets}`];
+    const bits = [
+      `Exo ${exIndex + 1}/${session.exercises.length}`,
+      `série ${numSerie || 1}/${ex.mode === 'TABATA' ? 1 : ex.plannedSets}`
+    ];
     if (ex.targetReps) bits.push(`cible ${ex.targetReps} reps`);
     if (ex.mode === 'MINUTEUR') bits.push(`r ${fmtClock(ex.recupSec)}`);
-    s.textContent = bits.join(' · ');
+    sousligneEl.textContent = bits.join(' · ');
   }
 
   function redessinerSeries() {
@@ -240,6 +312,7 @@ export async function vueLancerSeance(params) {
     if (ex.mode === 'TABATA') {
       zone.appendChild(bouton(ex.sets.length ? 'Relancer' : 'Démarrer', () => {
         beeper.unlock();
+        corps.querySelector('[data-derniere]').hidden = true;
         warmup = false;
         engine.mode = 'TABATA';
         engine.tabataStart(ex.workSec, ex.restSec, ex.tabataSeries);
@@ -255,27 +328,26 @@ export async function vueLancerSeance(params) {
     if (ex.sets.length === 0 && warmup) {
       zone.appendChild(bouton('Démarrer', () => {
         beeper.unlock();
+        corps.querySelector('[data-derniere]').hidden = true;
         if (ex.mode === 'MINUTEUR') {
           engine.mode = 'MINUTEUR';
           engine.minuteurStart(SETUP_SEC);
         } else {
           engine.mode = 'CHRONO';
           engine.chronoReset();
-          afficherSaisie(true);
+          prepareSaisie(ex);
         }
         warmup = false;
         dessinerSousligne();
         zone.replaceChildren();
       }, 'btn-lg'));
     } else if (ex.mode === 'MINUTEUR') {
-      const snap = engine._snapshot(Date.now());
-      if (snap.phase === 'PAUSED') zone.appendChild(bouton('Reprendre', () => engine.minuteurTogglePause()));
-      else zone.appendChild(bouton('Pause', () => engine.minuteurTogglePause()));
+      /* Pause/Reprendre : icône dans l'en-tête, gérée par majCadran. */
     } else {
       zone.appendChild(bouton('Série suivante', () => {
         engine.mode = 'CHRONO';
         engine.chronoReset();
-        afficherSaisie(true);
+        prepareSaisie(ex);
         zone.replaceChildren();
       }, 'btn-lg'));
     }
@@ -302,16 +374,41 @@ export async function vueLancerSeance(params) {
 
   function passerExercice() {
     engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
+    pauseBtn.hidden = true;
     if (exIndex < session.exercises.length - 1) { exIndex++; dessinerExercice(); }
-    else ouvrirBilan();
+    else ouvrirFin(true);
+  }
+
+  /** Croix de l'en-tête : dialogue unique terminer/quitter (EndSessionDialog, RunWorkout.kt). */
+  function ouvrirFin(depuisDernierExo = false) {
+    if (termine) return;
+    const fait = session.exercises.some(e => e.sets.length);
+    if (!fait) { location.hash = '#/seances'; return; }
+
+    const nbSeries = session.exercises.reduce((t, e) => t + e.sets.length, 0);
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Terminer la séance">
+        <div class="modale-boite">
+          <div class="modale-tete"><h2>Terminer la séance ?</h2></div>
+          <p class="etat-mono">${nbSeries} série${nbSeries > 1 ? 's' : ''} enregistrée${nbSeries > 1 ? 's' : ''} jusqu'ici.</p>
+          <div class="run-fin-actions">
+            <button class="btn btn-lg" data-avec-bilan type="button">Terminer avec bilan</button>
+            <button class="btn btn-ghost" data-sans-enregistrer type="button">Quitter sans enregistrer</button>
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+          </div>
+        </div>
+      </div>`);
+    modale.querySelector('[data-avec-bilan]').onclick = () => { modale.remove(); ouvrirBilan(); };
+    modale.querySelector('[data-sans-enregistrer]').onclick = () => {
+      if (confirm('Quitter sans enregistrer cette séance ?')) location.hash = '#/seances';
+    };
+    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    document.body.appendChild(modale);
   }
 
   /** Bilan de fin : ressenti (5 émojis) + note — EndSessionDialog/mood/note (RunWorkout.kt). */
   function ouvrirBilan() {
     if (termine) return;
-    const fait = session.exercises.some(e => e.sets.length);
-    if (!fait) { location.hash = '#/seances'; return; }
-
     const modale = h(`
       <div class="modale" role="dialog" aria-label="Terminer la séance">
         <div class="modale-boite">
@@ -384,4 +481,11 @@ export async function vueLancerSeance(params) {
 function fmtClock(totalSec) {
   const m = Math.floor(totalSec / 60), s = totalSec % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/** Même formule que fmtEstimate (entrainement.js / TrainingScreens.kt), pour le « reste ~Xh ». */
+function fmtReste(sec) {
+  const totalMin = Math.round(sec / 60);
+  const hh = Math.floor(totalMin / 60), mm = totalMin % 60;
+  return hh > 0 ? `${hh} h ${String(mm).padStart(2, '0')}` : `${mm} min`;
 }
