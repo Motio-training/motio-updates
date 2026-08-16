@@ -1099,3 +1099,77 @@ body:not(.connecte) #vue:has(.onb){
   background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-pill);color:var(--encre);
 }
 .coach-saisie input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-halo)}
+
+/* ==========================================================================
+   Bilan de fin de séance — portage de SummaryScreen (TrainingScreens.kt) :
+   charge totale, temps global/sous tension, carte musculaire, détail
+   modifiable par exercice, partage. Écarts assumés : pas de zoom plein écran
+   ni de bulle de nom sur la carte musculaire, pas de pavé numérique dédié
+   (édition par prompt()), pas de rattachement manuel des exercices non
+   reconnus par le lexique.
+   ========================================================================== */
+
+.bilan-grande{
+  margin:1.1rem 0 .7rem;padding:1.1rem 1.2rem;
+  background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-m);
+  display:flex;flex-direction:column;gap:.3rem;
+}
+.bilan-grande-label{font-size:.8rem;color:var(--encre-2)}
+.bilan-grande-valeur{
+  font-family:var(--f-display);font-weight:700;font-size:2.1rem;color:var(--accent);
+  font-variant-numeric:tabular-nums;
+}
+.bilan-petites{display:flex;gap:.7rem;margin-bottom:.5rem}
+.bilan-petite{
+  flex:1;padding:.85rem 1rem;background:var(--carte);border:1px solid var(--trait);
+  border-radius:var(--r-m);display:flex;flex-direction:column;gap:.25rem;
+}
+.bilan-petite .label{font-size:.76rem;color:var(--encre-2)}
+.bilan-petite .valeur{font-family:var(--f-display);font-weight:700;font-size:1.15rem;color:var(--encre);font-variant-numeric:tabular-nums}
+
+.bilan-souscat{
+  margin:1.3rem 0 .5rem;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--encre-2);
+}
+.bilan-canvas{width:100%;display:block;border-radius:var(--r-m);background:var(--carte);border:1px solid var(--trait)}
+.bilan-faces{display:flex;margin-top:.4rem}
+.bilan-faces span{flex:1;text-align:center;font-size:.72rem;color:var(--encre-2)}
+.bilan-degrade-row{display:flex;align-items:center;gap:.5rem;margin-top:.6rem}
+.bilan-degrade-row>span{font-size:.66rem;color:var(--encre-2);flex:none}
+.bilan-degrade{flex:1;border-radius:4px;display:block}
+.bilan-inconnus{margin:.6rem 0 0;font-size:.74rem;color:var(--encre-2)}
+
+.bilan-exo{
+  padding:.9rem 1rem;margin-bottom:.6rem;
+  background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-m);
+}
+.bilan-exo-tete{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.bilan-exo-tete b{font-size:1rem;color:var(--encre);font-weight:700}
+.bilan-exo-drop{
+  background:none;border:none;color:var(--encre-2);font-size:1.1rem;cursor:pointer;
+  padding:.15rem .4rem;line-height:1;
+}
+.bilan-exo-drop:hover{color:var(--accent2)}
+.bilan-exo-meta{margin:.2rem 0 .7rem;font-size:.78rem;color:var(--encre-2)}
+.bilan-serie-row{display:flex;align-items:center;gap:.5rem;padding:.2rem 0}
+.bilan-serie-idx{width:1.3rem;font-size:.78rem;color:var(--encre-2);font-weight:700;flex:none}
+.bilan-cell{
+  flex:1;padding:.45rem .5rem;text-align:center;font-variant-numeric:tabular-nums;
+  background:var(--creme-2);border:none;border-radius:var(--r-s);color:var(--encre);
+  font-family:var(--f-body);font-size:.9rem;cursor:pointer;
+}
+.bilan-cell:hover{box-shadow:0 0 0 2px var(--accent-halo)}
+.bilan-x{color:var(--encre-2);font-size:.85rem;padding:0 .2rem;flex:none}
+.bilan-suppr-serie{
+  background:none;border:none;color:var(--accent2);font-weight:700;font-size:1rem;
+  cursor:pointer;padding:.2rem .5rem;flex:none;
+}
+.bilan-ajouter-serie{width:100%;margin-top:.5rem}
+
+.bilan-diverge{
+  margin:1rem 0;padding:.9rem 1rem;
+  background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-m);
+}
+.bilan-diverge h3{margin:0 0 .3rem;font-size:.95rem;color:var(--encre)}
+.bilan-diverge p{margin:0;font-size:.8rem;color:var(--encre-2);line-height:1.4}
+.bilan-diverge .btn,.bilan-diverge .btn-ghost{width:100%;margin-top:.6rem}

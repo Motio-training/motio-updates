@@ -22,7 +22,7 @@
    par le cache.
    ========================================================================== */
 
-const CACHE = 'motio-app-v7';
+const CACHE = 'motio-app-v8';
 
 const COQUILLE = [
   './',
@@ -32,6 +32,7 @@ const COQUILLE = [
   'js/main.js', 'js/router.js', 'js/supabase.js', 'js/config.js', 'js/api.js',
   'js/model.js', 'js/catalog.js', 'js/partage.js', 'js/ui.js', 'js/trophies.js',
   'js/reglages.js', 'js/timer.js', 'js/beeper.js', 'js/workout-share.js',
+  'js/muscle-lexicon.js', 'js/muscle-map.js',
   'js/views/connexion.js', 'js/views/fil.js', 'js/views/profil.js',
   'js/views/entrainement.js', 'js/views/lancer.js', 'js/views/minuteurs.js',
   'js/views/coach.js', 'js/views/messages.js', 'js/views/groupes.js',
