@@ -45,6 +45,7 @@ export async function vueSeances() {
           <span class="ligne-meta">${esc(s.category || '')} · ${nbEx} exercices ·
             environ ${esc(duree(dureeSeance(d.exercises || [])))}</span>
         </div>
+        <a class="btn btn-sm" href="#/seances/${esc(s.local_id)}/lancer">Lancer</a>
         <button class="btn btn-sm btn-ghost">Supprimer</button>
       </li>`);
     li.querySelector('button').onclick = async (e) => {
@@ -79,7 +80,10 @@ export async function vueSeanceEdition(params) {
   const el = h(`
     <section class="page">
       <p class="eyebrow">Entraînement</p>
-      <h1>${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
+      <div class="rangee-titre">
+        <h1>${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
+        ${!neuve ? `<a class="btn" href="#/seances/${esc(params.id)}/lancer">Lancer la séance</a>` : ''}
+      </div>
 
       <div class="rangee">
         <label class="champ"><span>Nom</span>

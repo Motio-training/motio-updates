@@ -248,3 +248,37 @@ export async function deleteProgram(userId, localId) {
     .update({ deleted_at: new Date().toISOString() })
     .eq('user_id', userId).eq('local_id', String(localId)).select().single());
 }
+
+/* ==========================================================================
+   Séance en direct — écriture dans `shared_sessions`, même forme que
+   Social.push (Kotlin) : upsert sur (user_id, local_id), mêmes noms de
+   colonnes, même format compact pour `details` (n = nom, s = séries
+   {w,r,t,rir?}) puisque c'est ce que lit déjà partage.js/le fil Android.
+   ========================================================================== */
+
+export async function finishSession(userId, session) {
+  const details = session.exercises
+    .filter(e => e.sets.length)
+    .map(e => ({
+      n: e.name,
+      s: e.sets.map(s => {
+        const o = { w: s.weight, r: s.reps, t: s.tensionMs };
+        if (s.rir >= 0) o.rir = s.rir;
+        return o;
+      })
+    }));
+  const row = {
+    user_id: userId,
+    local_id: session.uid,
+    workout_name: session.workoutName,
+    category: session.category,
+    started_at: new Date(session.startedAt).toISOString(),
+    duration_ms: Math.max(0, session.endedAt - session.startedAt),
+    tension_ms: session.exercises.reduce((t, e) => t + e.sets.reduce((u, s) => u + (s.tensionMs || 0), 0), 0),
+    volume_kg: session.exercises.reduce((t, e) => t + e.sets.reduce((u, s) => u + (s.weight || 0) * (s.reps || 0), 0), 0),
+    exercise_count: session.exercises.filter(e => e.sets.length).length,
+    set_count: session.exercises.reduce((t, e) => t + e.sets.length, 0),
+    details
+  };
+  return unwrap(await sb.from(T.sharedSessions).upsert(row, { onConflict: 'user_id,local_id' }).select().single());
+}

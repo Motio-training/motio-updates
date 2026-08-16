@@ -7,6 +7,7 @@ import { vueFil } from './views/fil.js';
 import { vueProfil, vueAmis } from './views/profil.js';
 import { vueSeances, vueSeanceEdition, vueProgrammes,
          vueProgrammeNouveau, vueHistorique } from './views/entrainement.js';
+import { vueLancerSeance } from './views/lancer.js';
 
 const PUBLIQUES = ['/connexion'];
 
@@ -19,6 +20,7 @@ route('/profil', vueProfil);
 route('/profil/:id', vueProfil);
 route('/seances', vueSeances);
 route('/seances/:id', vueSeanceEdition);
+route('/seances/:id/lancer', vueLancerSeance);
 route('/programmes', vueProgrammes);
 route('/programmes/nouveau', vueProgrammeNouveau);
 route('/historique', vueHistorique);
@@ -59,3 +61,9 @@ $('#vue')?.addEventListener('click', () => {
 onAuthChange(() => resolve());
 
 start();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}

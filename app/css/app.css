@@ -643,3 +643,64 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   color:var(--accent);border-color:var(--accent);box-shadow:var(--ombre-1);
 }
 .btn[data-valider]{width:100%}
+
+/* ==========================================================================
+   Séance en direct
+   ========================================================================== */
+
+.rangee-titre{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.rangee-titre h1{margin:0}
+
+.run-tete{
+  display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+  margin-bottom:1.75rem;flex-wrap:wrap;
+}
+.run-progress{
+  font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--encre-2);
+}
+
+.run-cadran{
+  margin:1.25rem 0 1.5rem;padding:2.5rem 1.5rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;
+  border-radius:var(--r-l);border:1px solid var(--trait);
+  background:var(--carte);box-shadow:var(--ombre-1);
+  transition:background-color .25s ease,border-color .25s ease;
+}
+.run-cadran-label{
+  font-family:var(--f-mono);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--encre-2);
+}
+.run-cadran-value{
+  font-family:var(--f-display);font-weight:650;font-size:clamp(2.6rem,10vw,4.2rem);
+  line-height:1;letter-spacing:-.02em;color:var(--encre);
+  font-variant-numeric:tabular-nums;
+}
+.run-cadran.run-work{background:var(--accent-voile);border-color:var(--accent);}
+.run-cadran.run-work .run-cadran-value{color:var(--alerte)}
+.run-cadran.run-rest{background:var(--creme-2);border-color:var(--accent-halo)}
+.run-cadran.run-over .run-cadran-value{color:var(--accent)}
+.run-cadran.run-pause{opacity:.6}
+
+.run-controles{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.run-controles .btn{flex:1 1 12rem}
+
+.run-saisie{
+  margin-bottom:1.5rem;padding:1.25rem;border:1px solid var(--trait);
+  border-radius:var(--r-m);background:var(--creme-2);
+}
+.run-saisie .champ{margin-bottom:.75rem}
+.run-rir-label{
+  font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--encre-2);margin:0 0 .5rem;
+}
+.run-rir{display:flex;gap:.4rem;margin-bottom:1rem}
+.run-rir .puce{padding:.4rem .7rem;font-size:.82rem}
+.run-saisie .btn{width:100%}
+
+.run-series{margin-bottom:1.5rem}
+.run-serie-faite{
+  padding:.6rem .9rem;font-family:var(--f-mono);font-size:.82rem;color:var(--encre-2);
+}
+
+.run-bas{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
