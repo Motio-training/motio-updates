@@ -687,12 +687,26 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 
 .run-tete{
   display:flex;align-items:center;justify-content:space-between;gap:.75rem;
-  margin-bottom:1.75rem;flex-wrap:wrap;
+  margin-bottom:1.25rem;
+}
+.run-chrono-global{
+  font-family:var(--f-mono);font-size:.82rem;font-weight:600;color:var(--encre);
+  font-variant-numeric:tabular-nums;
 }
 .run-progress{
   font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
   color:var(--encre-2);
 }
+.run-fermer{
+  font-size:1.3rem;color:var(--encre-2);cursor:pointer;line-height:1;padding:.2rem;
+}
+.run-titre{margin:0 0 .15rem;text-align:center}
+.run-titre::after{display:none}
+.run-sousligne{
+  margin:0 0 1rem;text-align:center;color:var(--encre-2);
+  font-family:var(--f-mono);font-size:.76rem;
+}
+.run-bas-fixe{margin-top:1.25rem;text-align:center}
 
 .run-cadran{
   margin:1.25rem 0 1.5rem;padding:2.5rem 1.5rem;
@@ -737,7 +751,20 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   padding:.6rem .9rem;font-family:var(--f-mono);font-size:.82rem;color:var(--encre-2);
 }
 
-.run-bas{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.run-bas{display:flex;align-items:stretch;gap:.6rem}
+.run-fleche{
+  flex:0 0 auto;width:2.6rem;font-size:1.3rem;font-weight:700;color:var(--encre);
+  background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-pill);
+  cursor:pointer;
+}
+.run-fleche:disabled{opacity:.35;cursor:default}
+
+.run-moods{display:flex;justify-content:space-between;gap:.4rem;margin:.6rem 0 1rem}
+.run-mood{
+  flex:1;padding:.5rem 0;font-size:1.4rem;background:none;border:1px solid transparent;
+  border-radius:var(--r-m);cursor:pointer;
+}
+.run-mood.on{background:var(--accent-halo);border-color:var(--accent)}
 
 /* ==========================================================================
    Écran Entraînement — reprend exactement TrainingList/WorkoutCard
