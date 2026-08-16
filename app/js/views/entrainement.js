@@ -8,6 +8,7 @@ import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
 import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '../catalog.js';
 import { ouvrirPartage } from '../partage.js';
 import { encode as encoderSeance } from '../workout-share.js';
+import { ouvrirBilan } from '../bilan.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -187,7 +188,7 @@ export async function vueSeances() {
 
     modale.querySelector('[data-demarrer]').onclick = () => { fermer(); location.hash = `#/seances/${s.local_id}/lancer`; };
     modale.querySelector('[data-modifier]').onclick = () => { fermer(); location.hash = `#/seances/${s.local_id}`; };
-    modale.querySelector('[data-historique]')?.addEventListener('click', () => { fermer(); location.hash = '#/historique'; });
+    modale.querySelector('[data-historique]')?.addEventListener('click', () => { fermer(); location.hash = `#/seances/${s.local_id}/historique`; });
     modale.querySelector('[data-supprimer]').onclick = async () => {
       fermer();
       if (!confirm(`« ${nom} » et tout son historique seront supprimés. C'est définitif.`)) return;
@@ -727,4 +728,86 @@ export async function vueHistorique() {
     ul.appendChild(li);
   }
   render(el);
+}
+
+/* ================================================ historique d'une séance */
+
+const MOOD_EMOJI = { 1: '😩', 2: '😕', 3: '😐', 4: '🙂', 5: '💪' };
+
+/** dateLabel (TrainingScreens.kt) : « dd/mm/yyyy hh:mm ». */
+function dateHeure(ms) {
+  const d = new Date(ms);
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+/** fmtDurMin (TrainingScreens.kt). */
+function fmtDurMin(ms) {
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60), m = totalMin % 60;
+  return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} minutes`;
+}
+
+/**
+ * Historique d'UNE séance (HistoryScreen, TrainingScreens.kt ~3023) —
+ * distinct de l'historique général : ne liste que les réalisations de ce
+ * modèle précis, lues depuis w.history (pas shared_sessions). Chaque carte
+ * ouvre le même bilan modifiable que la fin de séance en direct (bilan.js).
+ */
+export async function vueHistoriqueSeance(params) {
+  render(loading("Chargement de l'historique"));
+  const moi = await currentUser();
+
+  let row;
+  try { row = await getWorkout(moi.id, params.id); }
+  catch (e) { return render(failure(e, "L'historique n'a pas pu être chargé")); }
+  if (!row) return render(empty('Séance introuvable', 'Elle a peut-être été supprimée.',
+    { href: '#/seances', label: 'Retour aux séances' }));
+
+  const modele = row.data;
+
+  function dessiner() {
+    const historique = [...(modele.history || [])].sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
+
+    const el = h(`
+      <section class="page">
+        <p class="eyebrow">Historique</p>
+        <h1>${esc(modele.name || `Séance ${modele.category}`)}</h1>
+        <div data-liste style="margin-top:1.25rem"></div>
+        <a class="btn btn-lg" href="#/seances" style="display:block;text-align:center;margin-top:1.5rem">Retour</a>
+      </section>`);
+
+    const liste = el.querySelector('[data-liste]');
+    if (!historique.length) {
+      liste.appendChild(h('<p class="etat-mono">Aucune séance enregistrée pour l\'instant.</p>'));
+    } else {
+      historique.forEach(s => {
+        const tonnage = (s.exercises || []).reduce((t, e) => t + (e.sets || []).reduce((u, st) => u + st.weight * st.reps, 0), 0);
+        const dureeMs = Math.max(0, (s.endedAt || 0) - (s.startedAt || 0));
+        const li = h(`
+          <div class="ligne ligne-action" style="cursor:pointer">
+            <div data-corps style="flex:1;min-width:0">
+              <p class="ligne-titre">${esc(dateHeure(s.startedAt))}</p>
+              <p class="ligne-meta">${esc(fmtDurMin(dureeMs))}${s.mood > 0 ? '   ' + (MOOD_EMOJI[s.mood] || '') : ''}</p>
+              ${s.note ? `<p class="ligne-meta" style="color:var(--dore)">${esc(s.note)}</p>` : ''}
+            </div>
+            <span style="color:var(--accent);font-weight:700;white-space:nowrap">${esc(kg(tonnage))}</span>
+            <button class="bilan-exo-drop" data-suppr type="button" aria-label="Supprimer cette séance">✕</button>
+          </div>`);
+        li.querySelector('[data-corps]').onclick = () => {
+          ouvrirBilan({ moi, modele, session: s, onFermer: dessiner });
+        };
+        li.querySelector('[data-suppr]').onclick = async (e) => {
+          e.stopPropagation();
+          if (!confirm(`Séance du ${dateHeure(s.startedAt)} · ${kg(tonnage)}. Elle sera retirée de l'historique et des statistiques, sans retour possible.`)) return;
+          modele.history = (modele.history || []).filter(x => x !== s);
+          try { await saveWorkout(moi.id, modele); dessiner(); }
+          catch (err) { toast(err.message); }
+        };
+        liste.appendChild(li);
+      });
+    }
+    render(el);
+  }
+
+  dessiner();
 }

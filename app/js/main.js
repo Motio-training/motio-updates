@@ -12,7 +12,7 @@ import { vueConnexion } from './views/connexion.js';
 import { vueFil } from './views/fil.js';
 import { vueProfil, vueAmis } from './views/profil.js';
 import { vueSeances, vueSeanceEdition, vueProgrammes,
-         vueProgrammeNouveau, vueHistorique, vueImporterSeance } from './views/entrainement.js';
+         vueProgrammeNouveau, vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
 import { vueLancerSeance } from './views/lancer.js';
 import { vueCoach } from './views/coach.js';
 import { vueMessages, vueMessageThread } from './views/messages.js';
@@ -42,6 +42,7 @@ route('/seances', vueSeances);
 route('/seances/importer/:code', vueImporterSeance);
 route('/seances/:id', vueSeanceEdition);
 route('/seances/:id/lancer', vueLancerSeance);
+route('/seances/:id/historique', vueHistoriqueSeance);
 route('/programmes', vueProgrammes);
 route('/programmes/nouveau', vueProgrammeNouveau);
 route('/historique', vueHistorique);
