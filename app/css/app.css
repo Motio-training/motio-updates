@@ -704,7 +704,9 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .run-titre::after{display:none}
 .run-tete-droite{display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;flex:none}
 .run-tete-icones{display:flex;align-items:center;gap:.55rem}
+.run-tete-icones a{display:flex;text-decoration:none}
 .run-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none}
+.run-cadran{cursor:pointer}
 .run-icone{
   font-size:1rem;color:var(--encre-2);cursor:pointer;line-height:1;padding:.15rem;
   background:none;border:none;

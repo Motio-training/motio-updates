@@ -74,7 +74,7 @@ export async function vueLancerSeance(params) {
         <h1 class="run-titre" data-titre></h1>
         <div class="run-tete-droite">
           <div class="run-tete-icones">
-            <img class="run-avatar" src="../assets/img/moti_avatar.jpg" alt="">
+            <a href="#/coach"><img class="run-avatar" src="../assets/img/moti_avatar.jpg" alt="Moti, ton coach IA"></a>
             <button class="run-icone" data-pause type="button" hidden aria-label="Pause">❚❚</button>
             <button class="run-icone" data-quitter type="button" aria-label="Fermer">✕</button>
           </div>
@@ -243,6 +243,17 @@ export async function vueLancerSeance(params) {
       exIndex--; dessinerExercice();
     };
     corps.querySelector('[data-suivant]').onclick = () => passerExercice();
+
+    /* Taper le cadran = action principale (centerTap, TrainingScreens.kt) :
+       valide la série en cours si la saisie est ouverte, sinon déclenche le
+       bouton principal du moment (Démarrer / Relancer / Série suivante). Rien
+       ne se passe pendant un décompte de récup/mise en place en cours, comme
+       dans le natif. */
+    corps.querySelector('[data-cadran]').onclick = () => {
+      const saisie = corps.querySelector('[data-saisie]');
+      if (saisie && !saisie.hidden) { corps.querySelector('[data-valider-serie]')?.click(); return; }
+      corps.querySelector('[data-controles] button')?.click();
+    };
 
     let rirChoisi = -1;
     corps.querySelectorAll('[data-rir-val]').forEach(b => {
