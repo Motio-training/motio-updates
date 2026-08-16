@@ -68,8 +68,11 @@
 
 *,*::before,*::after{box-sizing:border-box}
 
+html{overflow-x:hidden}
+
 body{
   margin:0;
+  overflow-x:hidden;
   background:var(--creme);
   color:var(--encre);
   font-family:var(--f-body);
@@ -205,7 +208,7 @@ body{
 .bottombar a[aria-current="page"] .bb-ico{background:rgba(169,194,94,.18)}
 
 @media (max-width:820px){
-  .coque{grid-template-columns:1fr}
+  .coque{grid-template-columns:minmax(0,1fr)}
   .menu-btn{display:flex}
   .nav{
     position:static;
