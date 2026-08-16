@@ -24,6 +24,7 @@ import { currentUser } from '../supabase.js';
 import { libelleRir, kg, dureeSeance } from '../model.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
+import { ouvrirPartage } from '../partage.js';
 
 const RIR = [0, 1, 2, 3, 4, 5];
 const SETUP_SEC = 10;
@@ -278,6 +279,16 @@ export async function vueLancerSeance(params) {
       afficherSaisie(false);
       redessinerSeries();
       dessinerSousligne();
+
+      /* Enchaîne directement sur la récupération, comme centerTap→startRecup
+         (natif) : après « Série faite », pas de bouton à chercher pour
+         relancer le décompte — il démarre tout seul, et la tension suivante
+         s'enclenche d'elle-même à la fin (OVERFLOW, voir majCadran). */
+      const complet = ex.sets.length >= ex.plannedSets;
+      if (!complet && ex.mode === 'MINUTEUR') {
+        engine.mode = 'MINUTEUR';
+        engine.minuteurStart(ex.recupSec);
+      }
       dessinerControles();
     };
   }
@@ -472,7 +483,9 @@ export async function vueLancerSeance(params) {
     }
 
     const tonnage = session.exercises.reduce((t, e) => t + e.sets.reduce((u, s) => u + s.weight * s.reps, 0), 0);
-    render(h(`
+    const tension = session.exercises.reduce((t, e) => t + e.sets.reduce((u, s) => u + (s.tensionMs || 0), 0), 0);
+
+    const el = h(`
       <section class="page page-etroite">
         <p class="eyebrow">Séance terminée</p>
         <h1>Bien joué.</h1>
@@ -481,8 +494,26 @@ export async function vueLancerSeance(params) {
           <div><b>${Math.round(tonnage)}</b><span>kg déplacés</span></div>
           <div><b>${session.exercises.reduce((t, e) => t + e.sets.length, 0)}</b><span>séries</span></div>
         </div>
-        <a class="btn btn-lg" href="#/historique">Voir l'historique</a>
-      </section>`));
+        <button class="btn btn-lg" data-partager type="button" style="width:100%">Partager l'image</button>
+        <a class="btn btn-ghost" href="#/historique" style="display:block;text-align:center;margin-top:.6rem">Voir l'historique</a>
+      </section>`);
+
+    /* Même gabarit que le partage depuis l'historique (partage.js) — juste
+       construit ici à partir de la séance qu'on vient de terminer, pas
+       relu depuis shared_sessions. */
+    el.querySelector('[data-partager]').onclick = () => ouvrirPartage({
+      workout_name: session.workoutName,
+      started_at: new Date(session.startedAt).toISOString(),
+      volume_kg: tonnage,
+      duration_ms: session.endedAt - session.startedAt,
+      tension_ms: tension,
+      details: session.exercises.map(e => ({
+        n: e.name,
+        s: e.sets.map(s => ({ w: s.weight, r: s.reps, rir: s.rir }))
+      }))
+    });
+
+    render(el);
   }
 
   dessinerExercice();
