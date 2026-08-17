@@ -30,6 +30,7 @@ export const CONFIG = {
     messages: 'messages',
     groups: 'groups',
     groupMembers: 'group_members',
-    groupMessages: 'group_messages'
+    groupMessages: 'group_messages',
+    liveSessions: 'live_sessions'
   }
 };

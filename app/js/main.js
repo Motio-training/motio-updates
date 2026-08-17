@@ -17,6 +17,7 @@ import { vueSeances, vueSeanceEdition, vueProgrammes,
 import { vueLancerSeance } from './views/lancer.js';
 import { vueCoach } from './views/coach.js';
 import { vueMessages, vueMessageThread } from './views/messages.js';
+import { vueDirect } from './views/direct.js';
 import { vueGroupes, vueGroupeDetail } from './views/groupes.js';
 import { vueDefis } from './views/defis.js';
 import { vueMinuteurs } from './views/minuteurs.js';
@@ -40,6 +41,7 @@ route('/profil/:id', vueProfil);
 route('/coach', vueCoach);
 route('/messages', vueMessages);
 route('/messages/:id', vueMessageThread);
+route('/direct/:id', vueDirect);
 route('/groupes', vueGroupes);
 route('/groupes/:id', vueGroupeDetail);
 route('/defis', vueDefis);
@@ -78,7 +80,7 @@ before(async (path) => {
 const GROUPES_ROUTE = {
   minuteurs: ['/minuteurs'],
   entrainement: ['/seances', '/programmes', '/historique'],
-  social: ['/fil', '/amis', '/messages', '/groupes', '/defis'],
+  social: ['/fil', '/amis', '/messages', '/groupes', '/defis', '/direct'],
   profil: ['/profil']
 };
 function groupeDe(path) {

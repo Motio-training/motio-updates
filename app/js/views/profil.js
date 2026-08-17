@@ -1,6 +1,6 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
-         searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount } from '../api.js';
+         searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -32,6 +32,10 @@ export async function vueProfil(params) {
 
   const stats = calculerStats(seances);
   const jeSuis = !estMoi && (await following(moi.id)).some(p => p.id === cible);
+  /* Badge « en direct » (LiveSessionScreen.kt) : uniquement sur le profil
+     d'un ami, jamais sur le mien — se voir soi-même « en direct » n'a pas
+     de sens. */
+  const enDirect = !estMoi ? await directDe(cible).catch(() => null) : null;
 
   /* Trophées : même calcul que computeProfileStats (Profile.kt), uniquement
      pour son propre profil — l'ami n'a que ce qu'il a bien voulu partager. */
@@ -56,6 +60,7 @@ export async function vueProfil(params) {
           <div class="profil-identite">
             <b data-nom>${esc(profil.username || 'sans pseudo')}</b>
             <span>${estMoi ? esc(moi.email || '') : 'Profil'}</span>
+            ${enDirect ? `<a class="profil-direct" href="#/direct/${esc(cible)}"><span class="fil-direct-point"></span>En direct ›</a>` : ''}
           </div>
         </div>
         <div class="profil-stats-ligne">

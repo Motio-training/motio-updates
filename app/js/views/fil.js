@@ -1,6 +1,6 @@
 import { h, render, loading, empty, failure, esc, toast, socialHeader, duree } from '../ui.js';
 import { feed, kudosFor, commentCounts, comments, addKudo, removeKudo,
-         addComment, deleteComment, unreadMessagesCount } from '../api.js';
+         addComment, deleteComment, unreadMessagesCount, amisEnDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { kg, libelleRir } from '../model.js';
 
@@ -24,16 +24,21 @@ export async function vueFil() {
   render(loading('Chargement du fil'));
   const moi = await currentUser();
 
-  let seances, unread = 0;
+  let seances, unread = 0, direct = [];
   try {
-    [seances, unread] = await Promise.all([
+    [seances, unread, direct] = await Promise.all([
       feed({ limit: 60 }),
-      unreadMessagesCount(moi.id).catch(() => 0)
+      unreadMessagesCount(moi.id).catch(() => 0),
+      amisEnDirect(moi.id).catch(() => [])
     ]);
   } catch (e) { return render(failure(e, "Le fil n'a pas pu être chargé")); }
 
   const el = h(`<section class="page"></section>`);
   el.appendChild(socialHeader('Fil', 'fil', unread));
+
+  const zoneDirect = h('<div></div>');
+  el.appendChild(zoneDirect);
+  dessinerDirect(zoneDirect, direct);
 
   if (!seances.length) {
     el.appendChild(empty(
@@ -41,20 +46,49 @@ export async function vueFil() {
       'Suis quelqu\'un, ou termine une séance dans l\'application : elle remontera ici.',
       { href: '#/amis', label: 'Trouver des amis' }
     ));
-    return render(el);
+  } else {
+    const ids = seances.map(s => s.id).filter(Boolean);
+    const [kud, nbCom] = await Promise.all([
+      kudosFor(ids, moi.id).catch(() => ({})),
+      commentCounts(ids).catch(() => ({}))
+    ]);
+
+    const liste = h('<div class="rangee-feed"></div>');
+    seances.forEach(s => liste.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0)));
+    el.appendChild(liste);
   }
 
-  const ids = seances.map(s => s.id).filter(Boolean);
-  const [kud, nbCom] = await Promise.all([
-    kudosFor(ids, moi.id).catch(() => ({})),
-    commentCounts(ids).catch(() => ({}))
-  ]);
-
-  const liste = h('<div class="rangee-feed"></div>');
-  seances.forEach(s => liste.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0)));
-  el.appendChild(liste);
+  /* Sondage léger du bandeau « en direct » tant que le fil reste ouvert —
+     seule chose sur cet écran qui a vraiment besoin de bouger toute seule
+     (LiveSessions.friendsLive, sondé toutes les 20 s côté natif). */
+  async function sonder() {
+    if (!document.body.contains(el)) return;
+    const frais = await amisEnDirect(moi.id).catch(() => []);
+    if (!document.body.contains(el)) return;
+    dessinerDirect(zoneDirect, frais);
+    setTimeout(sonder, 20000);
+  }
+  setTimeout(sonder, 20000);
 
   render(el);
+}
+
+/** LiveBanner (SocialScreens.kt) : un point orange, le pseudo, la séance/
+ *  l'exercice en cours, « Regarder › ». Tout en haut du fil, avant les
+ *  cartes — visible même si le fil lui-même est vide. */
+function dessinerDirect(zone, direct) {
+  zone.replaceChildren();
+  if (!direct.length) return;
+  zone.appendChild(h('<p class="fil-direct-titre">En direct</p>'));
+  direct.forEach(l => {
+    const meta = [l.workout_name || 'Séance', l.current_exercise].filter(Boolean).join(' · ');
+    zone.appendChild(h(`
+      <a class="fil-direct-ligne" href="#/direct/${esc(l.user_id)}">
+        <span class="fil-direct-point"></span>
+        <span class="fil-direct-corps"><b>${esc(l.username)}</b><span>${esc(meta)}</span></span>
+        <span class="fil-direct-regarder">Regarder ›</span>
+      </a>`));
+  });
 }
 
 /** FeedCard (SocialScreens.kt) : avatar + pastille catégorie + auteur, titre,

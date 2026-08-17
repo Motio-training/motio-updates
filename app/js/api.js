@@ -487,8 +487,10 @@ export async function groupSendWorkout(groupId, moiId, name, code) {
    {w,r,t,rir?}) puisque c'est ce que lit déjà partage.js/le fil Android.
    ========================================================================== */
 
-export async function finishSession(userId, session) {
-  const details = session.exercises
+/** Même format compact pour finishSession ET le battement de la séance en
+ *  direct (LiveSessions.heartbeat) : n = nom, s = séries {w,r,t,rir?}. */
+function detailsCompact(exercises) {
+  return exercises
     .filter(e => e.sets.length)
     .map(e => ({
       n: e.name,
@@ -498,6 +500,10 @@ export async function finishSession(userId, session) {
         return o;
       })
     }));
+}
+
+export async function finishSession(userId, session) {
+  const details = detailsCompact(session.exercises);
   const row = {
     user_id: userId,
     local_id: session.uid,
@@ -512,4 +518,65 @@ export async function finishSession(userId, session) {
     details
   };
   return unwrap(await sb.from(T.sharedSessions).upsert(row, { onConflict: 'user_id,local_id' }).select().single());
+}
+
+/* ==========================================================================
+   Suivi en direct — LiveSessions (Social.kt) : une ligne par utilisateur dans
+   live_sessions, remplacée (jamais mise à jour partiellement) au lancement
+   d'une séance, patchée toutes les ~15 s pendant qu'elle tourne, effacée à
+   la fin (normale ou abandon). La RLS filtre déjà la lecture à « moi-même
+   + les gens que je suis » (is_following) : pas de filtre à ajouter ici.
+   Pas de temps réel : sondage pendant que l'écran concerné reste ouvert,
+   même logique que Messages.
+   ========================================================================== */
+
+const LIVE_FRAIS_MS = 90_000;
+const LIVE_COLS = 'user_id,workout_name,category,current_exercise,set_count,started_at,updated_at';
+
+function fraiche(row) { return Date.now() - new Date(row.updated_at).getTime() < LIVE_FRAIS_MS; }
+
+/** LiveSessions.start : purge puis vrai INSERT (jamais un upsert) — une ligne
+ *  fantôme laissée par un onglet fermé sans passer par arreterDirect() ne
+ *  doit pas survivre à la séance suivante. */
+export async function demarrerDirect(userId, workoutName, category) {
+  await sb.from(T.liveSessions).delete().eq('user_id', userId);
+  const { error } = await sb.from(T.liveSessions)
+    .insert({ user_id: userId, workout_name: workoutName, category });
+  if (error) throw error;
+}
+
+/** LiveSessions.heartbeat : exercice en cours, séries faites, et le détail
+ *  complet (mêmes clés compactes que finishSession) pour que l'écran de
+ *  suivi d'un ami affiche la séance en entier. */
+export async function battementDirect(userId, session, exerciseIndex) {
+  const { error } = await sb.from(T.liveSessions).update({
+    current_exercise: session.exercises[exerciseIndex]?.name || '',
+    set_count: session.exercises.reduce((t, e) => t + e.sets.length, 0),
+    exercise_index: exerciseIndex,
+    details: detailsCompact(session.exercises),
+    updated_at: new Date().toISOString()
+  }).eq('user_id', userId);
+  if (error) throw error;
+}
+
+/** LiveSessions.stop : fin normale ou abandon, la ligne doit disparaître dans les deux cas. */
+export async function arreterDirect(userId) {
+  await sb.from(T.liveSessions).delete().eq('user_id', userId);
+}
+
+/** LiveSessions.friendsLive : séances en direct des gens que je suis. */
+export async function amisEnDirect(moiId) {
+  const rows = unwrap(await sb.from(T.liveSessions).select(LIVE_COLS).neq('user_id', moiId));
+  const fraiches = rows.filter(fraiche);
+  if (!fraiches.length) return [];
+  const noms = await usernamesFor(fraiches.map(r => r.user_id));
+  return fraiches.map(r => ({ ...r, username: noms[r.user_id] || '?' }));
+}
+
+/** LiveSessions.liveFor : la séance en direct d'un utilisateur précis, avec le détail complet. */
+export async function directDe(userId) {
+  const row = unwrap(await sb.from(T.liveSessions)
+    .select(`${LIVE_COLS},details,exercise_index`).eq('user_id', userId).maybeSingle());
+  if (!row || !fraiche(row)) return null;
+  return row;
 }

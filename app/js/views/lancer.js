@@ -21,7 +21,8 @@
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
-import { getWorkout, saveWorkout, finishSession, sessionsOf } from '../api.js';
+import { getWorkout, saveWorkout, finishSession, sessionsOf,
+         demarrerDirect, battementDirect, arreterDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { libelleRir, kg, dureeSeance, estime1RM } from '../model.js';
 import { devineMateriel } from '../catalog.js';
@@ -545,7 +546,12 @@ export async function vueLancerSeance(params) {
   function ouvrirFin(depuisDernierExo = false) {
     if (termine) return;
     const fait = session.exercises.some(e => e.sets.length);
-    if (!fait) { location.hash = '#/seances'; return; }
+    if (!fait) {
+      termine = true;
+      arreterDirect(moi.id).catch(() => {});
+      location.hash = '#/seances';
+      return;
+    }
 
     const nbSeries = session.exercises.reduce((t, e) => t + e.sets.length, 0);
     const modale = h(`
@@ -562,7 +568,11 @@ export async function vueLancerSeance(params) {
       </div>`);
     modale.querySelector('[data-avec-bilan]').onclick = () => { modale.remove(); ouvrirRessenti(); };
     modale.querySelector('[data-sans-enregistrer]').onclick = () => {
-      if (confirm('Quitter sans enregistrer cette séance ?')) location.hash = '#/seances';
+      if (confirm('Quitter sans enregistrer cette séance ?')) {
+        termine = true;
+        arreterDirect(moi.id).catch(() => {});
+        location.hash = '#/seances';
+      }
     };
     modale.querySelector('[data-annuler]').onclick = () => modale.remove();
     document.body.appendChild(modale);
@@ -609,6 +619,7 @@ export async function vueLancerSeance(params) {
     termine = true;
     engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
     session.endedAt = Date.now();
+    arreterDirect(moi.id).catch(() => {});
 
     enregistrement = true;
     render(loading('Enregistrement de la séance'));
@@ -633,6 +644,23 @@ export async function vueLancerSeance(params) {
 
   dessinerExercice();
   render(el);
+
+  /* Suivi en direct (LiveSessions, Social.kt) : annonce le début UNE SEULE
+     fois, puis publie l'avancement toutes les ~15 s tant que cet écran reste
+     affiché — un sondage de présence, pas un fil en temps réel. Best-effort
+     partout : une panne réseau ici ne doit jamais interrompre la séance. */
+  demarrerDirect(moi.id, modele.name, modele.category).catch(() => {});
+  const battementId = setInterval(() => {
+    if (termine || !document.body.contains(el)) {
+      clearInterval(battementId);
+      // Écran quitté sans passer par finaliser()/« Quitter sans
+      // enregistrer » (changement de route en cours de route) : la ligne
+      // doit quand même disparaître, pas traîner jusqu'à sa péremption.
+      if (!termine) arreterDirect(moi.id).catch(() => {});
+      return;
+    }
+    battementDirect(moi.id, session, exIndex).catch(() => {});
+  }, 15000);
 }
 
 /** trimNum (TrainingScreens.kt) : nombre sans « kg », décimale seulement si besoin. */

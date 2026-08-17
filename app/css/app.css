@@ -1244,3 +1244,49 @@ body:not(.connecte) #vue:has(.onb){
   background:color-mix(in srgb, var(--dore) 16%, transparent);
   color:var(--dore);font-weight:700;font-size:.85rem;
 }
+
+/* ==========================================================================
+   Suivi en direct — LiveBanner (fil) et LiveSessionScreen (écran dédié)
+   ========================================================================== */
+
+.fil-direct-titre{
+  margin:1.2rem 0 .5rem;font-family:var(--f-mono);font-size:.72rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);
+}
+.fil-direct-ligne{
+  display:flex;align-items:center;gap:.7rem;width:100%;text-align:left;
+  padding:.7rem .9rem;margin-bottom:.5rem;background:var(--carte);border:1px solid var(--trait);
+  border-radius:var(--r-m);cursor:pointer;font:inherit;color:inherit;text-decoration:none;
+}
+.fil-direct-point{width:8px;height:8px;border-radius:50%;background:var(--accent2);flex:none}
+.fil-direct-corps{flex:1;min-width:0}
+.fil-direct-corps b{display:block;font-size:.92rem;color:var(--encre)}
+.fil-direct-corps span{
+  display:block;font-size:.76rem;color:var(--encre-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.fil-direct-regarder{color:var(--accent);font-weight:700;font-size:.76rem;flex:none}
+
+.profil-direct{
+  display:flex;align-items:center;gap:.4rem;margin:.4rem 0 0;
+  color:var(--accent2);font-weight:700;font-size:.8rem;text-decoration:none;
+}
+.profil-direct .fil-direct-point{width:7px;height:7px}
+
+.direct-carte{
+  padding:1rem 1.1rem;background:var(--carte);border:1px solid var(--trait);
+  border-radius:var(--r-l);margin-top:1.2rem;
+}
+.direct-entete{display:flex;align-items:center;gap:.5rem}
+.direct-label{
+  font-family:var(--f-mono);font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--accent2);
+}
+.direct-depuis{margin-left:auto;font-size:.72rem;color:var(--encre-2)}
+.direct-titre{margin:.5rem 0 0;font-family:var(--f-display);font-weight:700;font-size:1.1rem;color:var(--encre)}
+.direct-exo{margin-top:.9rem}
+.direct-exo-nom{margin:0 0 .3rem;font-weight:700;font-size:.9rem;color:var(--encre)}
+.direct-exo-nom.courant{color:var(--accent)}
+.direct-exo-meta{margin:.5rem 0 0;color:var(--encre-2);font-size:.85rem}
+.direct-series{list-style:none;margin:0;padding:0;font-family:var(--f-mono);font-size:.8rem;color:var(--encre-2)}
+.direct-series li{padding:.1rem 0}
+.direct-en-cours{color:var(--accent);font-weight:700}
