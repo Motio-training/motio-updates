@@ -6,7 +6,8 @@
 
 import { h, render, loading, empty, failure, esc, toast, dateCourte, socialHeader } from '../ui.js';
 import { conversations, messageThread, sendText, sendWorkoutMessage,
-         markThreadRead, listWorkouts, usernamesFor } from '../api.js';
+         markThreadRead, listWorkouts, usernamesFor,
+         reactionsFor, toggleReaction, REACTION_EMOJIS } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
 import { saveWorkout } from '../api.js';
@@ -48,10 +49,11 @@ export async function vueMessageThread(params) {
   const moi = await currentUser();
   const friendId = params.id;
 
-  let messages, noms;
+  let messages, noms, reactions;
   try {
     messages = await messageThread(moi.id, friendId);
     noms = await usernamesFor([friendId]);
+    reactions = await reactionsFor(messages.map(m => m.id), moi.id);
   } catch (e) { return render(failure(e, "La conversation n'a pas pu être chargée")); }
 
   const aLire = messages.filter(m => m.recipient_id === moi.id && !m.read_at).map(m => m.id);
@@ -95,6 +97,62 @@ export async function vueMessageThread(params) {
       b.appendChild(h(`<p>${esc(m.body)}</p>`));
     }
     fil.appendChild(li);
+
+    /* Réactions déjà posées (Messages.reactionsFor) : badges pilule sous la
+       bulle, retaper la sienne la retire (toggleReaction). */
+    const agg = reactions[m.id];
+    if (agg && Object.keys(agg.counts).length) {
+      const rangee = h(`<div class="reac-rangee ${mine ? 'mine' : ''}"></div>`);
+      for (const [emoji, count] of Object.entries(agg.counts)) {
+        const pilule = h(`<button type="button" class="reac-pilule ${agg.mine.has(emoji) ? 'mine' : ''}">${emoji} ${count}</button>`);
+        pilule.onclick = () => reagir(m.id, emoji);
+        rangee.appendChild(pilule);
+      }
+      li.appendChild(rangee);
+    }
+
+    /* Appui long (souris ET tactile — pointerdown/pointerup, même motif que
+       le glissement de correction de série) : ouvre le sélecteur d'emoji
+       (onLongClick natif, ChatScreens.kt). */
+    let pressTimer = null;
+    const annuler = () => { clearTimeout(pressTimer); pressTimer = null; };
+    b.addEventListener('pointerdown', () => {
+      pressTimer = setTimeout(() => { pressTimer = null; ouvrirReactions(m.id); }, 450);
+    });
+    b.addEventListener('pointerup', annuler);
+    b.addEventListener('pointerleave', annuler);
+    b.addEventListener('pointercancel', annuler);
+    b.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  async function reagir(messageId, emoji) {
+    try {
+      await toggleReaction(messageId, moi.id, emoji);
+      reactions = await reactionsFor(messages.map(m => m.id), moi.id);
+      redessiner();
+    } catch (err) { toast(err.message); }
+  }
+
+  /** Sélecteur d'emoji (AlertDialog "Réagir", ChatScreens.kt). */
+  function ouvrirReactions(messageId) {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Réagir">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete" style="justify-content:center"><h2>Réagir</h2></div>
+          <div class="reac-choix" data-choix></div>
+          <button class="lien-inline menu-action-annuler" data-fermer type="button">Annuler</button>
+        </div>
+      </div>`);
+    const zone = modale.querySelector('[data-choix]');
+    REACTION_EMOJIS.forEach((e) => {
+      const btn = h(`<button type="button" class="reac-emoji">${e}</button>`);
+      btn.onclick = () => { modale.remove(); reagir(messageId, e); };
+      zone.appendChild(btn);
+    });
+    const fermer = () => modale.remove();
+    modale.querySelector('[data-fermer]').onclick = fermer;
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    document.body.appendChild(modale);
   }
 
   function redessiner() {
@@ -133,12 +191,21 @@ export async function vueMessageThread(params) {
   redessiner();
   render(el);
 
-  /* Sondage léger tant que l'écran reste ouvert — coupé au changement de vue. */
+  /* Sondage léger tant que l'écran reste ouvert — coupé au changement de vue.
+     Compare aussi les réactions (pas seulement le nombre de messages) : une
+     réaction posée par l'ami en face doit remonter sans recharger la page. */
+  function signatureReactions(r) {
+    return JSON.stringify(Object.keys(r).sort().map(id =>
+      [id, r[id].counts, [...r[id].mine].sort()]));
+  }
   const intervalle = setInterval(async () => {
     if (!document.body.contains(el)) { clearInterval(intervalle); return; }
     try {
       const fraiches = await messageThread(moi.id, friendId);
-      if (fraiches.length !== messages.length) { messages = fraiches; redessiner(); }
+      const fraichReac = await reactionsFor(fraiches.map(m => m.id), moi.id);
+      if (fraiches.length !== messages.length || signatureReactions(fraichReac) !== signatureReactions(reactions)) {
+        messages = fraiches; reactions = fraichReac; redessiner();
+      }
     } catch { /* pas grave, on retentera au prochain passage */ }
   }, 8000);
 }

@@ -46,6 +46,19 @@ export async function setUsername(userId, username) {
     .update({ username: clean }).eq('id', userId).select().single());
 }
 
+/** Account.uploadAvatar (Account.kt) : même bucket, même chemin
+ *  <userId>/avatar.jpg (un seul fichier par compte, écrasé — la policy
+ *  Storage exige que le 1er segment du chemin soit l'uid), même suffixe
+ *  ?v=timestamp pour casser le cache du navigateur sur la nouvelle photo. */
+export async function uploadAvatar(userId, blob) {
+  const path = `${userId}/avatar.jpg`;
+  const up = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+  if (up.error) throw up.error;
+  const { data } = sb.storage.from('avatars').getPublicUrl(path);
+  const url = `${data.publicUrl}?v=${Date.now()}`;
+  return unwrap(await sb.from(T.profiles).update({ avatar_url: url }).eq('id', userId).select().single());
+}
+
 /** delete_my_account (RPC SECURITY DEFINER) : efface profil, abonnements et
  *  séances envoyées au serveur. Le carnet local (natif) n'est pas concerné —
  *  côté web il n'y a pas de copie locale distincte à effacer en plus. */
@@ -349,6 +362,38 @@ export async function markThreadRead(messageIds) {
   for (const id of messageIds) {
     try { await sb.rpc('mark_message_read', { mid: id }); } catch { /* pas bloquant */ }
   }
+}
+
+/** REACTION_EMOJIS (Social.kt) : les six émojis proposés à l'appui long. */
+export const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+/** Messages.reactionsFor (Social.kt) : une requête pour tout un fil plutôt
+ *  qu'une par message. Renvoie { [messageId]: { counts: {emoji:n}, mine: Set } }. */
+export async function reactionsFor(messageIds, moiId) {
+  if (!messageIds.length) return {};
+  const rows = unwrap(await sb.from(T.messageReactions)
+    .select('message_id,user_id,emoji').in('message_id', messageIds));
+  const out = {};
+  for (const r of rows) {
+    const agg = out[r.message_id] || (out[r.message_id] = { counts: {}, mine: new Set() });
+    agg.counts[r.emoji] = (agg.counts[r.emoji] || 0) + 1;
+    if (r.user_id === moiId) agg.mine.add(r.emoji);
+  }
+  return out;
+}
+
+/** Messages.toggleReaction (Social.kt) : pose ou retire MA réaction — retaper
+ *  le même emoji la retire. Pas d'upsert atomique côté natif non plus, on
+ *  reproduit le même SELECT-puis-DELETE/INSERT. */
+export async function toggleReaction(messageId, moiId, emoji) {
+  const existe = unwrap(await sb.from(T.messageReactions).select('message_id')
+    .eq('message_id', messageId).eq('user_id', moiId).eq('emoji', emoji));
+  if (existe.length) {
+    return unwrap(await sb.from(T.messageReactions).delete()
+      .eq('message_id', messageId).eq('user_id', moiId).eq('emoji', emoji).select());
+  }
+  return unwrap(await sb.from(T.messageReactions)
+    .insert({ message_id: messageId, user_id: moiId, emoji }).select());
 }
 
 /* ==========================================================================

@@ -1,7 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
-         listWorkouts, saveWorkout, listPrograms, saveProgram } from '../api.js';
+         listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -51,9 +51,17 @@ export async function vueProfil(params) {
   const starsTot = trophyStats ? trophyStats.trophies.reduce((t, x) => t + x.levels.length, 0) : 0;
 
   const initiale = (profil.username || '?')[0].toUpperCase();
-  const avatarHtml = profil.avatar_url
+  const avatarInner = profil.avatar_url
     ? `<img class="profil-avatar" src="${esc(profil.avatar_url)}" alt="">`
     : `<span class="profil-avatar">${esc(initiale)}</span>`;
+  /* IdentityHeader (Profile.kt ~487-499) : l'avatar n'est cliquable que sur
+     son propre profil, jamais sur celui d'un ami. */
+  const avatarHtml = estMoi
+    ? `<button type="button" class="profil-avatar-bouton" data-avatar-bouton aria-label="Changer la photo de profil">
+        ${avatarInner}<span class="profil-avatar-crayon">✎</span>
+        <input type="file" accept="image/*" data-avatar-fichier hidden>
+      </button>`
+    : avatarInner;
 
   const el = h(`
     <section class="page">
@@ -163,6 +171,32 @@ export async function vueProfil(params) {
     });
   }
 
+  /* Avatar (IdentityHeader, Profile.kt ~430-596) : sélection puis recadrage
+     carré CENTRÉ automatique en 512×512 JPEG q85 — le natif propose un
+     recadrage interactif (com.canhub.cropper, ratio 1:1 ovale ajustable),
+     écart assumé côté web faute d'équivalent portable simple ; le résultat
+     final (carré centré, même taille, même compression) est identique. */
+  const boutonAvatar = el.querySelector('[data-avatar-bouton]');
+  if (boutonAvatar) {
+    const champFichier = boutonAvatar.querySelector('[data-avatar-fichier]');
+    boutonAvatar.addEventListener('click', (e) => { e.preventDefault(); champFichier.click(); });
+    champFichier.addEventListener('change', async () => {
+      const fichier = champFichier.files?.[0];
+      champFichier.value = '';
+      if (!fichier) return;
+      boutonAvatar.classList.add('charge');
+      try {
+        const blob = await recadrerAvatar(fichier);
+        const nouveauProfil = await uploadAvatar(moi.id, blob);
+        boutonAvatar.querySelector('.profil-avatar')?.remove();
+        boutonAvatar.insertAdjacentHTML('afterbegin',
+          `<img class="profil-avatar" src="${esc(nouveauProfil.avatar_url)}" alt="">`);
+        toast('Photo de profil mise à jour ✓');
+      } catch (err) { toast(err.message || "L'envoi de la photo a échoué."); }
+      finally { boutonAvatar.classList.remove('charge'); }
+    });
+  }
+
   /* records / séances : uniquement sur le profil d'un ami — le mien vit
      maintenant dans « Analyse et records » (#/profil/analyse). */
   const zoneRec = el.querySelector('[data-records]');
@@ -206,7 +240,11 @@ export async function vueProfil(params) {
   const btnSuivre = el.querySelector('[data-suivre]');
   if (btnSuivre) {
     let suivi = jeSuis;
-    btnSuivre.onclick = async () => {
+    btnSuivre.onclick = () => {
+      if (!suivi) { toggleSuivi(); return; }
+      confirmerNePlusSuivre(profil.username || 'cet utilisateur', toggleSuivi);
+    };
+    async function toggleSuivi() {
       btnSuivre.disabled = true;
       try {
         if (suivi) { await unfollow(moi.id, cible); suivi = false; }
@@ -214,7 +252,7 @@ export async function vueProfil(params) {
         btnSuivre.textContent = suivi ? 'Ne plus suivre' : 'Suivre';
       } catch (err) { toast(err.message); }
       finally { btnSuivre.disabled = false; }
-    };
+    }
   }
 
   el.querySelector('[data-tuto]')?.addEventListener('click', () => {
@@ -234,6 +272,22 @@ function enTete(titre) {
   return `
     <p class="eyebrow"><a class="lien-inline" href="#/profil">‹ Profil</a></p>
     <h1>${esc(titre)}</h1>`;
+}
+
+/** prepareAvatarBytes (Profile.kt ~549-596) : recadrage carré CENTRÉ puis
+ *  redimensionnement à 512×512, JPEG q85. `createImageBitmap` avec
+ *  `imageOrientation:'from-image'` gère la rotation EXIF à notre place —
+ *  le natif la corrige à la main (rotateIfNeeded), ce n'est pas nécessaire
+ *  ici. */
+async function recadrerAvatar(file) {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const cote = Math.min(bitmap.width, bitmap.height);
+  const sx = (bitmap.width - cote) / 2, sy = (bitmap.height - cote) / 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  canvas.getContext('2d').drawImage(bitmap, sx, sy, cote, cote, 0, 0, 512, 512);
+  return new Promise((resolve, reject) => canvas.toBlob(
+    (blob) => blob ? resolve(blob) : reject(new Error('Image illisible.')), 'image/jpeg', 0.85));
 }
 
 /** Analyse et records (StatsScreens.kt) : répartition musculaire de la
@@ -621,7 +675,7 @@ function lignePersonne(p, moi, suivi0) {
       <button class="btn btn-sm ${suivi ? 'btn-ghost' : ''}">${suivi ? 'Ne plus suivre' : 'Suivre'}</button>
     </li>`);
   const b = li.querySelector('button');
-  b.onclick = async () => {
+  async function toggleSuivi() {
     b.disabled = true;
     try {
       if (suivi) { await unfollow(moi.id, p.id); suivi = false; }
@@ -630,6 +684,31 @@ function lignePersonne(p, moi, suivi0) {
       b.classList.toggle('btn-ghost', suivi);
     } catch (err) { toast(err.message); }
     finally { b.disabled = false; }
+  }
+  b.onclick = () => {
+    if (!suivi) { toggleSuivi(); return; }
+    confirmerNePlusSuivre(p.username || 'sans pseudo', toggleSuivi);
   };
   return li;
+}
+
+/** PersonRow (SocialScreens.kt ~636-658) : demande confirmation avant de se
+ *  désabonner (jamais avant de suivre) — texte natif repris mot pour mot. */
+function confirmerNePlusSuivre(username, onConfirme) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="Ne plus suivre">
+      <div class="modale-boite modale-boite-etroite">
+        <div class="modale-tete" style="justify-content:center"><h2>Ne plus suivre ${esc(username)} ?</h2></div>
+        <p class="etat-mono">Tu ne verras plus ses séances dans ton fil ni ses séances en direct.</p>
+        <div class="modale-pied" style="justify-content:center;gap:1.2rem">
+          <button class="lien-inline" data-annuler type="button">Annuler</button>
+          <button class="lien-inline" data-confirmer type="button" style="color:var(--accent2);font-weight:700">Ne plus suivre</button>
+        </div>
+      </div>
+    </div>`);
+  const fermer = () => modale.remove();
+  modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+  modale.querySelector('[data-annuler]').onclick = fermer;
+  modale.querySelector('[data-confirmer]').onclick = () => { fermer(); onConfirme(); };
+  document.body.appendChild(modale);
 }

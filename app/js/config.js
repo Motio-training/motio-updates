@@ -28,6 +28,7 @@ export const CONFIG = {
     workouts: 'synced_workouts',
     programs: 'synced_programs',
     messages: 'messages',
+    messageReactions: 'message_reactions',
     groups: 'groups',
     groupMembers: 'group_members',
     groupMessages: 'group_messages',
