@@ -1,6 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
-         searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe } from '../api.js';
+         searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
+         listWorkouts, saveWorkout, listPrograms, saveProgram } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -8,6 +9,8 @@ import { reset as reinitialiserOnboarding } from './onboarding.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, drawLegend, MuscleScale } from '../muscle-map.js';
 import { CHANGELOG } from '../changelog.js';
+import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, definirObjectif } from '../reglages.js';
+import { buildBackupJson, parseBackupJson } from '../backup.js';
 
 export async function vueProfil(params) {
   render(loading('Chargement du profil'));
@@ -300,12 +303,10 @@ export async function vueProfilAnalyse() {
   render(el);
 }
 
-/** Compte et données (AccountScreens.kt) : identité, pseudo, déconnexion,
- *  suppression du compte. Écarts assumés face au natif : pas de copie sur
- *  fichier (le carnet web n'existe que dans Supabase, il n'y a rien de
- *  local à sauvegarder en plus), pas de niveau/objectif d'entraînement ni
- *  de notification « ami en direct » (réglages locaux/FCM, sans équivalent
- *  web pour l'instant). */
+/** Compte et données (AccountScreens.kt) : identité, pseudo, niveau/objectif
+ *  d'entraînement, copie sur fichier, déconnexion, suppression du compte.
+ *  Écart assumé face au natif : pas de notification « ami en direct »
+ *  (réglage FCM local, sans équivalent web). */
 export async function vueProfilCompte() {
   render(loading('Chargement'));
   const moi = await currentUser();
@@ -325,11 +326,88 @@ export async function vueProfilCompte() {
         </div>
       </div>
 
+      <div class="bloc">
+        <p class="bloc-titre">Mon profil d'entraînement</p>
+        <p class="etat-mono">Sert à proposer un plan et des charges de départ adaptés.</p>
+        <p class="champ-label" style="margin-top:.8rem">Niveau</p>
+        <div class="rangee rangee-serree" data-niveaux style="margin-bottom:.7rem"></div>
+        <p class="champ-label">Objectif</p>
+        <div class="rangee rangee-serree" data-objectifs></div>
+      </div>
+
+      <div class="bloc">
+        <p class="bloc-titre">Copie sur fichier</p>
+        <p class="etat-mono">Exporte tes séances et programmes dans un fichier — garde-le où tu
+          veux — et réimporte-le pour les retrouver. Utile aussi pour transférer des séances
+          vers ou depuis l'application Android.</p>
+        <div style="display:flex;gap:.6rem;margin-top:.8rem">
+          <button class="btn btn-ghost" data-exporter type="button" style="flex:1">Exporter</button>
+          <button class="btn btn-ghost" data-importer type="button" style="flex:1">Importer</button>
+        </div>
+        <input type="file" accept="application/json" data-fichier hidden>
+        <p class="etat-mono" data-msg-fichier style="margin-top:.6rem;color:var(--accent)"></p>
+      </div>
+
       <div class="bloc" style="display:flex;gap:.6rem">
         <button class="btn btn-ghost" data-deconnexion type="button" style="flex:1">Se déconnecter</button>
         <button class="btn btn-ghost" data-supprimer type="button" style="flex:1;color:var(--accent2);border-color:var(--accent2)">Supprimer</button>
       </div>
     </section>`);
+
+  /* Niveau/objectif : chips à sélection immédiate, comme PresetChip natif —
+     pas de bouton « valider », chaque appui persiste tout de suite. */
+  function dessinerChips(zone, options, actuel, definir) {
+    zone.replaceChildren();
+    options.forEach(([id, label]) => {
+      const b = h(`<button class="chip-cat ${id === actuel ? 'on' : ''}" type="button">${esc(label)}</button>`);
+      b.onclick = () => { definir(id); dessinerChips(zone, options, id, definir); };
+      zone.appendChild(b);
+    });
+  }
+  dessinerChips(el.querySelector('[data-niveaux]'), NIVEAUX, niveauActuel(), definirNiveau);
+  dessinerChips(el.querySelector('[data-objectifs]'), OBJECTIFS, objectifActuel(), definirObjectif);
+
+  /* Copie sur fichier : Profile.kt::buildBackupJson/restoreBackupJson, mais
+     import/export du compte cloud (pas de stockage local séparé côté web) —
+     voir backup.js. */
+  const msgFichier = el.querySelector('[data-msg-fichier]');
+  el.querySelector('[data-exporter]').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      const [workouts, programs] = await Promise.all([listWorkouts(moi.id), listPrograms(moi.id)]);
+      const json = buildBackupJson({
+        workouts: workouts.map(w => w.data), programs: programs.map(p => p.data),
+        trainingLevel: niveauActuel(), trainingGoal: objectifActuel()
+      });
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'motio-sauvegarde.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      msgFichier.textContent = 'Sauvegarde exportée ✓';
+    } catch (err) { toast(err.message || "L'export a échoué."); }
+    finally { e.target.disabled = false; }
+  };
+
+  const champFichier = el.querySelector('[data-fichier]');
+  el.querySelector('[data-importer]').onclick = () => champFichier.click();
+  champFichier.addEventListener('change', async () => {
+    const fichier = champFichier.files?.[0];
+    champFichier.value = '';
+    if (!fichier) return;
+    try {
+      const texte = await fichier.text();
+      const sauvegarde = parseBackupJson(texte);
+      if (!sauvegarde) { msgFichier.style.color = 'var(--accent2)'; msgFichier.textContent = 'Fichier illisible'; return; }
+      for (const w of sauvegarde.workouts) await saveWorkout(moi.id, w);
+      for (const p of sauvegarde.programs) await saveProgram(moi.id, p);
+      if (sauvegarde.trainingLevel) { definirNiveau(sauvegarde.trainingLevel); dessinerChips(el.querySelector('[data-niveaux]'), NIVEAUX, sauvegarde.trainingLevel, definirNiveau); }
+      if (sauvegarde.trainingGoal) { definirObjectif(sauvegarde.trainingGoal); dessinerChips(el.querySelector('[data-objectifs]'), OBJECTIFS, sauvegarde.trainingGoal, definirObjectif); }
+      msgFichier.style.color = 'var(--accent)';
+      msgFichier.textContent = `${sauvegarde.workouts.length} séance${sauvegarde.workouts.length > 1 ? 's' : ''} et ${sauvegarde.programs.length} programme${sauvegarde.programs.length > 1 ? 's' : ''} importés ✓`;
+    } catch (err) { toast(err.message || "L'import a échoué."); }
+  });
 
   el.querySelector('[data-pseudo]').onclick = () => {
     const modale = h(`

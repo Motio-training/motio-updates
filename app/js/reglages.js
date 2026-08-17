@@ -10,12 +10,19 @@
    Bips : SoundSettings.kt, sous-ensemble « Sifflet » seulement — le profil
    « Enregistrement (Canard) » est un fichier audio embarqué dans l'appli,
    sans équivalent portable ici.
+
+   Niveau/objectif d'entraînement : Profile.kt::trainingLevel/trainingGoal —
+   « uniquement local — pas montré aux amis, pas de synchro cloud nécessaire »
+   dit le commentaire natif, donc localStorage est exactement l'équivalent web
+   des SharedPreferences natives (par appareil, pas par compte).
    ========================================================================== */
 
 import { h } from './ui.js';
 
 const CLE_THEME = 'motio_theme';       // 'sombre' | 'clair' | 'systeme'
 const CLE_BIPS = 'motio_bips';         // JSON {freq,trill,volume,startFreq,startTrill,startVolume}
+const CLE_NIVEAU = 'motio_niveau';     // Level.name (ProgramModel.kt)
+const CLE_OBJECTIF = 'motio_objectif'; // Goal.name (ProgramModel.kt), PERSONNALISE exclue (réservée à l'IA)
 
 const BIPS_DEFAUT = {
   freq: 2750, trill: 43, volume: 1.0,
@@ -82,6 +89,28 @@ export function ouvrirTheme() {
   modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
   document.body.appendChild(modale);
 }
+
+/* ---------------------------------------------- niveau / objectif d'entraînement */
+
+export const NIVEAUX = [
+  ['DEBUTANT', 'Débutant'], ['INTERMEDIAIRE', 'Intermédiaire'], ['AVANCE', 'Avancé']
+];
+export const OBJECTIFS = [
+  ['MASSE', 'Prise de masse'], ['FORCE', 'Force'],
+  ['SECHE', 'Perte de gras'], ['FORME', 'Remise en forme']
+];
+
+export function niveauActuel() {
+  const v = localStorage.getItem(CLE_NIVEAU);
+  return NIVEAUX.some(([id]) => id === v) ? v : 'INTERMEDIAIRE';
+}
+export function definirNiveau(v) { localStorage.setItem(CLE_NIVEAU, v); }
+
+export function objectifActuel() {
+  const v = localStorage.getItem(CLE_OBJECTIF);
+  return OBJECTIFS.some(([id]) => id === v) ? v : 'MASSE';
+}
+export function definirObjectif(v) { localStorage.setItem(CLE_OBJECTIF, v); }
 
 /* ------------------------------------------------------------------- bips */
 

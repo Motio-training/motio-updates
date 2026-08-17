@@ -772,6 +772,14 @@ a.ligne-titre:hover{color:var(--accent)}
 .menu-action-ligne-danger{color:var(--accent2)}
 .menu-action-ligne-danger:hover{opacity:.8;color:var(--accent2)}
 .menu-action-annuler{display:block;margin:.9rem auto 0}
+.partage-aide{margin:.15rem 0 .6rem;color:var(--encre-2);font-size:.76rem;text-align:center}
+
+/* QR (Sharing.kt::QrDialog) : fond blanc FORCÉ — un QR sombre-sur-clair
+   inversé par le thème sombre du reste de la page ne se scanne plus. */
+.qr-surface{
+  background:#ffffff;border-radius:var(--r-m);padding:.6rem;margin:.4rem 0 .8rem;
+}
+.qr-canvas{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:calc(var(--r-m) - .3rem)}
 
 .cat-nom{
   font-family:var(--f-mono);font-size:.66rem;font-weight:500;

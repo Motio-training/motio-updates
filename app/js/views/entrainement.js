@@ -172,19 +172,7 @@ export async function vueSeances() {
       catch (err) { toast(err.message); w.pinned = !w.pinned; }
     };
 
-    modale.querySelector('[data-partager]').onclick = async () => {
-      fermer();
-      try {
-        const code = await encoderSeance(w);
-        const url = `${location.origin}${location.pathname}#/seances/importer/${code}`;
-        if (navigator.share) {
-          await navigator.share({ title: nom, text: `Découvre ma séance « ${nom} » sur Motio`, url });
-        } else {
-          await navigator.clipboard.writeText(url);
-          toast('Lien de la séance copié.');
-        }
-      } catch (err) { if (err.name !== 'AbortError') toast(err.message || 'Le partage a échoué.'); }
-    };
+    modale.querySelector('[data-partager]').onclick = () => { fermer(); ouvrirPartageSeance(w, nom); };
 
     modale.querySelector('[data-demarrer]').onclick = () => { fermer(); location.hash = `#/seances/${s.local_id}/lancer`; };
     modale.querySelector('[data-modifier]').onclick = () => { fermer(); location.hash = `#/seances/${s.local_id}`; };
@@ -201,6 +189,75 @@ export async function vueSeances() {
     };
 
     document.body.appendChild(modale);
+  }
+
+  /** Sous-menu de partage (TrainingScreens.kt ~575-603) : deux façons de
+   *  transmettre une séance, une seule idée — la personne en face n'a rien
+   *  à installer ni à saisir. */
+  function ouvrirPartageSeance(w, nom) {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Partager la séance">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete" style="justify-content:center"><h2>Partager la séance</h2></div>
+          <p class="menu-action-sous">${esc(nom)}</p>
+          <div class="menu-action-lignes">
+            <button class="menu-action-ligne" data-lien type="button">Envoyer un lien</button>
+            <p class="partage-aide">WhatsApp, SMS, e-mail… le lien importe la séance d'un appui.</p>
+            <button class="menu-action-ligne" data-qr type="button">Afficher le QR code</button>
+            <p class="partage-aide">À scanner sur place, avec l'appareil photo d'en face.</p>
+          </div>
+          <button class="lien-inline menu-action-annuler" data-fermer type="button">Fermer</button>
+        </div>
+      </div>`);
+    const fermer = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    modale.querySelector('[data-fermer]').onclick = fermer;
+    modale.querySelector('[data-lien]').onclick = async () => { fermer(); await envoyerLienSeance(w, nom); };
+    modale.querySelector('[data-qr]').onclick = async () => { fermer(); await ouvrirQrSeance(w, nom); };
+    document.body.appendChild(modale);
+  }
+
+  async function envoyerLienSeance(w, nom) {
+    try {
+      const code = await encoderSeance(w);
+      const url = `${location.origin}${location.pathname}#/seances/importer/${code}`;
+      if (navigator.share) {
+        await navigator.share({ title: nom, text: `Découvre ma séance « ${nom} » sur Motio`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast('Lien de la séance copié.');
+      }
+    } catch (err) { if (err.name !== 'AbortError') toast(err.message || 'Le partage a échoué.'); }
+  }
+
+  /** QrDialog (TrainingScreens.kt ~646-675) : fond forcé en blanc (le QR
+   *  doit rester lisible même en thème sombre), même lien que « Envoyer un
+   *  lien », juste encodé en image plutôt qu'envoyé par un canal externe. */
+  async function ouvrirQrSeance(w, nom) {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="QR code de la séance">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete" style="justify-content:center"><h2>${esc(nom)}</h2></div>
+          <div class="qr-surface" data-zone><canvas class="qr-canvas" data-canvas></canvas></div>
+          <p class="etat-mono">À scanner avec l'appareil photo de l'autre téléphone.</p>
+          <div class="modale-pied" style="justify-content:center"><button class="btn" data-fermer type="button">Fermer</button></div>
+        </div>
+      </div>`);
+    const fermer = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    modale.querySelector('[data-fermer]').onclick = fermer;
+    document.body.appendChild(modale);
+
+    try {
+      const code = await encoderSeance(w);
+      const url = `${location.origin}${location.pathname}#/seances/importer/${code}`;
+      const { dessinerQR } = await import('../qr.js');
+      const ok = await dessinerQR(modale.querySelector('[data-canvas]'), url, 900);
+      if (!ok) throw new Error('trop long');
+    } catch {
+      modale.querySelector('[data-zone]').replaceChildren(
+        h('<p class="etat-mono">Le QR code n\'a pas pu être créé pour cette séance.</p>'));
+    }
   }
 
   function dessinerListe() {
