@@ -625,3 +625,32 @@ export async function directDe(userId) {
   if (!row || !fraiche(row)) return null;
   return row;
 }
+
+/* ==========================================================================
+   Coach IA (Moti) — CoachStore (CoachChat.kt) : même table `coach_messages`
+   des deux côtés, sur demande explicite de Nicolas (« que cette conversation
+   se synchronise côté application et web »). L'espace web n'a pas de cache
+   local façon fichier natif : source de vérité = Supabase à chaque écran.
+   ========================================================================== */
+
+export async function coachThread(moiId) {
+  return unwrap(await sb.from(T.coachMessages)
+    .select('id,role,body,workout_data,created_at')
+    .eq('user_id', moiId).order('created_at', { ascending: true }));
+}
+
+/** id généré côté client (crypto.randomUUID) : même convention que le natif,
+ *  pour qu'un message garde le même identifiant quel que soit l'appareil qui
+ *  l'a envoyé. */
+export async function coachSendMessage(moiId, { id, role, body, workoutData = null, whenMs }) {
+  const row = {
+    id, user_id: moiId, role, body,
+    workout_data: workoutData,
+    created_at: new Date(whenMs).toISOString()
+  };
+  return unwrap(await sb.from(T.coachMessages).insert(row).select().single());
+}
+
+export async function coachClearThread(moiId) {
+  return unwrap(await sb.from(T.coachMessages).delete().eq('user_id', moiId).select());
+}

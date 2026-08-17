@@ -32,6 +32,7 @@ export const CONFIG = {
     groups: 'groups',
     groupMembers: 'group_members',
     groupMessages: 'group_messages',
-    liveSessions: 'live_sessions'
+    liveSessions: 'live_sessions',
+    coachMessages: 'coach_messages'
   }
 };

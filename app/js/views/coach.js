@@ -1,8 +1,13 @@
 /* ==========================================================================
    Coach IA (Moti) — même Edge Function `coach-chat` que l'app Android
    (CoachChat.kt) : {messages:[{role,content}], context: string} en entrée,
-   {reply, workout?} en sortie. Le fil de discussion est purement local
-   (localStorage), jamais stocké côté serveur, comme sur Android.
+   {reply, workout?} en sortie.
+
+   Le fil de discussion se synchronise maintenant avec l'appli (table
+   Supabase `coach_messages`, CoachStore.syncFromCloud côté natif) — demande
+   explicite de Nicolas. Pas de cache local façon fichier natif ici : la
+   table Supabase EST la source de vérité côté web, rechargée à chaque
+   ouverture de l'écran.
 
    Le contexte envoyé est plus modeste que côté natif (pas de programme actif
    ni de records ici : ces données ne vivent que dans le stockage local du
@@ -12,18 +17,20 @@
 
 import { h, render, esc, toast } from '../ui.js';
 import { sb, currentUser } from '../supabase.js';
-import { getProfile, sessionsOf } from '../api.js';
+import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread } from '../api.js';
 import { nouvelleSeance, MODE_LABELS } from '../model.js';
 import { saveWorkout } from '../api.js';
 
-const CLE = 'motio_coach_thread';
 const FENETRE = 12;
 
-function thread() {
-  try { return JSON.parse(localStorage.getItem(CLE) || '[]'); }
-  catch { return []; }
+/** coach_messages -> forme attendue par bulle()/redessiner() : role/text/
+ *  whenMs/workout (déjà le format brut de la proposition, workout_data). */
+function depuisLigne(r) {
+  return {
+    id: r.id, role: r.role, text: r.body,
+    whenMs: new Date(r.created_at).getTime(), workout: r.workout_data || null
+  };
 }
-function persister(msgs) { localStorage.setItem(CLE, JSON.stringify(msgs)); }
 
 function relDate(ms) {
   const jour = 86400000;
@@ -59,7 +66,9 @@ async function construireContexte(moi) {
 
 export async function vueCoach() {
   const moi = await currentUser();
-  let messages = thread();
+  let messages = [];
+  try { messages = (await coachThread(moi.id)).map(depuisLigne); }
+  catch (err) { toast(err.message || "L'historique n'a pas pu être chargé."); }
   let envoi = false;
 
   /* CoachScreen.kt ~112-129 : flèche retour, avatar Moti, « MOTI »/« Ton
@@ -181,8 +190,9 @@ export async function vueCoach() {
     const fermer = () => modale.remove();
     modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
     modale.querySelector('[data-annuler]').onclick = fermer;
-    modale.querySelector('[data-effacer]').onclick = () => {
-      fermer(); messages = []; persister(messages); redessiner();
+    modale.querySelector('[data-effacer]').onclick = async () => {
+      fermer(); messages = []; redessiner();
+      try { await coachClearThread(moi.id); } catch (err) { toast(err.message); }
     };
     document.body.appendChild(modale);
   };
@@ -193,13 +203,18 @@ export async function vueCoach() {
     if (!texte || envoi) return;
     envoi = true;
     champ.value = '';
-    messages = [...messages, { role: 'user', text: texte, whenMs: Date.now() }];
-    persister(messages); redessiner();
+    const messageUtilisateur = { id: crypto.randomUUID(), role: 'user', text: texte, whenMs: Date.now() };
+    messages = [...messages, messageUtilisateur];
+    redessiner();
 
     const attente = h(`<li class="coach-ligne"><div class="coach-bulle coach-attente">…</div></li>`);
     fil.appendChild(attente); fil.scrollTop = fil.scrollHeight;
 
     try {
+      await coachSendMessage(moi.id, {
+        id: messageUtilisateur.id, role: 'user', body: texte, whenMs: messageUtilisateur.whenMs
+      });
+
       const contexte = await construireContexte(moi);
       const history = messages.slice(-FENETRE).map(m => ({
         role: m.role === 'coach' ? 'assistant' : 'user', content: m.text
@@ -209,8 +224,16 @@ export async function vueCoach() {
       });
       if (error) throw error;
       if (!data?.reply) throw new Error('Réponse vide du coach.');
-      messages = [...messages, { role: 'coach', text: data.reply, whenMs: Date.now(), workout: data.workout || null }];
-      persister(messages);
+
+      const messageCoach = {
+        id: crypto.randomUUID(), role: 'coach', text: data.reply,
+        whenMs: Date.now(), workout: data.workout || null
+      };
+      messages = [...messages, messageCoach];
+      await coachSendMessage(moi.id, {
+        id: messageCoach.id, role: 'coach', body: messageCoach.text,
+        workoutData: messageCoach.workout, whenMs: messageCoach.whenMs
+      });
     } catch (err) {
       toast(err.message || "Le coach n'a pas répondu.");
     } finally {
