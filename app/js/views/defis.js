@@ -26,7 +26,7 @@ export async function vueDefis() {
   try { unread = await unreadMessagesCount(moi.id); } catch { /* pas bloquant */ }
 
   const el = h(`<section class="page"></section>`);
-  el.appendChild(socialHeader('Défis', 'defis', unread));
+  el.appendChild(socialHeader('Défis', 'defis', unread, () => vueDefis()));
 
   const zoneChips1 = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');
   const zoneChips2 = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');

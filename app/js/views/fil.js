@@ -34,7 +34,7 @@ export async function vueFil() {
   } catch (e) { return render(failure(e, "Le fil n'a pas pu être chargé")); }
 
   const el = h(`<section class="page"></section>`);
-  el.appendChild(socialHeader('Fil', 'fil', unread));
+  el.appendChild(socialHeader('Fil', 'fil', unread, () => vueFil()));
 
   const zoneDirect = h('<div></div>');
   el.appendChild(zoneDirect);

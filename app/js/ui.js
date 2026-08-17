@@ -101,15 +101,32 @@ const SOCIAL_TABS = [
   ['amis', 'Amis', '#/amis']
 ];
 
-export function socialHeader(titre, actif, unread = 0) {
+/** onActualiser (facultatif) : SocialRoot.refresh (SocialScreens.kt
+ *  ~108-116) — ici, simplement rejouer le chargement de l'écran courant
+ *  (chaque vue refait déjà son propre fetch au montage, donc « recharger
+ *  l'écran » revient au même effet visible que le refresh multi-ressources
+ *  natif). Le bouton se désactive et affiche « … » pendant l'appel. */
+export function socialHeader(titre, actif, unread = 0, onActualiser = null) {
   const chips = SOCIAL_TABS.map(([id, label, href]) => {
     const texte = id === 'messages' && unread ? `${label} (${unread})` : label;
     return `<a class="chip-cat social-tab ${id === actif ? 'on' : ''}" href="${href}">${esc(texte)}</a>`;
   }).join('');
-  return h(`
+  const el = h(`
     <div class="social-entete">
-      <p class="eyebrow">Social</p>
+      <div class="social-titre-rangee">
+        <p class="eyebrow" style="margin:0">Social</p>
+        ${onActualiser ? '<button class="lien-inline" data-actualiser type="button">Actualiser</button>' : ''}
+      </div>
       <h1>${esc(titre)}</h1>
       <div class="social-tabs">${chips}</div>
     </div>`);
+  if (onActualiser) {
+    const btn = el.querySelector('[data-actualiser]');
+    btn.onclick = async () => {
+      btn.disabled = true; btn.textContent = '…';
+      try { await onActualiser(); }
+      catch { btn.disabled = false; btn.textContent = 'Actualiser'; }
+    };
+  }
+  return el;
 }

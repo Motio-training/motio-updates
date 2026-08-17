@@ -672,7 +672,7 @@ export async function vueAmis() {
         <div data-abos></div>
       </div>
     </section>`);
-  el.insertBefore(socialHeader('Amis', 'amis', unread), el.firstChild);
+  el.insertBefore(socialHeader('Amis', 'amis', unread, () => vueAmis()), el.firstChild);
 
   const res = el.querySelector('[data-resultats]');
   let t;

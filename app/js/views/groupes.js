@@ -9,17 +9,18 @@
    RPC/tables que l'app.
    ========================================================================== */
 
-import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, socialHeader } from '../ui.js';
 import { currentUser } from '../supabase.js';
 import {
   groupsMine, groupsSearch, groupCreate, groupJoin, groupLeave, groupDelete,
   groupPreviewByCode, groupMembersList, groupRemoveMember, groupUpdateInfo, groupRegenerateCode,
   groupFeed, groupStandings, groupMessageThread, groupSendText, groupSendWorkout,
-  listWorkouts, unreadMessagesCount
+  listWorkouts, unreadMessagesCount, kudosFor, commentCounts
 } from '../api.js';
 import { kg } from '../model.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
 import { saveWorkout } from '../api.js';
+import { carteSeance } from './fil.js';
 
 /** Un code brut, un fragment « code=XXXX », ou un lien complet — mêmes trois
  *  formats acceptés que GroupScreens.kt (LINK_PREFIX/« code=»/brut). */
@@ -49,7 +50,7 @@ export async function vueGroupes() {
       <div class="rangee" style="margin-top:1rem">
         <label class="champ"><span>Rejoindre avec un code</span>
           <input type="text" data-code placeholder="ABCD1234"></label>
-        <button class="btn btn-ghost" data-rejoindre type="button">Rejoindre</button>
+        <button class="btn btn-ghost" data-rejoindre type="button">OK</button>
         <button class="btn btn-ghost" data-scanner type="button" hidden>📷 Scanner un QR code</button>
       </div>
 
@@ -59,7 +60,7 @@ export async function vueGroupes() {
 
       <div class="bloc" data-liste-groupes></div>
     </section>`);
-  el.insertBefore(socialHeader('Groupes', 'groupes', unread), el.firstChild);
+  el.insertBefore(socialHeader('Groupes', 'groupes', unread, () => vueGroupes()), el.firstChild);
 
   const zone = el.querySelector('[data-liste-groupes]');
   function dessinerListe() {
@@ -70,11 +71,15 @@ export async function vueGroupes() {
     }
     const ul = h('<ul class="liste"></ul>');
     for (const g of groupes) {
-      ul.appendChild(h(`
-        <li class="ligne ligne-action">
-          <a class="ligne-titre" href="#/groupes/${esc(g.id)}">${esc(g.name)}</a>
+      /* Toute la carte navigue — avant, seul le nom (dans un <a>) réagissait
+         au clic, le reste de la ligne (méta) ne faisait rien. */
+      const li = h(`
+        <li class="ligne ligne-action" style="cursor:pointer">
+          <span class="ligne-titre">${esc(g.name)}</span>
           <span class="ligne-meta">${g.memberCount} membre${g.memberCount > 1 ? 's' : ''}${g.mine ? ' · toi' : ''}</span>
-        </li>`));
+        </li>`);
+      li.onclick = () => { location.hash = `#/groupes/${g.id}`; };
+      ul.appendChild(li);
     }
     zone.appendChild(ul);
   }
@@ -291,14 +296,18 @@ export async function vueGroupeDetail(params) {
   let mode = 'fil';
   let periode = 30;
 
+  /* En-tête (GroupScreens.kt ~527-542) : pas de code affiché en clair sur
+     cet écran — seul « Inviter » (ShareGroupSheet) l'expose, encodé dans le
+     lien/QR. Avatar rond vide (pas de bannière côté web). */
   const el = h(`
     <section class="page groupe-detail">
-      <p class="eyebrow"><a class="lien-inline" href="#/groupes">‹ Groupes</a></p>
-      <h1>${esc(g.name)}</h1>
+      <div class="groupe-tete">
+        <a class="msg-retour" href="#/groupes" aria-label="Retour">‹</a>
+        <span class="groupe-avatar"></span>
+        <b class="groupe-nom">${esc(g.name)}</b>
+        <button class="lien-inline" data-inviter type="button">Inviter</button>
+      </div>
       ${g.description ? `<p class="lede">${esc(g.description)}</p>` : ''}
-      <p class="ligne-meta">Code d'invitation : <b data-code>${esc(g.invite_code)}</b>
-        <button class="lien-inline" data-copier type="button">copier</button>
-        <button class="lien-inline" data-qr type="button">QR code</button></p>
 
       <div class="rangee" style="gap:.5rem" data-onglets></div>
       <div data-corps></div>
@@ -306,43 +315,50 @@ export async function vueGroupeDetail(params) {
 
   const onglets = el.querySelector('[data-onglets]');
   const corps = el.querySelector('[data-corps]');
-  const modes = [['fil', 'Fil'], ['classement', 'Classement'], ['discussion', 'Discussion'], ['membres', 'Membres']];
 
   function dessinerOnglets() {
     onglets.replaceChildren();
+    const modes = [
+      ['fil', 'Fil'], ['classement', 'Classement'], ['discussion', 'Discussion'],
+      ['membres', `Membres (${g.memberCount})`]
+    ];
     for (const [id, label] of modes) {
-      const b = h(`<button class="puce ${mode === id ? 'puce-active' : ''}" type="button">${label}</button>`);
+      const b = h(`<button class="chip-cat ${mode === id ? 'on' : ''}" type="button">${esc(label)}</button>`);
       b.onclick = () => { mode = id; dessinerOnglets(); dessinerCorps(); };
       onglets.appendChild(b);
     }
   }
 
-  el.querySelector('[data-copier]').onclick = async () => {
-    await navigator.clipboard.writeText(g.invite_code).catch(() => {});
-    toast('Code copié.');
-  };
-
-  /* ShareGroupSheet (GroupScreens.kt ~444-482) : même dessin qu'un QR de
-     séance (qr.js), lien web à la place de chrono://group?code=. */
-  el.querySelector('[data-qr]').onclick = async () => {
+  /* ShareGroupSheet (GroupScreens.kt ~444-482) : QR + lien à copier,
+     texte et libellés natifs repris mot pour mot. Lien web (#/groupes/
+     rejoindre/:code) à la place de chrono://group?code=, seule façon
+     d'ouvrir quelque chose pour qui n'a pas l'appli installée. */
+  el.querySelector('[data-inviter]').onclick = async () => {
+    const lien = `${location.origin}${location.pathname}#/groupes/rejoindre/${g.invite_code}`;
     const modale = h(`
-      <div class="modale" role="dialog" aria-label="QR code d'invitation">
+      <div class="modale" role="dialog" aria-label="Inviter">
         <div class="modale-boite modale-boite-etroite">
-          <div class="modale-tete" style="justify-content:center"><h2>${esc(g.name)}</h2></div>
+          <div class="modale-tete" style="justify-content:center"><h2>Inviter dans ${esc(g.name)}</h2></div>
           <div class="qr-surface" data-zone><canvas class="qr-canvas" data-canvas></canvas></div>
-          <p class="etat-mono">À scanner avec l'appareil photo de l'autre téléphone.</p>
-          <div class="modale-pied" style="justify-content:center"><button class="btn" data-fermer type="button">Fermer</button></div>
+          <p class="etat-mono">Quiconque scanne ce code ou ouvre ce lien rejoint le groupe immédiatement.</p>
+          <div class="modale-pied" style="justify-content:center">
+            <button class="lien-inline" data-fermer type="button">Fermer</button>
+            <button class="btn" data-copier type="button">Copier le lien</button>
+          </div>
         </div>
       </div>`);
     const fermer = () => modale.remove();
     modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
     modale.querySelector('[data-fermer]').onclick = fermer;
+    modale.querySelector('[data-copier]').onclick = async () => {
+      await navigator.clipboard.writeText(lien).catch(() => {});
+      toast('Lien copié.');
+    };
     document.body.appendChild(modale);
 
     try {
-      const url = `${location.origin}${location.pathname}#/groupes/rejoindre/${g.invite_code}`;
       const { dessinerQR } = await import('../qr.js');
-      const ok = await dessinerQR(modale.querySelector('[data-canvas]'), url, 700);
+      const ok = await dessinerQR(modale.querySelector('[data-canvas]'), lien, 700);
       if (!ok) throw new Error('trop long');
     } catch {
       modale.querySelector('[data-zone]').replaceChildren(
@@ -358,26 +374,22 @@ export async function vueGroupeDetail(params) {
     if (mode === 'membres') return dessinerMembres();
   }
 
+  /* FeedCard (SocialScreens.kt) : le fil de groupe réutilise la MÊME carte
+     que le fil général côté natif, pas une liste simplifiée — carteSeance
+     (fil.js) est donc réutilisée telle quelle ici plutôt que réécrite. */
   async function dessinerFil() {
     let items;
     try { items = await groupFeed(groupId); }
     catch (e) { return corps.replaceChildren(failure(e, "Le fil n'a pas pu être chargé")); }
     if (!items.length) return corps.replaceChildren(h(`<p class="etat-mono">Rien à afficher pour l'instant.</p>`));
-    const ul = h('<ul class="liste"></ul>');
-    for (const s of items) {
-      ul.appendChild(h(`
-        <li class="ligne">
-          <div class="ligne-tete">
-            <span class="ligne-titre">${esc(s.username)} — ${esc(s.workout_name || 'Séance')}</span>
-            <span class="ligne-meta">${esc(dateCourte(s.started_at))}</span>
-          </div>
-          <p class="ligne-stats">
-            <span>${esc(duree((s.duration_ms || 0) / 1000))}</span>
-            <span>${esc(kg(s.volume_kg))}</span>
-          </p>
-        </li>`));
-    }
-    corps.replaceChildren(ul);
+    const ids = items.map(s => s.id).filter(Boolean);
+    const [kud, nbCom] = await Promise.all([
+      kudosFor(ids, moi.id).catch(() => ({})),
+      commentCounts(ids).catch(() => ({}))
+    ]);
+    const conteneur = h('<div class="rangee-feed"></div>');
+    items.forEach(s => conteneur.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0)));
+    corps.replaceChildren(conteneur);
   }
 
   async function dessinerClassement() {

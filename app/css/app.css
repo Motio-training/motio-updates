@@ -1039,6 +1039,7 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .chip-cat.on{background:var(--accent);border-color:var(--accent);color:var(--accent-sur)}
 
 .social-entete{margin-bottom:1.25rem}
+.social-titre-rangee{display:flex;align-items:baseline;justify-content:space-between;gap:1rem}
 .social-entete h1{margin:0 0 .85rem}
 .social-tabs{
   display:flex;gap:.5rem;overflow-x:auto;white-space:nowrap;
@@ -1160,8 +1161,29 @@ body:not(.connecte) #vue:has(.onb){
 }
 .msg-actions{margin-bottom:.75rem}
 .coach-vide{padding:1rem 0}
-.coach-ligne{display:flex}
+/* En-tête (CoachScreen.kt ~112-129) : flèche, avatar Moti, identité,
+   « Recommencer » à droite. */
+.coach-tete{display:flex;align-items:center;gap:.6rem;margin-bottom:.9rem}
+.coach-retour{font-size:1.8rem;line-height:1;color:var(--encre);text-decoration:none;padding:0 .3rem;flex:none}
+.coach-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none}
+.coach-identite{flex:1;min-width:0;display:flex;flex-direction:column}
+.coach-identite b{font-family:var(--f-display);font-weight:700;font-size:1.05rem;color:var(--encre)}
+.coach-identite span{color:var(--encre-2);font-size:.72rem}
+
+.coach-ligne{display:flex;align-items:flex-end;gap:.4rem}
 .coach-ligne.mine{justify-content:flex-end}
+.coach-bulle-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none}
+
+/* Bulle « séance proposée » (CoachBubble, CoachScreen.kt ~209-227) : fond
+   doré plein, texte/icône sombres — pas la teinte à 16% du bandeau de
+   record, ici c'est un remplissage total. */
+.coach-seance-pilule{
+  display:flex;align-items:center;gap:.5rem;margin-left:32px;
+  background:var(--dore);border:none;border-radius:var(--r-m);
+  padding:.55rem .85rem;cursor:pointer;
+}
+.coach-seance-pilule img{width:18px;height:18px;border-radius:50%;object-fit:cover;flex:none}
+.coach-seance-pilule span{font-weight:700;font-size:.82rem;color:#1E2216}
 .coach-bulle{
   max-width:80%;padding:.75rem 1rem;border-radius:var(--r-m);
   background:var(--carte);border:1px solid var(--trait);box-shadow:var(--ombre-1);
@@ -1188,16 +1210,40 @@ body:not(.connecte) #vue:has(.onb){
 }
 .reac-emoji:hover{background:var(--creme-2)}
 
-.coach-seance{
-  margin-top:.75rem;padding:.85rem 1rem;border-radius:var(--r-s);
-  background:var(--accent-voile);border:1px solid var(--accent-halo);
+/* En-tête de conversation (ChatThreadScreen, ChatScreens.kt) : flèche
+   retour séparée, puis toute la ligne (avatar + pseudo) ouvre le profil. */
+.msg-tete{display:flex;align-items:center;gap:.4rem;margin-bottom:1rem}
+.msg-retour{
+  font-size:1.8rem;line-height:1;color:var(--encre);text-decoration:none;
+  padding:0 .4rem;flex:none;
 }
-.coach-seance .tag{
-  margin:0 0 .3rem;font-family:var(--f-mono);font-size:.6rem;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--accent);
+.msg-tete-lien{
+  display:flex;align-items:center;gap:.6rem;flex:1;min-width:0;
+  text-decoration:none;color:inherit;
 }
-.coach-seance-nom{margin:0;font-family:var(--f-display);font-weight:600;font-size:1rem;color:var(--encre)}
-.coach-seance .btn{margin-top:.6rem}
+.msg-tete-lien b{
+  font-family:var(--f-display);font-weight:700;font-size:1.05rem;color:var(--encre);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.msg-avatar{
+  width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;
+  background:var(--accent);color:var(--accent-sur);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-display);font-weight:700;font-size:.95rem;
+}
+.msg-plus{flex:none;font-weight:700;font-size:1.1rem;padding:.72rem .95rem}
+
+/* En-tête de groupe (GroupScreens.kt ~527-542) : avatar VIDE (pas de
+   bannière côté web), flèche retour + « Inviter » à droite. */
+.groupe-tete{display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem}
+.groupe-avatar{width:34px;height:34px;border-radius:50%;background:var(--creme-2);flex:none}
+.groupe-nom{
+  flex:1;min-width:0;font-family:var(--f-display);font-weight:700;font-size:1.05rem;color:var(--encre);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.msg-quand{margin:.2rem 0 0;font-size:.62rem}
+.coach-ligne .msg-quand{color:var(--encre-2)}
+.coach-ligne.mine .msg-quand{color:color-mix(in srgb, var(--accent-sur) 60%, transparent)}
 
 .coach-saisie{display:flex;gap:.6rem;position:sticky;bottom:1rem}
 .coach-saisie input{

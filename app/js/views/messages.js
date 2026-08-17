@@ -6,11 +6,25 @@
 
 import { h, render, loading, empty, failure, esc, toast, dateCourte, socialHeader } from '../ui.js';
 import { conversations, messageThread, sendText, sendWorkoutMessage,
-         markThreadRead, listWorkouts, usernamesFor,
+         markThreadRead, listWorkouts, usernamesFor, getProfile,
          reactionsFor, toggleReaction, REACTION_EMOJIS } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
 import { saveWorkout } from '../api.js';
+
+/** whenLabel (ChatScreens.kt) : « aujourd'hui HH:mm » / « hier HH:mm » /
+ *  date courte au-delà — affiché DANS la bulle, sous le texte. */
+function whenLabelMessage(iso) {
+  const d = new Date(iso);
+  const maintenant = new Date();
+  const hhmm = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === maintenant.toDateString()) return `aujourd'hui ${hhmm}`;
+  const hier = new Date(maintenant); hier.setDate(hier.getDate() - 1);
+  if (d.toDateString() === hier.toDateString()) return `hier ${hhmm}`;
+  const jours = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  const mois = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+}
 
 export async function vueMessages() {
   render(loading('Chargement des messages'));
@@ -22,7 +36,7 @@ export async function vueMessages() {
 
   const unread = convs.reduce((t, c) => t + (c.unread || 0), 0);
   const el = h(`<section class="page"></section>`);
-  el.appendChild(socialHeader('Messages', 'messages', unread));
+  el.appendChild(socialHeader('Messages', 'messages', unread, () => vueMessages()));
 
   if (!convs.length) {
     el.appendChild(empty('Aucun message',
@@ -34,12 +48,16 @@ export async function vueMessages() {
   const ul = h('<ul class="liste" data-liste></ul>');
   el.appendChild(ul);
   for (const c of convs) {
-    ul.appendChild(h(`
-      <li class="ligne ligne-action">
-        <a class="ligne-titre" href="#/messages/${esc(c.id)}">${esc(c.username)}
-          ${c.unread ? `<span class="etiquette">${c.unread} non lu${c.unread > 1 ? 's' : ''}</span>` : ''}</a>
+    /* Toute la carte navigue, pas seulement le pseudo — un appui sur la
+       ligne de méta (aperçu du dernier message) ne faisait rien avant. */
+    const li = h(`
+      <li class="ligne ligne-action" style="cursor:pointer">
+        <span class="ligne-titre">${esc(c.username)}
+          ${c.unread ? `<span class="etiquette">${c.unread} non lu${c.unread > 1 ? 's' : ''}</span>` : ''}</span>
         <span class="ligne-meta">${esc(c.body)} · ${esc(dateCourte(c.at))}</span>
-      </li>`));
+      </li>`);
+    li.onclick = () => { location.hash = `#/messages/${c.id}`; };
+    ul.appendChild(li);
   }
   render(el);
 }
@@ -49,29 +67,40 @@ export async function vueMessageThread(params) {
   const moi = await currentUser();
   const friendId = params.id;
 
-  let messages, noms, reactions;
+  let messages, profilAmi, reactions;
   try {
     messages = await messageThread(moi.id, friendId);
-    noms = await usernamesFor([friendId]);
+    profilAmi = await getProfile(friendId);
     reactions = await reactionsFor(messages.map(m => m.id), moi.id);
   } catch (e) { return render(failure(e, "La conversation n'a pas pu être chargée")); }
 
   const aLire = messages.filter(m => m.recipient_id === moi.id && !m.read_at).map(m => m.id);
   if (aLire.length) markThreadRead(aLire);
 
+  const nomAmi = profilAmi?.username || 'Conversation';
+  const initiale = (nomAmi || '?')[0].toUpperCase();
+  const avatarAmi = profilAmi?.avatar_url
+    ? `<img class="msg-avatar" src="${esc(profilAmi.avatar_url)}" alt="">`
+    : `<span class="msg-avatar">${esc(initiale)}</span>`;
+
+  /* ChatThreadScreen (ChatScreens.kt ~127-149) : toute la ligne (hors flèche
+     retour) ouvre le profil de l'ami. */
   const el = h(`
     <section class="page msg-thread">
-      <p class="eyebrow"><a class="lien-inline" href="#/amis">‹ Amis</a></p>
-      <h1>${esc(noms[friendId] || 'Conversation')}</h1>
+      <div class="msg-tete">
+        <a class="msg-retour" href="#/messages" aria-label="Retour">‹</a>
+        <a class="msg-tete-lien" href="#/profil/${esc(friendId)}">
+          ${avatarAmi}
+          <b>${esc(nomAmi)}</b>
+        </a>
+      </div>
 
       <ul class="msg-fil" data-fil></ul>
 
-      <div class="msg-actions">
-        <button class="btn btn-sm btn-ghost" type="button" data-partager>Partager une séance</button>
-      </div>
       <form class="coach-saisie" data-form>
-        <input type="text" data-texte placeholder="Écrire un message…" autocomplete="off" maxlength="1000">
-        <button class="btn" type="submit">Envoyer</button>
+        <button class="btn btn-ghost msg-plus" type="button" data-partager>＋</button>
+        <input type="text" data-texte placeholder="Message…" autocomplete="off" maxlength="1000">
+        <button class="btn" type="submit">↑</button>
       </form>
     </section>`);
 
@@ -96,6 +125,7 @@ export async function vueMessageThread(params) {
     } else {
       b.appendChild(h(`<p>${esc(m.body)}</p>`));
     }
+    b.appendChild(h(`<p class="msg-quand">${esc(whenLabelMessage(m.created_at))}</p>`));
     fil.appendChild(li);
 
     /* Réactions déjà posées (Messages.reactionsFor) : badges pilule sous la

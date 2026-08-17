@@ -62,56 +62,95 @@ export async function vueCoach() {
   let messages = thread();
   let envoi = false;
 
+  /* CoachScreen.kt ~112-129 : flèche retour, avatar Moti, « MOTI »/« Ton
+     coach IA », et « Recommencer » à droite (seulement s'il y a des
+     messages) — tout sur une seule ligne, pas le triptyque eyebrow/h1/lede
+     d'avant. */
   const el = h(`
     <section class="page coach">
-      <p class="eyebrow">Ton coach IA</p>
-      <h1>Moti</h1>
-      <p class="lede">Il connaît tes dernières séances et répond avec tes vrais chiffres.</p>
+      <div class="coach-tete">
+        <a class="coach-retour" href="#/profil" aria-label="Retour">‹</a>
+        <img class="coach-avatar" src="../assets/img/moti_avatar.jpg" alt="">
+        <div class="coach-identite">
+          <b>MOTI</b>
+          <span>Ton coach IA</span>
+        </div>
+        <button class="lien-inline" data-recommencer type="button" hidden>Recommencer</button>
+      </div>
 
       <ul class="coach-fil" data-fil></ul>
 
       <form class="coach-saisie" data-form>
-        <input type="text" data-texte placeholder="Écrire à Moti…" autocomplete="off" maxlength="1000">
-        <button class="btn" type="submit">Envoyer</button>
+        <input type="text" data-texte placeholder="Écris à ton coach…" autocomplete="off" maxlength="1000">
+        <button class="btn" type="submit">↑</button>
       </form>
     </section>`);
 
   const fil = el.querySelector('[data-fil]');
   const form = el.querySelector('[data-form]');
   const champ = el.querySelector('[data-texte]');
+  const btnRecommencer = el.querySelector('[data-recommencer]');
+
+  /** Bulle « séance proposée » dorée (CoachBubble, CoachScreen.kt ~209-227) :
+   *  compacte, avatar Moti + libellé, ouvre un aperçu au lieu d'afficher le
+   *  détail directement dans le fil. */
+  function ouvrirApercuSeance(workout) {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Séance proposée">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete" style="justify-content:center"><h2>${esc(workout.name)}</h2></div>
+          <p class="ligne-meta">${workout.exercises.length} exercice${workout.exercises.length > 1 ? 's' : ''}</p>
+          <ul class="liste" style="margin-top:1rem;text-align:left">
+            ${workout.exercises.map(ex => `<li class="ligne"><span class="ligne-titre">${esc(ex.name)}</span></li>`).join('')}
+          </ul>
+          <div class="modale-pied" style="justify-content:center">
+            <button class="lien-inline" data-fermer type="button">Fermer</button>
+            <button class="btn" data-importer type="button">Importer dans mes séances</button>
+          </div>
+        </div>
+      </div>`);
+    const fermer = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    modale.querySelector('[data-fermer]').onclick = fermer;
+    modale.querySelector('[data-importer]').onclick = async (e) => {
+      e.target.disabled = true;
+      try {
+        const seance = nouvelleSeance(workout.name, 'Coach IA');
+        seance.exercises = workout.exercises.map(ex => ({
+          name: ex.name, mode: 'MINUTEUR',
+          plannedSets: Math.min(10, Math.max(1, ex.sets || 3)),
+          targetReps: Math.min(30, Math.max(1, ex.reps || 8)),
+          recupSec: Math.min(600, Math.max(15, ex.rest_sec || 90)),
+          workSec: 20, restSec: 10, tabataSeries: 8, groupId: 0, sets: []
+        }));
+        await saveWorkout(moi.id, seance);
+        toast('Séance importée.');
+        e.target.textContent = 'Importée ✓';
+      } catch (err) { toast(err.message); e.target.disabled = false; }
+    };
+    document.body.appendChild(modale);
+  }
 
   function bulle(m) {
     const mine = m.role === 'user';
-    const li = h(`<li class="coach-ligne ${mine ? 'mine' : ''}"><div class="coach-bulle"></div></li>`);
-    const b = li.querySelector('.coach-bulle');
+    const li = h(`<li class="coach-ligne ${mine ? 'mine' : ''}"></li>`);
+    if (!mine) li.appendChild(h(`<img class="coach-bulle-avatar" src="../assets/img/moti_avatar.jpg" alt="">`));
+    const b = h('<div class="coach-bulle"></div>');
+    li.appendChild(b);
     b.appendChild(h(`<p>${esc(m.text).replace(/\n/g, '<br>')}</p>`));
-    if (m.workout) {
-      const carte = h(`
-        <div class="coach-seance">
-          <p class="tag">Séance proposée</p>
-          <p class="coach-seance-nom">${esc(m.workout.name)}</p>
-          <p class="ligne-meta">${m.workout.exercises.length} exercices</p>
-          <button class="btn btn-sm" type="button" data-importer>Importer dans mes séances</button>
-        </div>`);
-      carte.querySelector('[data-importer]').onclick = async (e) => {
-        e.target.disabled = true;
-        try {
-          const seance = nouvelleSeance(m.workout.name, 'Coach IA');
-          seance.exercises = m.workout.exercises.map(ex => ({
-            name: ex.name, mode: 'MINUTEUR',
-            plannedSets: Math.min(10, Math.max(1, ex.sets || 3)),
-            targetReps: Math.min(30, Math.max(1, ex.reps || 8)),
-            recupSec: Math.min(600, Math.max(15, ex.rest_sec || 90)),
-            workSec: 20, restSec: 10, tabataSeries: 8, groupId: 0, sets: []
-          }));
-          await saveWorkout(moi.id, seance);
-          toast('Séance importée.');
-          e.target.textContent = 'Importée ✓';
-        } catch (err) { toast(err.message); e.target.disabled = false; }
-      };
-      b.appendChild(carte);
-    }
     fil.appendChild(li);
+
+    if (m.workout) {
+      const pilule = h(`
+        <li class="coach-ligne">
+          <button type="button" class="coach-seance-pilule">
+            <img src="../assets/img/moti_avatar.jpg" alt="">
+            <span>Voir la séance proposée</span>
+          </button>
+        </li>`);
+      pilule.querySelector('button').onclick = () => ouvrirApercuSeance(m.workout);
+      fil.appendChild(pilule);
+    }
   }
 
   function redessiner() {
@@ -121,8 +160,32 @@ export async function vueCoach() {
     } else {
       messages.forEach(bulle);
     }
+    btnRecommencer.hidden = !messages.length;
     fil.scrollTop = fil.scrollHeight;
   }
+
+  /** Confirmation avant d'effacer (CoachScreen.kt ~174-187) : le bouton dit
+   *  « Recommencer », mais la confirmation dit « Effacer ». */
+  btnRecommencer.onclick = () => {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Recommencer la conversation">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete" style="justify-content:center"><h2>Recommencer la conversation ?</h2></div>
+          <p class="etat-mono">L'historique de cette discussion sera effacé.</p>
+          <div class="modale-pied" style="justify-content:center;gap:1.2rem">
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+            <button class="lien-inline" data-effacer type="button" style="color:var(--accent2);font-weight:700">Effacer</button>
+          </div>
+        </div>
+      </div>`);
+    const fermer = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    modale.querySelector('[data-annuler]').onclick = fermer;
+    modale.querySelector('[data-effacer]').onclick = () => {
+      fermer(); messages = []; persister(messages); redessiner();
+    };
+    document.body.appendChild(modale);
+  };
 
   form.onsubmit = async (e) => {
     e.preventDefault();
