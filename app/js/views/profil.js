@@ -9,7 +9,8 @@ import { reset as reinitialiserOnboarding } from './onboarding.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, drawLegend, MuscleScale } from '../muscle-map.js';
 import { CHANGELOG } from '../changelog.js';
-import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, definirObjectif } from '../reglages.js';
+import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, definirObjectif,
+         recordsEpingles, estRecordEpingle, toggleRecordEpingle } from '../reglages.js';
 import { buildBackupJson, parseBackupJson } from '../backup.js';
 
 export async function vueProfil(params) {
@@ -307,7 +308,7 @@ export async function vueProfilAnalyse() {
       .map(ex => ({ name: ex.n, sets: (ex.s || []).map(st => ({ reps: st.r })) }))
   };
   const { zones, unknown, isEmpty } = await muscleLoadOf(sessionLike);
-  const stats = calculerStats(seances);
+  const records = tousLesRecords(seances);
 
   const el = h(`
     <section class="page">
@@ -318,6 +319,7 @@ export async function vueProfilAnalyse() {
 
       <div class="bloc">
         <p class="bloc-titre">Records estimés</p>
+        ${records.length ? '<p class="etat-mono">Touche l\'étoile pour épingler un record en tête de liste.</p>' : ''}
         <div data-records></div>
       </div>
     </section>`);
@@ -341,18 +343,41 @@ export async function vueProfilAnalyse() {
     }
   }
 
+  /* Records épinglés (PinnedRecords, Stats.kt) : remontent en tête, dans
+     l'ordre où ils ont été épinglés ; le reste suit trié par date
+     d'amélioration décroissante. Pas de réordonnancement manuel (natif :
+     appui long + glissé) — écart assumé. */
   const zoneRec = el.querySelector('[data-records]');
-  if (!stats.records.length) {
-    zoneRec.appendChild(h('<p class="etat-mono">Aucun détail de séries partagé.</p>'));
-  } else {
+  function dessinerRecords() {
+    zoneRec.replaceChildren();
+    if (!records.length) {
+      zoneRec.appendChild(h('<p class="etat-mono">Aucun détail de séries partagé.</p>'));
+      return;
+    }
+    const epingles = recordsEpingles();
+    const tries = [...records].sort((a, b) => {
+      const pa = epingles.includes(a.nom), pb = epingles.includes(b.nom);
+      if (pa !== pb) return pa ? -1 : 1;
+      if (pa && pb) return epingles.indexOf(a.nom) - epingles.indexOf(b.nom);
+      return b.whenMs - a.whenMs;
+    });
     const ul = h('<ul class="liste"></ul>');
-    for (const [nom, rm] of stats.records) {
-      ul.appendChild(h(`<li class="ligne ligne-action">
-        <span class="ligne-titre">${esc(nom)}</span>
-        <span class="ligne-meta">${esc(kg(rm))} · 1RM estimé</span></li>`));
+    for (const r of tries) {
+      const epingle = epingles.includes(r.nom);
+      const li = h(`
+        <li class="ligne record-ligne ${epingle ? 'epingle' : ''}">
+          <button type="button" class="record-etoile" aria-label="${epingle ? 'Désépingler' : 'Épingler'} ${esc(r.nom)}">${epingle ? '★' : '☆'}</button>
+          <span class="record-corps">
+            <span class="ligne-titre">${esc(r.nom)}</span>
+            <span class="ligne-meta">${esc(kg(r.rm))} · 1RM estimé</span>
+          </span>
+        </li>`);
+      li.querySelector('.record-etoile').onclick = () => { toggleRecordEpingle(r.nom); dessinerRecords(); };
+      ul.appendChild(li);
     }
     zoneRec.appendChild(ul);
   }
+  dessinerRecords();
 
   render(el);
 }
@@ -597,6 +622,23 @@ function ouvrirTrophee(tr) {
  * détail des séries, que l'auteur peut avoir choisi de ne pas partager.
  * Même parti pris que Social.friendStats.
  */
+/** allRecords (Stats.kt), sans le tri pinned-first (fait à l'affichage) :
+ *  tous les records estimés, avec la date de leur dernière amélioration
+ *  (whenMs) pour le tri par récence des non-épinglés. */
+function tousLesRecords(seances) {
+  const best = new Map();
+  for (const s of seances) {
+    for (const ex of (Array.isArray(s.details) ? s.details : [])) {
+      for (const st of (ex.s || [])) {
+        const rm = estime1RM(st.w || 0, st.r || 0);
+        const cur = best.get(ex.n);
+        if (!cur || rm > cur.rm) best.set(ex.n, { rm, whenMs: new Date(s.started_at).getTime() });
+      }
+    }
+  }
+  return [...best.entries()].map(([nom, v]) => ({ nom, rm: v.rm, whenMs: v.whenMs }));
+}
+
 function calculerStats(seances) {
   const best = new Map();
   for (const s of seances) {

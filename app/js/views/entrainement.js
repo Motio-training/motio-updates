@@ -1,6 +1,6 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
 import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
-         listPrograms, sessionsOf } from '../api.js';
+         listPrograms, saveProgram, sessionsOf } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
@@ -9,6 +9,8 @@ import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '
 import { ouvrirPartage } from '../partage.js';
 import { encode as encoderSeance } from '../workout-share.js';
 import { ouvrirBilan } from '../bilan.js';
+import { niveauActuel } from '../reglages.js';
+import { genererProgrammeIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -701,34 +703,181 @@ export async function vueProgrammes() {
   render(el);
 }
 
+/** AiProgramWizard (ProgramScreens.kt ~378-530) : objectif en texte libre,
+ *  pas les 4 gabarits fixes de GOALS — la fonction Edge generate-program
+ *  attend goal_text, pas un Goal enum (Goal.PERSONNALISE n'existe QUE comme
+ *  résultat de cette génération, jamais comme choix manuel). L'algorithme
+ *  maison à règles fixes (ProgramGenerator.kt, sans IA) n'est pas porté ici
+ *  — c'est bien AiProgramGenerator/generate-program que ce point du chantier
+ *  visait. */
 export async function vueProgrammeNouveau() {
-  render(h(`
-    <section class="page page-etroite">
-      <p class="eyebrow">Entraînement</p>
-      <h1>Générer un programme</h1>
+  render(loading('Chargement'));
+  const moi = await currentUser();
 
-      <div class="rangee">
-        <label class="champ"><span>Objectif</span>
-          <select>${GOALS.map(g => `<option value="${g.id}">${esc(g.label)}</option>`).join('')}</select></label>
-        <label class="champ"><span>Niveau</span>
-          <select>${LEVELS.map(l => `<option value="${l.id}">${esc(l.label)}</option>`).join('')}</select></label>
-      </div>
-      <div class="rangee">
-        <label class="champ champ-mini"><span>Semaines</span>
-          <input type="number" min="4" max="24" value="8"></label>
-        <label class="champ champ-mini"><span>Séances / semaine</span>
-          <input type="number" min="2" max="6" value="3"></label>
-      </div>
+  const el = h(`<section class="page page-etroite"></section>`);
+  render(el);
 
-      <div class="chantier">
-        <h2>Générateur à brancher</h2>
-        <p>Les réglages ci-dessus sont ceux de <code>ProgramGenerator.kt</code>,
-           mais l'algorithme lui-même n'est pas encore ici. Deux voies : le
-           réimplémenter en JavaScript, ou le déporter dans une fonction Edge
-           Supabase appelée par Android et par le web. La seconde évite qu'ils
-           divergent au premier ajustement — c'est celle que je recommande.</p>
-      </div>
-    </section>`));
+  let etat = {
+    goalText: '', level: niveauActuel(), daysPerWeek: 3, weeks: 8,
+    gears: [], weekdays: defaultDaysFor(3), heure: '18:00',
+    date: new Date().toISOString().slice(0, 10)
+  };
+
+  dessinerFormulaire();
+
+  function dessinerFormulaire() {
+    el.replaceChildren(h(`
+      <div>
+        <p class="eyebrow">Entraînement</p>
+        <h1>Générer un programme</h1>
+        <p class="lede">Décris ton objectif avec tes mots — Moti construit une
+          périodisation par blocs adaptée, avec les exercices de ton catalogue.</p>
+
+        <label class="champ"><span>Objectif précis</span>
+          <textarea data-objectif rows="4" maxlength="600"
+            placeholder="Ex. : progresser au développé couché pour atteindre 100 kg d'ici 8 semaines, 3 séances par semaine, je suis intermédiaire.">${esc(etat.goalText)}</textarea></label>
+
+        <div class="rangee">
+          <label class="champ"><span>Niveau</span>
+            <select data-niveau>${LEVELS.map(l => `<option value="${l.id}" ${l.id === etat.level ? 'selected' : ''}>${esc(l.label)}</option>`).join('')}</select></label>
+          <label class="champ champ-mini"><span>Semaines</span>
+            <select data-semaines>${[4, 6, 8, 12].map(n => `<option value="${n}" ${n === etat.weeks ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        </div>
+        <div class="rangee">
+          <label class="champ champ-mini"><span>Séances / semaine</span>
+            <select data-jours-semaine>${[2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n === etat.daysPerWeek ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+          <label class="champ champ-mini"><span>Heure des séances</span>
+            <input type="time" data-heure value="${esc(etat.heure)}"></label>
+          <label class="champ champ-mini"><span>1ʳᵉ séance à partir du</span>
+            <input type="date" data-date value="${esc(etat.date)}"></label>
+        </div>
+
+        <p class="champ-label">Jours d'entraînement</p>
+        <div class="rangee rangee-serree" data-jours style="margin-bottom:1rem"></div>
+
+        <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
+        <div class="rangee rangee-serree" data-materiel style="margin-bottom:1.25rem"></div>
+
+        <button class="btn btn-lg" data-generer type="button" style="width:100%">Générer le programme</button>
+      </div>`));
+
+    el.querySelector('[data-objectif]').addEventListener('input', (e) => { etat.goalText = e.target.value; });
+    el.querySelector('[data-niveau]').addEventListener('change', (e) => { etat.level = e.target.value; });
+    el.querySelector('[data-semaines]').addEventListener('change', (e) => { etat.weeks = Number(e.target.value); });
+    el.querySelector('[data-heure]').addEventListener('input', (e) => { etat.heure = e.target.value; });
+    el.querySelector('[data-date]').addEventListener('input', (e) => { etat.date = e.target.value; });
+    el.querySelector('[data-jours-semaine]').addEventListener('change', (e) => {
+      etat.daysPerWeek = Number(e.target.value);
+      etat.weekdays = defaultDaysFor(etat.daysPerWeek);
+      dessinerJours();
+    });
+
+    const zoneJours = el.querySelector('[data-jours]');
+    function dessinerJours() {
+      zoneJours.replaceChildren();
+      WEEK_DAYS.forEach((dow, i) => {
+        const actif = etat.weekdays.includes(dow);
+        const b = h(`<button type="button" class="chip-cat ${actif ? 'on' : ''}">${WEEK_DAY_LABELS[i]}</button>`);
+        b.onclick = () => {
+          etat.weekdays = actif ? etat.weekdays.filter(d => d !== dow) : [...etat.weekdays, dow];
+          dessinerJours();
+        };
+        zoneJours.appendChild(b);
+      });
+    }
+    dessinerJours();
+
+    const zoneMateriel = el.querySelector('[data-materiel]');
+    Object.entries(GEARS).forEach(([id, g]) => {
+      const actif = etat.gears.includes(id);
+      const b = h(`<button type="button" class="chip-cat ${actif ? 'on' : ''}">${esc(g.label)}</button>`);
+      b.onclick = () => {
+        etat.gears = actif ? etat.gears.filter(x => x !== id) : [...etat.gears, id];
+        dessinerFormulaire();
+      };
+      zoneMateriel.appendChild(b);
+    });
+
+    el.querySelector('[data-generer]').onclick = async (e) => {
+      const objectif = etat.goalText.trim();
+      if (!objectif) return toast('Décris ton objectif en quelques mots.');
+      if (!etat.weekdays.length) return toast('Choisis au moins un jour d\'entraînement.');
+      e.target.disabled = true; e.target.textContent = 'Génération en cours… (20-30 s)';
+      try {
+        const [h, m] = etat.heure.split(':').map(Number);
+        const startMs = new Date(`${etat.date}T00:00:00`).getTime();
+        const { draft, notes } = await genererProgrammeIA({
+          goalText: objectif, level: etat.level, daysPerWeek: etat.daysPerWeek, weeks: etat.weeks,
+          gears: etat.gears, weekdays: etat.weekdays, minuteOfDay: h * 60 + m, startMs
+        });
+        dessinerApercu(draft, notes);
+      } catch (err) {
+        toast(err.message || 'La génération a échoué.');
+        e.target.disabled = false; e.target.textContent = 'Générer le programme';
+      }
+    };
+  }
+
+  /** Écran d'aperçu/validation (ProgramScreens.kt) : rien n'est enregistré
+   *  tant que « Valider » n'a pas été pressé — même principe que le natif. */
+  function dessinerApercu(draft, notes) {
+    const { program, workouts } = draft;
+    el.replaceChildren(h(`
+      <div>
+        <p class="eyebrow">Entraînement</p>
+        <h1>${esc(program.name)}</h1>
+        ${notes ? `<p class="lede">${esc(notes)}</p>` : ''}
+        <p class="ligne-stats" style="margin:0 0 1rem">
+          <span>${program.weeks} semaines</span>
+          <span>${program.daysPerWeek} séances / semaine</span>
+          <span>${program.sessions.length} séances planifiées</span>
+        </p>
+        <div class="bloc">
+          <p class="bloc-titre">Modèles de séance</p>
+          <div data-modeles></div>
+        </div>
+        <div class="bloc">
+          <p class="bloc-titre">Planning (5 premières séances)</p>
+          <ul class="liste" data-planning></ul>
+        </div>
+        <div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
+          <button class="btn btn-ghost" data-recommencer style="flex:1">Recommencer</button>
+          <button class="btn btn-lg" data-valider style="flex:1">Valider le programme</button>
+        </div>
+      </div>`));
+
+    const zoneModeles = el.querySelector('[data-modeles]');
+    workouts.forEach(w => {
+      zoneModeles.appendChild(h(`
+        <div style="margin-bottom:.8rem">
+          <p style="font-weight:700;margin:0 0 .3rem">${esc(w.name)} <span class="ligne-meta">· ${esc(w.category)}</span></p>
+          <p class="ligne-meta" style="margin:0">${w.exercises.map(x => esc(x.name)).join(' · ')}</p>
+        </div>`));
+    });
+
+    const ulPlanning = el.querySelector('[data-planning]');
+    program.sessions.slice(0, 5).forEach(s => {
+      ulPlanning.appendChild(h(`
+        <li class="ligne">
+          <div class="ligne-tete">
+            <span class="ligne-titre">S${s.week} — ${esc(s.title)}${s.deload ? ' · décharge' : ''}</span>
+            <span class="ligne-meta">${esc(new Date(s.dateMs).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }))}</span>
+          </div>
+          <p class="ligne-corps">${s.items.map(it => `${esc(it.name)} ${it.sets}×${it.reps}`).join(', ')}</p>
+        </li>`));
+    });
+
+    el.querySelector('[data-recommencer]').onclick = () => dessinerFormulaire();
+    el.querySelector('[data-valider]').onclick = async (ev) => {
+      ev.target.disabled = true;
+      try {
+        for (const w of workouts) await saveWorkout(moi.id, w);
+        await saveProgram(moi.id, program);
+        toast('Programme enregistré ✓');
+        location.hash = '#/programmes';
+      } catch (err) { toast(err.message); ev.target.disabled = false; }
+    };
+  }
 }
 
 /* ========================================================== historique */

@@ -1,21 +1,33 @@
 /* ==========================================================================
-   Groupes d'entraînement — portage de GroupScreens.kt. Pas de bannière ni de
-   QR côté web (v1) : le code d'invitation se copie-colle, ce qui suffit pour
-   un lien envoyé par message. Le reste (fil, classement, discussion, membres)
-   reprend les mêmes RPC/tables que l'app.
+   Groupes d'entraînement — portage de GroupScreens.kt. Pas de bannière côté
+   web (v1). QR d'invitation (affichage + scan caméra) : voir plus bas —
+   contrairement au natif (qui ne fait QUE dessiner un QR, le scan étant
+   délégué à l'appareil photo du système), le web scanne lui-même via
+   BarcodeDetector quand le navigateur le permet, puisqu'une PWA n'a pas
+   d'intent-filter déclaratif pour intercepter un lien scanné par une appli
+   tierce. Le reste (fil, classement, discussion, membres) reprend les mêmes
+   RPC/tables que l'app.
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { currentUser } from '../supabase.js';
 import {
   groupsMine, groupsSearch, groupCreate, groupJoin, groupLeave, groupDelete,
-  groupMembersList, groupRemoveMember, groupUpdateInfo, groupRegenerateCode,
+  groupPreviewByCode, groupMembersList, groupRemoveMember, groupUpdateInfo, groupRegenerateCode,
   groupFeed, groupStandings, groupMessageThread, groupSendText, groupSendWorkout,
   listWorkouts, unreadMessagesCount
 } from '../api.js';
 import { kg } from '../model.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
 import { saveWorkout } from '../api.js';
+
+/** Un code brut, un fragment « code=XXXX », ou un lien complet — mêmes trois
+ *  formats acceptés que GroupScreens.kt (LINK_PREFIX/« code=»/brut). */
+function extraireCode(texte) {
+  const brut = texte.trim();
+  const m = brut.match(/code=([A-Za-z0-9]+)/);
+  return (m ? m[1] : brut).split('&')[0].trim();
+}
 
 export async function vueGroupes() {
   render(loading('Chargement des groupes'));
@@ -38,6 +50,7 @@ export async function vueGroupes() {
         <label class="champ"><span>Rejoindre avec un code</span>
           <input type="text" data-code placeholder="ABCD1234"></label>
         <button class="btn btn-ghost" data-rejoindre type="button">Rejoindre</button>
+        <button class="btn btn-ghost" data-scanner type="button" hidden>📷 Scanner un QR code</button>
       </div>
 
       <label class="champ"><span>Ou rechercher un groupe par nom</span>
@@ -77,18 +90,31 @@ export async function vueGroupes() {
     });
   };
 
-  el.querySelector('[data-rejoindre]').onclick = async () => {
-    const champ = el.querySelector('[data-code]');
-    let code = champ.value.trim();
-    if (!code) return;
-    const m = code.match(/code=([A-Za-z0-9]+)/);
-    if (m) code = m[1];
+  async function rejoindreParCode(code) {
     try {
-      const g = await groupJoin(code);
+      const g = await groupJoin(extraireCode(code));
       toast(`Tu as rejoint ${g.name}.`);
       location.hash = `#/groupes/${g.id}`;
     } catch (err) { toast(err.message); }
+  }
+
+  el.querySelector('[data-rejoindre]').onclick = () => {
+    const code = el.querySelector('[data-code]').value.trim();
+    if (code) rejoindreParCode(code);
   };
+
+  /* Scan caméra (BarcodeDetector) : le natif n'a PAS ça — il délègue au
+     scanner du système, qui ouvre chrono://group?code=... via intent-filter.
+     Une PWA n'a pas cette passerelle déclarative, donc si on veut un scan
+     "dans l'appli" ici, il faut vraiment décoder l'image nous-mêmes. Bouton
+     caché par défaut, révélé seulement si le navigateur sait faire — pas de
+     dégradation bruyante sur les navigateurs qui ne le supportent pas
+     (Safari notamment), le champ + coller le code reste la voie normale. */
+  const btnScanner = el.querySelector('[data-scanner]');
+  if ('BarcodeDetector' in window) {
+    btnScanner.hidden = false;
+    btnScanner.onclick = () => ouvrirScanQR(rejoindreParCode);
+  }
 
   const res = el.querySelector('[data-resultats]');
   let t;
@@ -124,6 +150,100 @@ export async function vueGroupes() {
   });
 
   render(el);
+}
+
+/** Reçu depuis un lien/QR d'invitation (#/groupes/rejoindre/:code) :
+ *  aperçu sans adhésion (get_group_preview) puis confirmation explicite —
+ *  GroupJoinPrompt (GroupScreens.kt ~378-438), même principe que l'aperçu
+ *  d'une séance reçue avant import. */
+export async function vueGroupeRejoindre(params) {
+  render(loading('Chargement du groupe'));
+
+  let apercu;
+  try { apercu = await groupPreviewByCode(params.code); }
+  catch (e) { return render(failure(e, "Le groupe n'a pas pu être trouvé")); }
+  if (!apercu) {
+    return render(empty('Groupe introuvable',
+      "Ce code d'invitation est invalide, ou le code a été régénéré depuis.",
+      { href: '#/groupes', label: 'Retour aux groupes' }));
+  }
+
+  const el = h(`
+    <section class="page page-etroite">
+      <p class="eyebrow">Invitation</p>
+      <h1>${esc(apercu.name)}</h1>
+      ${apercu.description ? `<p class="lede">${esc(apercu.description)}</p>` : ''}
+      <p class="ligne-meta">${apercu.member_count} membre${apercu.member_count > 1 ? 's' : ''}</p>
+      <button class="btn btn-lg" data-rejoindre type="button" style="width:100%;margin-top:1.25rem">Rejoindre ce groupe</button>
+    </section>`);
+
+  el.querySelector('[data-rejoindre]').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      const g = await groupJoin(params.code);
+      toast(`Tu as rejoint ${g.name}.`);
+      location.hash = `#/groupes/${g.id}`;
+    } catch (err) { toast(err.message); e.target.disabled = false; }
+  };
+
+  render(el);
+}
+
+/** Scan caméra d'un QR d'invitation (BarcodeDetector — Chrome/Edge/Android ;
+ *  absent de Safari, d'où la révélation conditionnelle du bouton). Flux
+ *  vidéo affiché en direct, détection en boucle via requestAnimationFrame,
+ *  premier code lu = on coupe la caméra et on rejoint. */
+function ouvrirScanQR(surCode) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="Scanner un QR code">
+      <div class="modale-boite modale-boite-etroite">
+        <div class="modale-tete" style="justify-content:center"><h2>Scanner le QR code</h2></div>
+        <div class="scan-video-zone"><video data-video autoplay playsinline muted></video></div>
+        <p class="etat-mono" data-msg>Vise le QR code affiché sur l'autre téléphone.</p>
+        <div class="modale-pied" style="justify-content:center">
+          <button class="btn btn-ghost" data-fermer type="button">Annuler</button>
+        </div>
+      </div>
+    </div>`);
+  document.body.appendChild(modale);
+
+  const video = modale.querySelector('[data-video]');
+  const msg = modale.querySelector('[data-msg]');
+  let flux = null, actif = true, raf = null;
+
+  const fermer = () => {
+    actif = false;
+    if (raf) cancelAnimationFrame(raf);
+    flux?.getTracks().forEach(t => t.stop());
+    modale.remove();
+  };
+  modale.querySelector('[data-fermer]').onclick = fermer;
+  modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+
+  (async () => {
+    try {
+      flux = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch {
+      msg.textContent = "Caméra inaccessible — vérifie l'autorisation, ou colle le code à la main.";
+      return;
+    }
+    if (!actif) { flux.getTracks().forEach(t => t.stop()); return; }
+    video.srcObject = flux;
+
+    const detecteur = new BarcodeDetector({ formats: ['qr_code'] });
+    const boucle = async () => {
+      if (!actif) return;
+      try {
+        const codes = await detecteur.detect(video);
+        if (codes.length) {
+          const texte = codes[0].rawValue || '';
+          if (texte) { fermer(); surCode(texte); return; }
+        }
+      } catch { /* image pas encore prête, on retente */ }
+      raf = requestAnimationFrame(boucle);
+    };
+    raf = requestAnimationFrame(boucle);
+  })();
 }
 
 function ouvrirFormulaireGroupe(existant, valider) {
@@ -177,7 +297,8 @@ export async function vueGroupeDetail(params) {
       <h1>${esc(g.name)}</h1>
       ${g.description ? `<p class="lede">${esc(g.description)}</p>` : ''}
       <p class="ligne-meta">Code d'invitation : <b data-code>${esc(g.invite_code)}</b>
-        <button class="lien-inline" data-copier type="button">copier</button></p>
+        <button class="lien-inline" data-copier type="button">copier</button>
+        <button class="lien-inline" data-qr type="button">QR code</button></p>
 
       <div class="rangee" style="gap:.5rem" data-onglets></div>
       <div data-corps></div>
@@ -199,6 +320,34 @@ export async function vueGroupeDetail(params) {
   el.querySelector('[data-copier]').onclick = async () => {
     await navigator.clipboard.writeText(g.invite_code).catch(() => {});
     toast('Code copié.');
+  };
+
+  /* ShareGroupSheet (GroupScreens.kt ~444-482) : même dessin qu'un QR de
+     séance (qr.js), lien web à la place de chrono://group?code=. */
+  el.querySelector('[data-qr]').onclick = async () => {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="QR code d'invitation">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete" style="justify-content:center"><h2>${esc(g.name)}</h2></div>
+          <div class="qr-surface" data-zone><canvas class="qr-canvas" data-canvas></canvas></div>
+          <p class="etat-mono">À scanner avec l'appareil photo de l'autre téléphone.</p>
+          <div class="modale-pied" style="justify-content:center"><button class="btn" data-fermer type="button">Fermer</button></div>
+        </div>
+      </div>`);
+    const fermer = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    modale.querySelector('[data-fermer]').onclick = fermer;
+    document.body.appendChild(modale);
+
+    try {
+      const url = `${location.origin}${location.pathname}#/groupes/rejoindre/${g.invite_code}`;
+      const { dessinerQR } = await import('../qr.js');
+      const ok = await dessinerQR(modale.querySelector('[data-canvas]'), url, 700);
+      if (!ok) throw new Error('trop long');
+    } catch {
+      modale.querySelector('[data-zone]').replaceChildren(
+        h('<p class="etat-mono">Le QR code n\'a pas pu être créé.</p>'));
+    }
   };
 
   async function dessinerCorps() {

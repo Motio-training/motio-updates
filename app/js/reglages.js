@@ -23,6 +23,7 @@ const CLE_THEME = 'motio_theme';       // 'sombre' | 'clair' | 'systeme'
 const CLE_BIPS = 'motio_bips';         // JSON {freq,trill,volume,startFreq,startTrill,startVolume}
 const CLE_NIVEAU = 'motio_niveau';     // Level.name (ProgramModel.kt)
 const CLE_OBJECTIF = 'motio_objectif'; // Goal.name (ProgramModel.kt), PERSONNALISE exclue (réservée à l'IA)
+const CLE_RECORDS_EPINGLES = 'motio_records_epingles'; // PinnedRecords (Stats.kt) : liste ordonnée, séparée par « | »
 
 const BIPS_DEFAUT = {
   freq: 2750, trill: 43, volume: 1.0,
@@ -111,6 +112,24 @@ export function objectifActuel() {
   return OBJECTIFS.some(([id]) => id === v) ? v : 'MASSE';
 }
 export function definirObjectif(v) { localStorage.setItem(CLE_OBJECTIF, v); }
+
+/* ------------------------------------------------------- records épinglés */
+
+/** PinnedRecords (Stats.kt) : liste ordonnée de noms d'exercices — un
+ *  Set perdrait l'ordre choisi à la main. Pas de réordonnancement manuel
+ *  côté web (natif : appui long + glissé) — écart assumé, l'ordre suit
+ *  simplement celui dans lequel les records ont été épinglés. */
+export function recordsEpingles() {
+  const raw = localStorage.getItem(CLE_RECORDS_EPINGLES);
+  return raw ? raw.split('|').filter(Boolean) : [];
+}
+export function estRecordEpingle(nom) { return recordsEpingles().includes(nom); }
+export function toggleRecordEpingle(nom) {
+  const cur = recordsEpingles();
+  const i = cur.indexOf(nom);
+  if (i >= 0) cur.splice(i, 1); else cur.push(nom);
+  localStorage.setItem(CLE_RECORDS_EPINGLES, cur.join('|'));
+}
 
 /* ------------------------------------------------------------------- bips */
 
