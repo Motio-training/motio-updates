@@ -7,17 +7,21 @@
    seul (pas de libellé séparé), rappel LA DERNIÈRE FOIS pendant l'échauffe-
    ment, cellules Poids/Reps ouvrant un pavé numérique dédié, glissement
    pour corriger une série déjà faite, suggestion de charge autorégulée par
-   RIR (Coaching.kt), bannière de record, bouton unique « Exercice suivant
-   ▶ » + rond « ‹ » précédent, croix = dialogue unique (terminer avec bilan
-   / quitter sans enregistrer).
+   RIR (Coaching.kt), bannière de record, suivi en direct visible par les
+   abonnés (LiveSessions), remplacement d'exercice en cours de route (appui
+   sur le titre), bouton unique « Exercice suivant ▶ » + rond « ‹ »
+   précédent, croix = dialogue unique (terminer avec bilan / quitter sans
+   enregistrer).
 
-   Écarts encore assumés : pas de suivi en direct visible par les abonnés
-   (LiveSessions), pas de remplacement d'exercice en cours de route, pas de
-   report automatique du RIR d'une série à l'autre, pas d'estimation de
-   charge de départ sans historique (StrengthDefaults — dépend du niveau et
-   du poids de corps, des réglages locaux natifs sans équivalent web),
-   navigation simplifiée (pas de superséries/blocs multi-exercices, pas de
-   « peek » vers l'exercice précédent/suivant en gardant la récup en cours).
+   Écarts encore assumés : pas de modification des réglages (séries/reps
+   cible/récup) d'un exercice en cours de séance, seul son remplacement
+   complet est possible (ExerciseMenuDialog natif propose les deux, ici
+   l'appui sur le titre va droit au remplacement). Pas de report automatique
+   du RIR d'une série à l'autre, pas d'estimation de charge de départ sans
+   historique (StrengthDefaults — dépend du niveau et du poids de corps, des
+   réglages locaux natifs sans équivalent web), navigation simplifiée (pas
+   de superséries/blocs multi-exercices, pas de « peek » vers l'exercice
+   précédent/suivant en gardant la récup en cours).
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
@@ -30,6 +34,7 @@ import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
 import { ouvrirBilan } from '../bilan.js';
 import { ouvrirPave } from '../numpad.js';
+import { ouvrirCatalogue } from './entrainement.js';
 
 const RIR = [0, 1, 2, 3, 4, 5];
 const SETUP_SEC = 10;
@@ -103,7 +108,7 @@ export async function vueLancerSeance(params) {
           <span class="run-tete-label">SÉANCE</span>
           <span class="run-chrono-global" data-chrono-global>0:00</span>
         </div>
-        <h1 class="run-titre" data-titre></h1>
+        <button type="button" class="run-titre" data-titre></button>
         <div class="run-tete-droite">
           <div class="run-tete-icones">
             <a href="#/coach"><img class="run-avatar" src="../assets/img/moti_avatar.jpg" alt="Moti, ton coach IA"></a>
@@ -137,6 +142,7 @@ export async function vueLancerSeance(params) {
 
   el.querySelector('[data-quitter]').onclick = () => ouvrirFin();
   pauseBtn.onclick = () => engine.minuteurTogglePause();
+  titreEl.onclick = () => ouvrirRemplacement();
 
   function majCadran(snap) {
     const cadran = corps.querySelector('[data-cadran]');
@@ -234,7 +240,7 @@ export async function vueLancerSeance(params) {
     warmup = ex.sets.length === 0;
     poidsVal = 0; repsVal = 0;
 
-    titreEl.textContent = ex.name;
+    titreEl.innerHTML = `${esc(ex.name)} <span class="run-titre-crayon">✎</span>`;
     pauseBtn.hidden = true;
 
     corps.replaceChildren(h(`
@@ -540,6 +546,54 @@ export async function vueLancerSeance(params) {
     pauseBtn.hidden = true;
     if (exIndex < session.exercises.length - 1) { exIndex++; dessinerExercice(); }
     else ouvrirFin(true);
+  }
+
+  /** Appui sur le titre : remplacer l'exercice en cours (ExerciseMenuDialog
+   *  → askSwap, TrainingScreens.kt). La machine est prise, on passe à autre
+   *  chose sans perdre ce qui est déjà fait : ce n'est pas un renommage, les
+   *  séries déjà enregistrées appartiennent à l'ancien exercice et le
+   *  restent — coupe en deux, comme le natif (ex.blank() + plannedSets
+   *  ajusté des deux côtés). */
+  function ouvrirRemplacement() {
+    if (termine) return;
+    const ex = session.exercises[exIndex];
+    const nb = ex.sets.length;
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Remplacer l'exercice">
+        <div class="modale-boite">
+          <div class="modale-tete"><h2>Remplacer l'exercice</h2></div>
+          <p class="etat-mono">${nb === 0
+            ? "L'exercice sera remplacé par celui que tu choisis."
+            : `Les ${nb} série${nb > 1 ? 's' : ''} déjà faites resteront enregistrées sous « ${esc(ex.name)} ». Le nouvel exercice prendra la suite, avec les séries restantes.`}</p>
+          <div class="modale-pied">
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+            <button class="btn" data-choisir type="button">Choisir</button>
+          </div>
+        </div>
+      </div>`);
+    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    modale.querySelector('[data-choisir]').onclick = () => {
+      modale.remove();
+      ouvrirCatalogue((nom) => remplacerExercice(nom));
+    };
+    document.body.appendChild(modale);
+  }
+
+  function remplacerExercice(nom) {
+    const ex = session.exercises[exIndex];
+    const fait = ex.sets.length;
+    if (fait === 0) {
+      ex.name = nom;
+    } else {
+      const restant = Math.max(1, ex.plannedSets - fait);
+      ex.plannedSets = fait;
+      const fresh = { ...ex, sets: [], name: nom, plannedSets: restant };
+      session.exercises.splice(exIndex + 1, 0, fresh);
+      exIndex += 1;
+    }
+    engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
+    pauseBtn.hidden = true;
+    dessinerExercice();
   }
 
   /** Croix de l'en-tête : dialogue unique terminer/quitter (EndSessionDialog, RunWorkout.kt). */

@@ -858,8 +858,11 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 }
 .run-titre{
   flex:1;min-width:0;margin:0;text-align:left;font-size:1.15rem;line-height:1.2;
+  font-weight:700;font-family:inherit;color:var(--encre);
+  background:none;border:none;padding:0;cursor:pointer;
 }
 .run-titre::after{display:none}
+.run-titre-crayon{font-size:.75rem;color:var(--encre-2);vertical-align:middle}
 .run-tete-droite{display:flex;flex-direction:column;align-items:flex-end;gap:.2rem;flex:none}
 .run-tete-icones{display:flex;align-items:center;gap:.55rem}
 .run-tete-icones a{display:flex;text-decoration:none}

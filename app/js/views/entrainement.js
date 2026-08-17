@@ -507,7 +507,7 @@ export async function vueSeanceEdition(params) {
 
 /* ================================================= sélecteur d'exercice */
 
-function ouvrirCatalogue(choisir) {
+export function ouvrirCatalogue(choisir) {
   const modale = h(`
     <div class="modale" role="dialog" aria-label="Choisir un exercice">
       <div class="modale-boite">
