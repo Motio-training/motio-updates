@@ -914,8 +914,9 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .run-cellule{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:.15rem;
   padding:.75rem .5rem;border-radius:var(--r-m);background:var(--carte);
-  border:1px solid var(--trait);
+  border:1px solid var(--trait);cursor:pointer;font:inherit;
 }
+.run-cellule:active{background:var(--accent-halo)}
 .run-cellule-label{
   font-family:var(--f-mono);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;
   color:var(--encre-2);
@@ -939,8 +940,24 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .run-saisie .btn{width:100%}
 
 .run-series{margin-bottom:1.5rem}
+
+/* Ligne glissable (glissement pour corriger une série déjà faite,
+   TrainingScreens.kt) : l'action « Modifier » vit sous la ligne, révélée en
+   glissant le contenu vers la gauche — pas de bouton visible en permanence. */
+.run-serie-rangee{position:relative;overflow:hidden;border-radius:var(--r-s)}
+.run-serie-rangee+.run-serie-rangee{margin-top:2px}
+.run-serie-action{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;
+  background:var(--accent);border-radius:var(--r-s);
+}
+.run-serie-action button{
+  height:100%;padding:0 1.1rem;background:none;border:none;color:var(--accent-sur);
+  font-family:var(--f-display);font-weight:700;font-size:.85rem;cursor:pointer;
+}
 .run-serie-faite{
-  padding:.6rem .9rem;font-family:var(--f-mono);font-size:.82rem;color:var(--encre-2);
+  position:relative;padding:.6rem .9rem;font-family:var(--f-mono);font-size:.82rem;
+  color:var(--encre-2);background:var(--creme);touch-action:pan-y;
+  transition:transform .18s var(--ressort);
 }
 
 .run-bas{display:flex;align-items:stretch;gap:.6rem}
@@ -1197,3 +1214,33 @@ body:not(.connecte) #vue:has(.onb){
 .bilan-diverge h3{margin:0 0 .3rem;font-size:.95rem;color:var(--encre)}
 .bilan-diverge p{margin:0;font-size:.8rem;color:var(--encre-2);line-height:1.4}
 .bilan-diverge .btn,.bilan-diverge .btn-ghost{width:100%;margin-top:.6rem}
+
+/* ==========================================================================
+   Pavé numérique dédié — NumPadDialog (TrainingScreens.kt)
+   ========================================================================== */
+
+.pave-numerique{text-align:center}
+.pave-titre{
+  margin:0;font-family:var(--f-mono);font-size:.7rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--encre-2);
+}
+.pave-valeur{
+  margin:.5rem 0 1.1rem;font-family:var(--f-display);font-weight:700;font-size:2.6rem;
+  color:var(--accent);font-variant-numeric:tabular-nums;
+}
+.pave-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:1.2rem}
+.pave-touche{
+  aspect-ratio:1;border-radius:50%;font-family:var(--f-display);font-weight:600;font-size:1.3rem;
+  background:var(--creme-2);border:none;color:var(--encre);cursor:pointer;
+}
+.pave-touche:active{background:var(--accent-halo)}
+
+/* ==========================================================================
+   Bannière de record — PrBanner (TrainingScreens.kt)
+   ========================================================================== */
+
+.run-pr-banniere{
+  margin:0 0 .8rem;padding:.6rem .8rem;text-align:center;border-radius:var(--r-s);
+  background:color-mix(in srgb, var(--dore) 16%, transparent);
+  color:var(--dore);font-weight:700;font-size:.85rem;
+}

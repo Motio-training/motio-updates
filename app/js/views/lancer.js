@@ -5,26 +5,30 @@
    (SÉANCE + chrono à gauche, titre au centre, avatar Moti + pause + croix à
    droite, « reste ~Xh » sous les icônes), ÉCHAUFFEMENT en gros texte doré
    seul (pas de libellé séparé), rappel LA DERNIÈRE FOIS pendant l'échauffe-
-   ment, cellules Poids/Reps (grande valeur + repère de la dernière fois en
-   dessous), bouton unique « Exercice suivant ▶ » + rond « ‹ » précédent,
-   croix = dialogue unique (terminer avec bilan / quitter sans enregistrer).
+   ment, cellules Poids/Reps ouvrant un pavé numérique dédié, glissement
+   pour corriger une série déjà faite, suggestion de charge autorégulée par
+   RIR (Coaching.kt), bannière de record, bouton unique « Exercice suivant
+   ▶ » + rond « ‹ » précédent, croix = dialogue unique (terminer avec bilan
+   / quitter sans enregistrer).
 
-   Écarts encore assumés (le natif y consacre plusieurs centaines de lignes
-   rien que pour ça) : pas de pavé numérique dédié (NumPadDialog), pas de
-   glissement pour corriger une série déjà faite, pas de suggestion de charge
-   complète (Coaching.kt — ici juste « comme la dernière fois »), pas de
-   suivi en direct (LiveSessions), pas de remplacement d'exercice en cours de
-   route, pas de bannière de record. Chacun représente un chantier à part —
-   à reprendre un par un si Nicolas les demande.
+   Écarts encore assumés : pas de suivi en direct visible par les abonnés
+   (LiveSessions), pas de remplacement d'exercice en cours de route, pas de
+   report automatique du RIR d'une série à l'autre, pas d'estimation de
+   charge de départ sans historique (StrengthDefaults — dépend du niveau et
+   du poids de corps, des réglages locaux natifs sans équivalent web),
+   navigation simplifiée (pas de superséries/blocs multi-exercices, pas de
+   « peek » vers l'exercice précédent/suivant en gardant la récup en cours).
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
-import { getWorkout, saveWorkout, finishSession } from '../api.js';
+import { getWorkout, saveWorkout, finishSession, sessionsOf } from '../api.js';
 import { currentUser } from '../supabase.js';
-import { libelleRir, kg, dureeSeance } from '../model.js';
+import { libelleRir, kg, dureeSeance, estime1RM } from '../model.js';
+import { devineMateriel } from '../catalog.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
 import { ouvrirBilan } from '../bilan.js';
+import { ouvrirPave } from '../numpad.js';
 
 const RIR = [0, 1, 2, 3, 4, 5];
 const SETUP_SEC = 10;
@@ -57,10 +61,36 @@ export async function vueLancerSeance(params) {
     exercises: modele.exercises.map(e => ({ ...e, sets: [] }))
   };
 
+  /* Records d'avant cette séance, par nom d'exercice (newRecords/recordsFor,
+     Stats.kt) : figés une fois pour toutes au lancement, comme le natif qui
+     exclut la session en cours — deux séries plus lourdes l'une que l'autre
+     PENDANT la même séance ne se comparent pas entre elles, seulement au
+     meilleur déjà enregistré avant de commencer. Best-effort : une panne
+     réseau ici n'empêche pas de s'entraîner, la bannière de record manque
+     juste pour cette séance. */
+  const meilleursAvant = new Map();
+  try {
+    const passees = await sessionsOf(moi.id, { limit: 200 });
+    for (const s of passees) {
+      for (const ex of (Array.isArray(s.details) ? s.details : [])) {
+        for (const st of (ex.s || [])) {
+          if (!st.r || !st.w) continue;
+          const cur = meilleursAvant.get(ex.n) || { poids: 0, repsAuPoidsMax: 0, rm: 0 };
+          if (st.w > cur.poids) { cur.poids = st.w; cur.repsAuPoidsMax = st.r; }
+          else if (Math.abs(st.w - cur.poids) < 0.001 && st.r > cur.repsAuPoidsMax) cur.repsAuPoidsMax = st.r;
+          const rm = estime1RM(st.w, st.r);
+          if (rm > cur.rm) cur.rm = rm;
+          meilleursAvant.set(ex.n, cur);
+        }
+      }
+    }
+  } catch { /* pas grave : pas de bannière de record cette fois */ }
+
   let exIndex = 0;
   let warmup = true;      // écran ÉCHAUFFEMENT tant qu'aucune série n'a démarré sur cet exercice
   let termine = false;
   let enregistrement = false;
+  let poidsVal = 0, repsVal = 0;   // valeurs des cellules Poids/Reps — pavé numérique, pas d'<input>
 
   const totalEstimeSec = dureeSeance(modele.exercises);
   const engine = new Engine((snap) => majCadran(snap));
@@ -149,23 +179,34 @@ export async function vueLancerSeance(params) {
     return null;
   }
 
-  /** Pré-remplit poids/reps avec la dernière fois — pas de coach de charge complet, juste un repère. */
+  /** Reflète poidsVal/repsVal dans les cellules — pas d'<input>, la valeur
+   *  vit en mémoire et se pose via le pavé numérique (ouvrirPave). */
+  function majCellules() {
+    const pv = corps.querySelector('[data-poids-val]');
+    const rv = corps.querySelector('[data-reps-val]');
+    if (pv) pv.textContent = poidsVal ? trimNum(poidsVal) : '0';
+    if (rv) rv.textContent = repsVal || '0';
+  }
+
+  /** Pré-remplit poids/reps avec la suggestion autorégulée par RIR (LoadCoach,
+   *  Coaching.kt) — « comme la dernière fois » quand il n'y a rien de plus à
+   *  dire, une charge ajustée sinon. */
   function prepareSaisie(ex) {
     const sets = dernieresSeries(ex.name);
     const dernier = sets ? sets[sets.length - 1] : null;
-    const poidsInput = corps.querySelector('[data-poids]');
-    const repsInput = corps.querySelector('[data-reps]');
+    const suggestion = dernier ? suggestionCharge(ex.name, dernier) : null;
     const poidsRef = corps.querySelector('[data-poids-ref]');
     const repsRef = corps.querySelector('[data-reps-ref]');
     if (dernier) {
-      if (!poidsInput.value) poidsInput.value = dernier.weight || '';
-      if (!repsInput.value) repsInput.value = dernier.reps || ex.targetReps || '';
+      if (!poidsVal) poidsVal = (suggestion?.poids ?? dernier.weight) || 0;
+      if (!repsVal) repsVal = dernier.reps || ex.targetReps || 0;
       poidsRef.textContent = kg(dernier.weight);
       repsRef.textContent = `${dernier.reps} reps`;
     } else {
-      if (!repsInput.value && ex.targetReps) repsInput.value = ex.targetReps;
+      if (!repsVal && ex.targetReps) repsVal = ex.targetReps;
       poidsRef.textContent = ''; repsRef.textContent = '';
     }
+    majCellules();
     afficherSaisie(true);
   }
 
@@ -179,13 +220,18 @@ export async function vueLancerSeance(params) {
     sets.forEach((s, i) => liste.appendChild(h(
       `<li>${i + 1}. ${esc(kg(s.weight))} × ${s.reps}${s.rir >= 0 ? ' · RIR ' + s.rir : ''}</li>`)));
     const dernier = sets[sets.length - 1];
-    zone.querySelector('[data-conseil]').textContent =
-      `→ ${esc(kg(dernier.weight))} conseillés · comme la dernière fois`;
+    const suggestion = suggestionCharge(ex.name, dernier);
+    /* N'affiche la ligne conseillée que si elle dit plus qu'une évidence —
+       même seuil que LastTimeRecap (TrainingScreens.kt). */
+    zone.querySelector('[data-conseil]').textContent = suggestion && suggestion.raison !== 'comme la dernière fois'
+      ? `→ ${esc(kg(suggestion.poids))} conseillés : ${suggestion.raison}`
+      : `→ ${esc(kg(dernier.weight))} conseillés · comme la dernière fois`;
   }
 
   function dessinerExercice() {
     const ex = session.exercises[exIndex];
     warmup = ex.sets.length === 0;
+    poidsVal = 0; repsVal = 0;
 
     titreEl.textContent = ex.name;
     pauseBtn.hidden = true;
@@ -203,20 +249,22 @@ export async function vueLancerSeance(params) {
           <span class="run-cadran-value" data-value>ÉCHAUFFEMENT</span>
         </div>
 
+        <p class="run-pr-banniere" data-pr hidden></p>
+
         <div class="run-controles" data-controles></div>
 
         <div class="run-saisie" data-saisie hidden>
           <div class="run-cellules">
-            <label class="run-cellule">
+            <button type="button" class="run-cellule" data-poids>
               <span class="run-cellule-label">Poids</span>
-              <input type="number" inputmode="decimal" min="0" step="0.5" data-poids class="run-cellule-valeur">
+              <span class="run-cellule-valeur" data-poids-val>0</span>
               <span class="run-cellule-ref" data-poids-ref></span>
-            </label>
-            <label class="run-cellule">
+            </button>
+            <button type="button" class="run-cellule" data-reps>
               <span class="run-cellule-label">Reps</span>
-              <input type="number" inputmode="numeric" min="0" data-reps class="run-cellule-valeur">
+              <span class="run-cellule-valeur" data-reps-val>0</span>
               <span class="run-cellule-ref" data-reps-ref></span>
-            </label>
+            </button>
           </div>
           <p class="run-rir-label">RIR (facultatif, répétitions en réserve)</p>
           <div class="run-rir" data-rir>
@@ -256,6 +304,29 @@ export async function vueLancerSeance(params) {
       corps.querySelector('[data-controles] button')?.click();
     };
 
+    /* Pavé numérique dédié (NumPadDialog) au lieu du clavier système : les
+       cellules sont des boutons, la valeur vit dans poidsVal/repsVal. */
+    corps.querySelector('[data-poids]').onclick = () => {
+      ouvrirPave({
+        kind: 'poids',
+        onValider: (v) => {
+          if (!v) return;
+          const n = parseFloat(v.replace(',', '.'));
+          if (!Number.isNaN(n)) { poidsVal = n; majCellules(); }
+        }
+      });
+    };
+    corps.querySelector('[data-reps]').onclick = () => {
+      ouvrirPave({
+        kind: 'reps',
+        onValider: (v) => {
+          if (!v) return;
+          const n = parseInt(v, 10);
+          if (Number.isInteger(n) && n > 0) { repsVal = n; majCellules(); }
+        }
+      });
+    };
+
     let rirChoisi = -1;
     corps.querySelectorAll('[data-rir-val]').forEach(b => {
       b.onclick = () => {
@@ -267,8 +338,8 @@ export async function vueLancerSeance(params) {
     });
 
     corps.querySelector('[data-valider-serie]').onclick = () => {
-      const poids = parseFloat(corps.querySelector('[data-poids]').value) || 0;
-      const reps = parseInt(corps.querySelector('[data-reps]').value, 10) || 0;
+      const poids = poidsVal || 0;
+      const reps = repsVal || 0;
       if (!reps) return toast('Renseigne le nombre de répétitions.');
 
       let tensionMs;
@@ -279,6 +350,13 @@ export async function vueLancerSeance(params) {
       afficherSaisie(false);
       redessinerSeries();
       dessinerSousligne();
+
+      /* Bannière de record (PrBanner) : comparée aux séances passées, jamais
+         à cette même séance en cours (meilleursAvant est figé au lancement). */
+      const msgRecord = messageRecord(ex.name, poids, reps, meilleursAvant);
+      const banniere = corps.querySelector('[data-pr]');
+      banniere.hidden = !msgRecord;
+      banniere.textContent = msgRecord ? `★  ${msgRecord}` : '';
 
       /* Enchaîne directement sur la récupération, comme centerTap→startRecup
          (natif) : après « Série faite », pas de bouton à chercher pour
@@ -310,12 +388,74 @@ export async function vueLancerSeance(params) {
     const ex = session.exercises[exIndex];
     const ul = corps.querySelector('[data-liste-series]');
     ul.replaceChildren();
-    ex.sets.forEach((s, i) => {
-      ul.appendChild(h(`<li class="ligne run-serie-faite">
-        Série ${i + 1} — ${esc(kg(s.weight))} × ${s.reps}
-        ${s.rir >= 0 ? `<span class="etiquette">${esc(libelleRir(s.rir))}</span>` : ''}
-      </li>`));
+    ex.sets.forEach((s, i) => ul.appendChild(ligneSerieGlissable(s, i)));
+  }
+
+  /** Glissement pour corriger une série déjà faite (au lieu du pavé numérique
+   *  natif directement branché sur la case touchée) : glisser la ligne vers
+   *  la gauche révèle « Modifier », qui rouvre le pavé (poids puis reps) sur
+   *  CETTE série précise. La série reste un objet en mémoire (session.
+   *  exercises[exIndex].sets[i]) : rien à sauvegarder tant que la séance
+   *  n'est pas terminée, la correction part avec le reste à ce moment-là. */
+  function ligneSerieGlissable(s, i) {
+    const LARGEUR = 92; // px, largeur de la zone « Modifier » révélée
+    const li = h(`
+      <li class="run-serie-rangee">
+        <div class="run-serie-action"><button type="button">Modifier</button></div>
+        <div class="ligne run-serie-faite">
+          Série ${i + 1} — ${esc(kg(s.weight))} × ${s.reps}
+          ${s.rir >= 0 ? `<span class="etiquette">${esc(libelleRir(s.rir))}</span>` : ''}
+        </div>
+      </li>`);
+    const contenu = li.querySelector('.run-serie-faite');
+    const boutonModifier = li.querySelector('.run-serie-action button');
+
+    let depart = null, x = 0, ouvert = false;
+    const poser = (val) => { x = val; contenu.style.transform = x ? `translateX(${x}px)` : ''; };
+
+    contenu.addEventListener('pointerdown', (e) => {
+      depart = e.clientX;
+      contenu.style.transition = 'none';
+      contenu.setPointerCapture(e.pointerId);
     });
+    contenu.addEventListener('pointermove', (e) => {
+      if (depart === null) return;
+      const base = ouvert ? -LARGEUR : 0;
+      poser(Math.min(0, Math.max(-LARGEUR, base + (e.clientX - depart))));
+    });
+    const relacher = () => {
+      if (depart === null) return;
+      depart = null;
+      contenu.style.transition = '';
+      ouvert = x < -LARGEUR / 2;
+      poser(ouvert ? -LARGEUR : 0);
+    };
+    contenu.addEventListener('pointerup', relacher);
+    contenu.addEventListener('pointercancel', relacher);
+    // Un appui alors que « Modifier » est révélé referme la ligne au lieu de
+    // rouvrir le pavé par accident.
+    contenu.addEventListener('click', (e) => {
+      if (ouvert) { e.preventDefault(); ouvert = false; poser(0); }
+    });
+
+    boutonModifier.onclick = () => {
+      ouvert = false; poser(0);
+      ouvrirPave({
+        kind: 'poids',
+        onValider: (v) => {
+          if (v) { const n = parseFloat(v.replace(',', '.')); if (!Number.isNaN(n)) s.weight = n; }
+          ouvrirPave({
+            kind: 'reps',
+            onValider: (v2) => {
+              if (v2) { const n2 = parseInt(v2, 10); if (Number.isInteger(n2) && n2 > 0) s.reps = n2; }
+              redessinerSeries();
+            }
+          });
+        }
+      });
+    };
+
+    return li;
   }
 
   function dessinerControles() {
@@ -420,7 +560,7 @@ export async function vueLancerSeance(params) {
           </div>
         </div>
       </div>`);
-    modale.querySelector('[data-avec-bilan]').onclick = () => { modale.remove(); ouvrirBilan(); };
+    modale.querySelector('[data-avec-bilan]').onclick = () => { modale.remove(); ouvrirRessenti(); };
     modale.querySelector('[data-sans-enregistrer]').onclick = () => {
       if (confirm('Quitter sans enregistrer cette séance ?')) location.hash = '#/seances';
     };
@@ -428,8 +568,12 @@ export async function vueLancerSeance(params) {
     document.body.appendChild(modale);
   }
 
-  /** Bilan de fin : ressenti (5 émojis) + note — EndSessionDialog/mood/note (RunWorkout.kt). */
-  function ouvrirBilan() {
+  /** Ressenti de fin : 5 émojis + note — EndSessionDialog/mood/note (RunWorkout.kt).
+   *  Nommée à part de bilan.js::ouvrirBilan (le VRAI écran de résultats, importé plus
+   *  haut) pour ne plus le masquer par une déclaration locale du même nom — c'était
+   *  le cas avant : finaliser() appelait sans le savoir CETTE fonction-ci au lieu de
+   *  l'écran de bilan importé, à cause du masquage de portée JS. */
+  function ouvrirRessenti() {
     if (termine) return;
     const modale = h(`
       <div class="modale" role="dialog" aria-label="Terminer la séance">
@@ -489,6 +633,40 @@ export async function vueLancerSeance(params) {
 
   dessinerExercice();
   render(el);
+}
+
+/** trimNum (TrainingScreens.kt) : nombre sans « kg », décimale seulement si besoin. */
+function trimNum(v) {
+  return Math.abs(v % 1) < 0.05 ? String(Math.round(v)) : v.toFixed(1).replace('.', ',');
+}
+
+/** recordMessage (TrainingScreens.kt) : priorité poids+1RM > poids > 1RM > reps. */
+function messageRecord(nom, poids, reps, meilleursAvant) {
+  const avant = meilleursAvant.get(nom);
+  if (!avant) return '';
+  const battPoids = poids > avant.poids + 0.001;
+  const rm = estime1RM(poids, reps);
+  const battRM = rm > avant.rm + 0.001;
+  if (battPoids && battRM) return `Record ! ${trimNum(poids)} kg, ta plus lourde sur cet exercice.`;
+  if (battPoids) return `Record de charge : ${trimNum(poids)} kg.`;
+  if (battRM) return `Record : meilleur 1RM estimé sur cet exercice.`;
+  if (Math.abs(poids - avant.poids) < 0.001 && reps > avant.repsAuPoidsMax) return `Record : ${reps} répétitions à ${trimNum(poids)} kg.`;
+  return '';
+}
+
+/** suggestionCharge (LoadCoach.suggestedWeight, Coaching.kt) : autorégulation
+ *  par RIR à partir de la dernière fois — pas d'estimation de départ sans
+ *  historique (StrengthDefaults dépend de réglages locaux natifs absents du
+ *  web : poids de corps, niveau). */
+function suggestionCharge(nomExercice, dernier) {
+  if (!dernier) return null;
+  const step = devineMateriel(nomExercice) === 'BARRE' ? 2.5 : 1.0;
+  const round = v => Math.round(v / step) * step;
+  const rir = dernier.rir ?? -1;
+  if (rir < 0) return { poids: dernier.weight, raison: 'comme la dernière fois' };
+  if (rir >= 4) return { poids: round(dernier.weight * 1.075), raison: `RIR ${rir} la dernière fois : encore facile, charge relevée` };
+  if (rir >= 2) return { poids: round(dernier.weight * 1.02), raison: `RIR ${rir} la dernière fois : léger cran si possible` };
+  return { poids: dernier.weight, raison: `RIR ${rir} la dernière fois : proche de l'échec, même charge` };
 }
 
 function fmtClock(totalSec) {
