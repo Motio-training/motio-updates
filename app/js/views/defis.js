@@ -10,6 +10,7 @@ import { h, render, loading, failure, esc, socialHeader } from '../ui.js';
 import { standings, unreadMessagesCount } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { kg } from '../model.js';
+import { filPortee, definirFilPortee } from '../reglages.js';
 
 const PERIODES = [7, 30, 90];
 const GENRES = [
@@ -30,11 +31,23 @@ export async function vueDefis() {
 
   const zoneChips1 = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');
   const zoneChips2 = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');
+  const zonePortee = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');
   const explication = h('<p class="etat-mono" style="margin-bottom:1rem"></p>');
   const zoneListe = h('<div></div>');
-  el.append(zoneChips1, zoneChips2, explication, zoneListe);
+  el.append(zoneChips1, zoneChips2, zonePortee, explication, zoneListe);
 
-  let periode = 30, genre = 'tonnage';
+  let periode = 30, genre = 'tonnage', portee = filPortee();
+
+  /* Amis/Tous : même préférence que le fil (fil.js), partagée entre les deux
+     écrans — AccountScreens.kt : profil public. */
+  function dessinerPortee() {
+    zonePortee.replaceChildren();
+    [['amis', 'Amis'], ['tous', 'Tous']].forEach(([id, label]) => {
+      const b = h(`<button class="chip-cat ${portee === id ? 'on' : ''}" type="button">${label}</button>`);
+      b.onclick = () => { if (portee === id) return; portee = id; definirFilPortee(id); dessinerPortee(); charger(); };
+      zonePortee.appendChild(b);
+    });
+  }
 
   function dessinerChips() {
     zoneChips1.replaceChildren();
@@ -56,7 +69,7 @@ export async function vueDefis() {
   async function charger() {
     zoneListe.replaceChildren(h('<p class="etat-mono">Chargement…</p>'));
     try {
-      classement = await standings(periode);
+      classement = await standings(periode, { scope: portee, moiId: moi.id });
       dessinerListe();
     } catch (e) {
       zoneListe.replaceChildren(failure(e, "Le classement n'a pas pu être chargé"));
@@ -99,6 +112,7 @@ export async function vueDefis() {
   }
 
   dessinerChips();
+  dessinerPortee();
   render(el);
   charger();
 }

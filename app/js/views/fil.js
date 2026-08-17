@@ -3,6 +3,8 @@ import { feed, kudosFor, commentCounts, comments, addKudo, removeKudo,
          addComment, deleteComment, unreadMessagesCount, amisEnDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { kg, libelleRir } from '../model.js';
+import { titreSeance } from '../muscle-lexicon.js';
+import { filPortee, definirFilPortee } from '../reglages.js';
 
 const COULEUR_CAT = { Push: 'var(--accent)', Pull: 'var(--accent2)', Legs: 'var(--dore)' };
 function catColor(cat) { return COULEUR_CAT[cat] || 'var(--encre-2)'; }
@@ -23,15 +25,15 @@ function whenLabel(iso) {
 export async function vueFil() {
   render(loading('Chargement du fil'));
   const moi = await currentUser();
+  let portee = filPortee();
 
-  let seances, unread = 0, direct = [];
+  let unread = 0, direct = [];
   try {
-    [seances, unread, direct] = await Promise.all([
-      feed({ limit: 60 }),
+    [unread, direct] = await Promise.all([
       unreadMessagesCount(moi.id).catch(() => 0),
       amisEnDirect(moi.id).catch(() => [])
     ]);
-  } catch (e) { return render(failure(e, "Le fil n'a pas pu être chargé")); }
+  } catch { /* pas bloquant */ }
 
   const el = h(`<section class="page"></section>`);
   el.appendChild(socialHeader('Fil', 'fil', unread, () => vueFil()));
@@ -40,22 +42,50 @@ export async function vueFil() {
   el.appendChild(zoneDirect);
   dessinerDirect(zoneDirect, direct);
 
-  if (!seances.length) {
-    el.appendChild(empty(
-      'Le fil est vide',
-      'Suis quelqu\'un, ou termine une séance dans l\'application : elle remontera ici.',
-      { href: '#/amis', label: 'Trouver des amis' }
-    ));
-  } else {
+  /* Amis/Tous (AccountScreens.kt : profil public) : une préférence par
+     appareil, partagée avec le classement (défis.js). */
+  const zoneChips = h('<div class="rangee rangee-serree" style="margin-bottom:.8rem"></div>');
+  el.appendChild(zoneChips);
+  function dessinerChips() {
+    zoneChips.replaceChildren();
+    [['amis', 'Amis'], ['tous', 'Tous']].forEach(([id, label]) => {
+      const b = h(`<button class="chip-cat ${portee === id ? 'on' : ''}" type="button">${label}</button>`);
+      b.onclick = () => { if (portee === id) return; portee = id; definirFilPortee(id); dessinerChips(); charger(); };
+      zoneChips.appendChild(b);
+    });
+  }
+  dessinerChips();
+
+  const zoneListe = h('<div><p class="etat-mono">Chargement…</p></div>');
+  el.appendChild(zoneListe);
+
+  async function charger() {
+    zoneListe.replaceChildren(h('<p class="etat-mono">Chargement…</p>'));
+    let seances;
+    try { seances = await feed({ limit: 60, scope: portee, moiId: moi.id }); }
+    catch (e) { return zoneListe.replaceChildren(failure(e, "Le fil n'a pas pu être chargé")); }
+
+    if (!seances.length) {
+      zoneListe.replaceChildren(empty(
+        'Le fil est vide',
+        portee === 'tous'
+          ? 'Personne en profil public n\'a encore de séance à montrer.'
+          : 'Suis quelqu\'un, ou termine une séance dans l\'application : elle remontera ici.',
+        { href: '#/amis', label: 'Trouver des amis' }
+      ));
+      return;
+    }
+
     const ids = seances.map(s => s.id).filter(Boolean);
-    const [kud, nbCom] = await Promise.all([
+    const [kud, nbCom, titres] = await Promise.all([
       kudosFor(ids, moi.id).catch(() => ({})),
-      commentCounts(ids).catch(() => ({}))
+      commentCounts(ids).catch(() => ({})),
+      Promise.all(seances.map(s => titreSeance(s)))
     ]);
 
     const liste = h('<div class="rangee-feed"></div>');
-    seances.forEach(s => liste.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0)));
-    el.appendChild(liste);
+    seances.forEach((s, i) => liste.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0, titres[i])));
+    zoneListe.replaceChildren(liste);
   }
 
   /* Sondage léger du bandeau « en direct » tant que le fil reste ouvert —
@@ -71,6 +101,7 @@ export async function vueFil() {
   setTimeout(sonder, 20000);
 
   render(el);
+  charger();
 }
 
 /** LiveBanner (SocialScreens.kt) : un point orange, le pseudo, la séance/
@@ -91,9 +122,14 @@ function dessinerDirect(zone, direct) {
   });
 }
 
-/** FeedCard (SocialScreens.kt) : avatar + pastille catégorie + auteur, titre,
- *  4 chiffres, puis kudos/commenter — toute la carte ouvre le détail. */
-export function carteSeance(s, moi, kudo, nbCommentaires) {
+/** FeedCard (SocialScreens.kt) : avatar + pastille catégorie + auteur, titre
+ *  (dérivé des zones musculaires les plus travaillées — titreSeance,
+ *  muscle-lexicon.js), puis une ligne de chiffres condensée et kudos/
+ *  commenter — toute la carte ouvre le détail. Carte volontairement compacte
+ *  (Nicolas : « je trouve la bulle trop grande, que 3 entraînements sur
+ *  l'écran ») : les 4 chiffres tenaient sur deux lignes chacun, ils tiennent
+ *  maintenant sur une seule ligne mono, toute l'info reste affichée. */
+export function carteSeance(s, moi, kudo, nbCommentaires, titre) {
   const k = kudo || { count: 0, mine: false };
   const detail = Array.isArray(s.details) ? s.details : [];
   const aDuDetail = detail.some(e => (e.s || []).length);
@@ -109,14 +145,8 @@ export function carteSeance(s, moi, kudo, nbCommentaires) {
         <span class="feed-quand">${esc(whenLabel(s.started_at))}</span>
       </div>
 
-      <p class="feed-titre">${esc(s.workout_name || 'Séance')}</p>
-
-      <div class="feed-stats">
-        <span>Durée<b>${esc(duree((s.duration_ms || 0) / 1000))}</b></span>
-        <span>Tonnage<b>${esc(kg(s.volume_kg))}</b></span>
-        <span>Séries<b>${s.set_count || 0}</b></span>
-        <span>Exos<b>${s.exercise_count || 0}</b></span>
-      </div>
+      <p class="feed-titre">${esc(titre || s.workout_name || 'Séance')}</p>
+      <p class="feed-stats-ligne">${esc(duree((s.duration_ms || 0) / 1000))} · ${esc(kg(s.volume_kg))} · ${s.set_count || 0} séries · ${s.exercise_count || 0} exos</p>
 
       <div class="feed-bas">
         <span class="feed-kudo ${k.mine ? 'feed-kudo-on' : ''}" data-kudo>

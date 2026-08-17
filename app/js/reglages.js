@@ -24,6 +24,7 @@ const CLE_BIPS = 'motio_bips';         // JSON {freq,trill,volume,startFreq,star
 const CLE_NIVEAU = 'motio_niveau';     // Level.name (ProgramModel.kt)
 const CLE_OBJECTIF = 'motio_objectif'; // Goal.name (ProgramModel.kt), PERSONNALISE exclue (réservée à l'IA)
 const CLE_RECORDS_EPINGLES = 'motio_records_epingles'; // PinnedRecords (Stats.kt) : liste ordonnée, séparée par « | »
+const CLE_FIL_PORTEE = 'motio_fil_portee'; // 'amis' | 'tous' — filtre du fil et du classement
 
 const BIPS_DEFAUT = {
   freq: 2750, trill: 43, volume: 1.0,
@@ -112,6 +113,18 @@ export function objectifActuel() {
   return OBJECTIFS.some(([id]) => id === v) ? v : 'MASSE';
 }
 export function definirObjectif(v) { localStorage.setItem(CLE_OBJECTIF, v); }
+
+/* ------------------------------------------------- portée fil/classement */
+
+/** Fil et classement montrent par défaut mes abonnements seulement — « Tous »
+ *  élargit aux comptes en profil public (RLS sessions_read_public). Une seule
+ *  préférence partagée entre les deux écrans, par appareil. */
+export function filPortee() {
+  return localStorage.getItem(CLE_FIL_PORTEE) === 'tous' ? 'tous' : 'amis';
+}
+export function definirFilPortee(v) {
+  localStorage.setItem(CLE_FIL_PORTEE, v === 'tous' ? 'tous' : 'amis');
+}
 
 /* ------------------------------------------------------- records épinglés */
 

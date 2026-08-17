@@ -34,6 +34,16 @@ const LABELS = {
 };
 export function musLabel(key) { return LABELS[key] || key; }
 
+/** Libellés courts pour un titre de séance (ex. « Pecs/Triceps ») — plus
+ *  concis que musLabel(), qui reste utilisé pour la carte musculaire détaillée. */
+const LABELS_COURTS = {
+  TRAPEZES: 'Trapèzes', EPAULES: 'Épaules', EPAULES_AR: 'Épaules',
+  PECTORAUX: 'Pecs', DORSAUX: 'Dos', BICEPS: 'Biceps', TRICEPS: 'Triceps',
+  LOMBAIRES: 'Lombaires', ABDOS: 'Abdos', AVANTBRAS: 'Avant-bras',
+  FESSIERS: 'Fessiers', QUADRICEPS: 'Quadris', ISCHIOS: 'Ischios', MOLLETS: 'Mollets'
+};
+function musLabelCourt(key) { return LABELS_COURTS[key] || musLabel(key); }
+
 /* ---------------------------------------------------------------- normalisation */
 
 const LINKERS = new Set([
@@ -332,4 +342,30 @@ export async function muscleLoadOf(session) {
     for (const [zone, w] of Object.entries(m)) zones[zone] = (zones[zone] || 0) + sets * w * w;
   }
   return { zones, unknown, isEmpty: Object.keys(zones).length === 0 };
+}
+
+/**
+ * Titre affiché dans le fil : dérivé des zones les plus travaillées quand
+ * c'est reconnaissable (ex. « Séance Pecs/Triceps »), plutôt que le nom du
+ * modèle (souvent une méthode — « Force + hypertrophie » — pas très parlant
+ * en un coup d'œil dans une liste). Repli sur le nom du modèle si le détail
+ * est absent (séances envoyées avant que le détail existe) ou si rien n'est
+ * reconnu.
+ */
+export async function titreSeance(s) {
+  const base = (s.workout_name || 'Séance').trim() || 'Séance';
+  const brut = Array.isArray(s.details) ? s.details : [];
+  if (!brut.length) return base;
+  const sessionLike = {
+    exercises: brut.map(ex => ({ name: ex.n, sets: (ex.s || []).map(x => ({ reps: x.r })) }))
+  };
+  const { zones } = await muscleLoadOf(sessionLike);
+  if (!Object.keys(zones).length) return base;
+  const groupes = {};
+  for (const [zone, score] of Object.entries(zones)) {
+    const label = musLabelCourt(zone);
+    groupes[label] = (groupes[label] || 0) + score;
+  }
+  const top = Object.entries(groupes).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([label]) => label);
+  return `Séance ${top.join('/')}`;
 }

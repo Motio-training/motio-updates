@@ -457,4 +457,12 @@ export const CHANGELOG = [
                 "Thème Motio sombre éclairci : fond et panneaux remontés d'un cran, moins écrasant",
                 "Espace web iPhone : mêmes réglages Thème et Son que l'appli, jusque-là absents"
             ] },
+  { date: "17 août 2026", versions: "v2.30", items: [
+                "La conversation avec le coach IA se synchronise maintenant entre l'appli et l'espace web"
+            ] },
+  { date: "17 août 2026", versions: "v2.31", items: [
+                "Profil public : tes séances peuvent apparaître dans le fil et le classement de tout le monde, pas seulement de tes abonnés",
+                "Filtre Amis/Tous dans le fil et le classement",
+                "Cartes du fil plus compactes, avec un titre de séance basé sur les muscles travaillés"
+            ] },
 ];

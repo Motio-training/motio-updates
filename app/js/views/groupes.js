@@ -21,6 +21,7 @@ import { kg } from '../model.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
 import { saveWorkout } from '../api.js';
 import { carteSeance } from './fil.js';
+import { titreSeance } from '../muscle-lexicon.js';
 
 /** Un code brut, un fragment « code=XXXX », ou un lien complet — mêmes trois
  *  formats acceptés que GroupScreens.kt (LINK_PREFIX/« code=»/brut). */
@@ -383,12 +384,13 @@ export async function vueGroupeDetail(params) {
     catch (e) { return corps.replaceChildren(failure(e, "Le fil n'a pas pu être chargé")); }
     if (!items.length) return corps.replaceChildren(h(`<p class="etat-mono">Rien à afficher pour l'instant.</p>`));
     const ids = items.map(s => s.id).filter(Boolean);
-    const [kud, nbCom] = await Promise.all([
+    const [kud, nbCom, titres] = await Promise.all([
       kudosFor(ids, moi.id).catch(() => ({})),
-      commentCounts(ids).catch(() => ({}))
+      commentCounts(ids).catch(() => ({})),
+      Promise.all(items.map(s => titreSeance(s)))
     ]);
     const conteneur = h('<div class="rangee-feed"></div>');
-    items.forEach(s => conteneur.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0)));
+    items.forEach((s, i) => conteneur.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0, titres[i])));
     corps.replaceChildren(conteneur);
   }
 

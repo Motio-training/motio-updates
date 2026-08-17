@@ -1,6 +1,6 @@
 {
-  "versionCode": 133,
-  "versionName": "2.30",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.30/motio.apk",
-  "notes": "Le coach IA se synchronise maintenant entre l'appli et l'espace web."
+  "versionCode": 134,
+  "versionName": "2.31",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.31/motio.apk",
+  "notes": "Profil public, filtre Amis/Tous dans le fil et le classement, cartes du fil plus compactes avec titre dérivé des muscles travaillés."
 }

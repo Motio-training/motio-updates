@@ -37,7 +37,14 @@ function unwrap({ data, error }) {
 
 export async function getProfile(userId) {
   return unwrap(await sb.from(T.profiles)
-    .select('id,username,display_name,avatar_url').eq('id', userId).maybeSingle());
+    .select('id,username,display_name,avatar_url,is_public').eq('id', userId).maybeSingle());
+}
+
+/** Profil public (AccountScreens.kt) : visible dans le fil et le classement
+ *  de tout le monde, pas seulement de ses abonnés — RLS sessions_read_public. */
+export async function setPublicProfile(userId, isPublic) {
+  return unwrap(await sb.from(T.profiles)
+    .update({ is_public: isPublic }).eq('id', userId).select().single());
 }
 
 export async function setUsername(userId, username) {
@@ -117,15 +124,25 @@ const CHAMPS_SESSION =
   'volume_kg,exercise_count,set_count,details';
 
 /**
- * Le fil : mes séances et celles des gens que je suis. Le filtrage vient de la
- * politique RLS, pas de la requête — une requête forgée à la main ne
- * renverrait rien de plus.
+ * Le fil : mes séances, celles des gens que je suis, celles de mes groupes,
+ * et depuis sessions_read_public celles de tout compte en profil public — le
+ * filtrage vient de la politique RLS, pas de la requête. `scope: 'amis'`
+ * réduit ensuite ce résultat côté client aux gens que je suis (+ moi-même) ;
+ * `scope: 'tous'` garde tout ce que la RLS a laissé passer. On sur-échantillonne
+ * en 'amis' car un compte public trop actif pourrait remplir toute la limite
+ * avant le filtre.
  */
-export async function feed({ limit = 60, before = null } = {}) {
+export async function feed({ limit = 60, before = null, scope = 'amis', moiId } = {}) {
+  const fetchLimit = scope === 'amis' ? Math.max(limit * 3, 200) : limit;
   let q = sb.from(T.sharedSessions).select(CHAMPS_SESSION)
-    .order('started_at', { ascending: false }).limit(limit);
+    .order('started_at', { ascending: false }).limit(fetchLimit);
   if (before) q = q.lt('started_at', before);
-  const rows = unwrap(await q);
+  let rows = unwrap(await q);
+  if (scope === 'amis' && moiId) {
+    const amis = new Set((await following(moiId)).map(p => p.id));
+    rows = rows.filter(r => r.user_id === moiId || amis.has(r.user_id));
+  }
+  rows = rows.slice(0, limit);
   const noms = await usernamesFor(rows.map(r => r.user_id));
   return rows.map(r => ({ ...r, username: noms[r.user_id] || '?' }));
 }
@@ -201,7 +218,7 @@ export async function deleteComment(id) {
  * renvoie déjà que mes séances et celles des gens que je suis, donc aucun
  * filtre par abonnement à écrire côté client.
  */
-export async function standings(jours) {
+export async function standings(jours, { scope = 'amis', moiId } = {}) {
   const depuis = new Date();
   depuis.setHours(0, 0, 0, 0);
   depuis.setDate(depuis.getDate() - (jours - 1));
@@ -219,7 +236,11 @@ export async function standings(jours) {
     const j = new Date(r.started_at); j.setHours(0, 0, 0, 0);
     (jourSet[uid] || (jourSet[uid] = new Set())).add(j.getTime());
   }
-  const ids = Object.keys(sessions);
+  let ids = Object.keys(sessions);
+  if (scope === 'amis' && moiId) {
+    const amis = new Set((await following(moiId)).map(p => p.id));
+    ids = ids.filter(uid => uid === moiId || amis.has(uid));
+  }
   if (!ids.length) return [];
   const noms = await usernamesFor(ids);
   return ids.map(uid => ({

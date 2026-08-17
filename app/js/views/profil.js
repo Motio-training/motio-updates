@@ -1,7 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
-         listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar } from '../api.js';
+         listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -415,6 +415,13 @@ export async function vueProfilCompte() {
       </div>
 
       <div class="bloc">
+        <p class="bloc-titre">Visibilité</p>
+        <p class="etat-mono">En profil public, tes séances apparaissent dans le fil et le
+          classement de tout le monde (onglet « Tous »), pas seulement de tes abonnés.</p>
+        <div class="rangee rangee-serree" data-visibilite style="margin-top:.7rem"></div>
+      </div>
+
+      <div class="bloc">
         <p class="bloc-titre">Copie sur fichier</p>
         <p class="etat-mono">Exporte tes séances et programmes dans un fichier — garde-le où tu
           veux — et réimporte-le pour les retrouver. Utile aussi pour transférer des séances
@@ -445,6 +452,27 @@ export async function vueProfilCompte() {
   }
   dessinerChips(el.querySelector('[data-niveaux]'), NIVEAUX, niveauActuel(), definirNiveau);
   dessinerChips(el.querySelector('[data-objectifs]'), OBJECTIFS, objectifActuel(), definirObjectif);
+
+  /* Visibilité : profils_read est déjà lisible de tous (recherche par
+     pseudo), seule la visibilité des SÉANCES change — sessions_read_public. */
+  let estPublic = !!profil.is_public;
+  const zoneVisibilite = el.querySelector('[data-visibilite]');
+  function dessinerVisibilite() {
+    zoneVisibilite.replaceChildren();
+    [[false, 'Privé'], [true, 'Public']].forEach(([val, label]) => {
+      const b = h(`<button class="chip-cat ${estPublic === val ? 'on' : ''}" type="button">${label}</button>`);
+      b.onclick = async () => {
+        if (estPublic === val) return;
+        const avant = estPublic;
+        estPublic = val;
+        dessinerVisibilite();
+        try { await setPublicProfile(moi.id, val); }
+        catch (err) { estPublic = avant; dessinerVisibilite(); toast(err.message); }
+      };
+      zoneVisibilite.appendChild(b);
+    });
+  }
+  dessinerVisibilite();
 
   /* Copie sur fichier : Profile.kt::buildBackupJson/restoreBackupJson, mais
      import/export du compte cloud (pas de stockage local séparé côté web) —
