@@ -10,13 +10,13 @@ import { h } from './ui.js';
 
 /**
  * @param {object} p
- * @param {'poids'|'reps'} p.kind
+ * @param {'poids'|'reps'|'secondes'} p.kind
  * @param {(valeur: string) => void} p.onValider appelé avec la chaîne tapée
  *   (peut être vide — c'est à l'appelant de garder l'ancienne valeur dans ce cas)
  */
 export function ouvrirPave({ kind, onValider }) {
   const allowDot = kind === 'poids';
-  const titre = kind === 'poids' ? 'POIDS (kg)' : 'RÉPÉTITIONS';
+  const titre = kind === 'poids' ? 'POIDS (kg)' : kind === 'secondes' ? 'DURÉE (secondes)' : 'RÉPÉTITIONS';
   let valeur = '';
 
   const modale = h(`

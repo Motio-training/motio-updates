@@ -1,6 +1,6 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
 import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
-         listPrograms, saveProgram, sessionsOf } from '../api.js';
+         listPrograms, saveProgram, sessionsOf, deleteSharedSession } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
@@ -10,7 +10,7 @@ import { ouvrirPartage } from '../partage.js';
 import { encode as encoderSeance } from '../workout-share.js';
 import { ouvrirBilan } from '../bilan.js';
 import { niveauActuel } from '../reglages.js';
-import { genererProgrammeIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
+import { genererProgrammeIA, genererSeanceIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -81,8 +81,117 @@ export async function vueSeances() {
         <span class="chevron">›</span>
       </a>
 
+      <div class="rangee rangee-serree" style="margin-bottom:1rem">
+        <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
+        <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance</button>
+      </div>
+
       <div data-corps></div>
     </section>`);
+
+  /* Génération d'UNE séance par IA (genererSeanceIA, programme-ia.js) —
+     manquait sur l'écran principal côté web alors que TrainingList (natif)
+     a ce bouton juste à côté de « Programme », signalé par Nicolas. */
+  el.querySelector('[data-generer-seance]').onclick = () => ouvrirGenerationSeanceIA();
+
+  function ouvrirGenerationSeanceIA() {
+    let goalText = '', niveau = niveauActuel(), gears = [];
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Générer une séance">
+        <div class="modale-boite">
+          <div class="modale-tete"><h2>Générer une séance</h2></div>
+          <label class="champ"><span>Quel type de séance ?</span>
+            <textarea data-objectif rows="3" maxlength="300" placeholder="Ex. : pecs et triceps, 45 minutes, matériel limité."></textarea></label>
+          <p class="champ-label" style="margin-top:.8rem">Niveau</p>
+          <div class="rangee rangee-serree" data-niveau style="margin-bottom:.6rem"></div>
+          <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
+          <div class="rangee rangee-serree" data-materiel></div>
+          <div class="modale-pied">
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+            <button class="btn" data-generer type="button">Générer</button>
+          </div>
+        </div>
+      </div>`);
+
+    modale.querySelector('[data-objectif]').addEventListener('input', (e) => { goalText = e.target.value; });
+
+    const zoneNiveau = modale.querySelector('[data-niveau]');
+    LEVELS.forEach(l => {
+      const b = h(`<button class="chip-cat ${l.id === niveau ? 'on' : ''}" type="button">${esc(l.label)}</button>`);
+      b.onclick = () => {
+        niveau = l.id;
+        zoneNiveau.querySelectorAll('.chip-cat').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
+      };
+      zoneNiveau.appendChild(b);
+    });
+
+    const zoneMateriel = modale.querySelector('[data-materiel]');
+    Object.entries(GEARS).forEach(([id, g]) => {
+      const b = h(`<button class="chip-cat" type="button">${esc(g.label)}</button>`);
+      b.onclick = () => {
+        b.classList.toggle('on');
+        gears = b.classList.contains('on') ? [...gears, id] : gears.filter(x => x !== id);
+      };
+      zoneMateriel.appendChild(b);
+    });
+
+    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+    modale.querySelector('[data-generer]').onclick = async (e) => {
+      const objectif = goalText.trim();
+      if (!objectif) return toast('Décris le type de séance voulu.');
+      e.target.disabled = true; e.target.textContent = 'Génération… (20-30 s)';
+      try {
+        const { workout, notes } = await genererSeanceIA({ goalText: objectif, level: niveau, gears });
+        modale.remove();
+        ouvrirApercuSeanceIA(workout, notes);
+      } catch (err) {
+        toast(err.message || 'La génération a échoué.');
+        e.target.disabled = false; e.target.textContent = 'Générer';
+      }
+    };
+    document.body.appendChild(modale);
+  }
+
+  /** Aperçu avant enregistrement — rien n'est écrit tant que « Ajouter à mes
+   *  séances » n'a pas été pressé, même principe que l'aperçu de programme. */
+  function ouvrirApercuSeanceIA(workout, notes) {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Séance proposée">
+        <div class="modale-boite">
+          <div class="modale-tete"><h2>Séance proposée</h2></div>
+          <label class="champ"><span>Nom</span>
+            <input type="text" data-nom value="${esc(workout.name)}" maxlength="60"></label>
+          ${notes ? `<p class="etat-mono" style="margin-top:.4rem">${esc(notes)}</p>` : ''}
+          <ul class="liste" style="margin-top:.8rem">
+            ${workout.exercises.map(ex => `
+              <li class="ligne">
+                <span class="ligne-titre">${esc(ex.name)}</span>
+                <span class="ligne-meta">${ex.plannedSets} × ${ex.targetReps}</span>
+              </li>`).join('')}
+          </ul>
+          <div class="modale-pied">
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+            <button class="btn" data-ajouter type="button">Ajouter à mes séances</button>
+          </div>
+        </div>
+      </div>`);
+    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+    modale.querySelector('[data-ajouter]').onclick = async (e) => {
+      const nom = modale.querySelector('[data-nom]').value.trim();
+      if (nom) workout.name = nom;
+      e.target.disabled = true;
+      try {
+        await saveWorkout(moi.id, workout);
+        modale.remove();
+        toast('Séance ajoutée ✓');
+        vueSeances();
+      } catch (err) { toast(err.message); e.target.disabled = false; }
+    };
+    document.body.appendChild(modale);
+  }
 
   const corps = el.querySelector('[data-corps]');
 
@@ -437,12 +546,18 @@ export async function vueSeanceEdition(params) {
   const estim = el.querySelector('[data-estim]');
 
   function redessiner() {
+    // « Enchaîner » recrée tout le bloc (zone.replaceChildren()) : le bouton
+    // tapé disparaît du DOM et perd le focus, ce qui faisait remonter la
+    // page en haut sur certains navigateurs — signalé par Nicolas. On mémorise
+    // la position de défilement et on la restaure juste après le redessin.
+    const y = window.scrollY;
     zone.replaceChildren();
     seance.exercises.forEach((ex, i) => {
       zone.appendChild(carteExercice(ex, i));
       if (i < seance.exercises.length - 1) zone.appendChild(lienEnchainer(i));
     });
     estim.textContent = 'environ ' + fmtEstimate(estimatedSec(seance));
+    window.scrollTo(0, y);
   }
 
   function lienEnchainer(i) {
@@ -1006,7 +1121,13 @@ export async function vueHistoriqueSeance(params) {
           e.stopPropagation();
           if (!confirm(`Séance du ${dateHeure(s.startedAt)} · ${kg(tonnage)}. Elle sera retirée de l'historique et des statistiques, sans retour possible.`)) return;
           modele.history = (modele.history || []).filter(x => x !== s);
-          try { await saveWorkout(moi.id, modele); dessiner(); }
+          try {
+            await saveWorkout(moi.id, modele);
+            // Retire aussi la copie serveur (fil, kudos, commentaires en
+            // cascade) : sinon la séance restait visible de ses abonnés.
+            deleteSharedSession(moi.id, s.uid).catch(() => {});
+            dessiner();
+          }
           catch (err) { toast(err.message); }
         };
         liste.appendChild(li);

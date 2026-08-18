@@ -1,6 +1,6 @@
 {
-  "versionCode": 134,
-  "versionName": "2.31",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.31/motio.apk",
-  "notes": "Profil public, filtre Amis/Tous dans le fil et le classement, cartes du fil plus compactes avec titre dérivé des muscles travaillés."
+  "versionCode": 135,
+  "versionName": "2.32",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.32/motio.apk",
+  "notes": "Correctifs de retour terrain : séance en direct qui ne se réinitialise plus en arrière-plan, séances récentes avant les records sur un profil, suppression cascadée, coach IA plus précis."
 }

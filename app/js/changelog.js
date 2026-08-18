@@ -465,4 +465,17 @@ export const CHANGELOG = [
                 "Filtre Amis/Tous dans le fil et le classement",
                 "Cartes du fil plus compactes, avec un titre de séance basé sur les muscles travaillés"
             ] },
+  { date: "17 août 2026", versions: "v2.32", items: [
+                "Correction : le nombre de série affiché pendant la récupération",
+                "Correction : le bouton « Quitter sans enregistrer » ne fermait pas la fenêtre",
+                "Correction : « Enchaîner » ne fait plus remonter la page en haut, bouton agrandi",
+                "Correction : le champ de saisie du chat n'était pas complètement visible",
+                "RIR modifiable après coup sur une série déjà faite (glissement)",
+                "Séances récentes affichées avant les records sur le profil d'un ami, avec un lien vers les autres séances et le détail de chaque séance",
+                "Suppression d'une séance : elle disparaît aussi du fil et du classement de tes abonnés",
+                "En-tête du fil allégé (le doublon avec les onglets est retiré)",
+                "Les 3 minuteurs (Chrono/Minuteur/Tabata) partagent maintenant la même présentation",
+                "Génération d'une séance individuelle par IA, directement depuis l'écran Entraînement",
+                "Moti (coach IA) répond avec plus de précision aux questions techniques de préparation physique, et garde un ton plus tenu"
+            ] },
 ];

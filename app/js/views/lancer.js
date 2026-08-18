@@ -41,6 +41,36 @@ const SETUP_SEC = 10;
 const MOODS = [[1, '😩'], [2, '😕'], [3, '😐'], [4, '🙂'], [5, '💪']];
 const MOOD_LABELS = { 1: 'Épuisé', 2: 'Fatigué', 3: 'Normal', 4: 'En forme', 5: 'Excellent' };
 
+/** Choix du RIR d'une série déjà faite (glissement, ligneSerieGlissable) —
+ *  mêmes puces que la saisie initiale, en aparté puisqu'il n'y a pas de pavé
+ *  numérique adapté à une valeur discrète 0-5. Retaper la valeur déjà
+ *  sélectionnée l'efface (comme le toggle des puces à la saisie). */
+function ouvrirChoixRir(actuel, onValider) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="RIR">
+      <div class="modale-boite modale-boite-etroite">
+        <div class="modale-tete"><h2>RIR (répétitions en réserve)</h2></div>
+        <div class="run-rir" data-rir>
+          ${RIR.map(r => `<button type="button" class="puce" data-rir-val="${r}">${r === 5 ? '5+' : r}</button>`).join('')}
+        </div>
+        <div class="modale-pied">
+          <button class="lien-inline" data-annuler type="button">Annuler</button>
+        </div>
+      </div>
+    </div>`);
+  modale.querySelectorAll('[data-rir-val]').forEach(b => {
+    if (Number(b.dataset.rirVal) === actuel) b.classList.add('puce-active');
+    b.onclick = () => {
+      const v = Number(b.dataset.rirVal);
+      modale.remove();
+      onValider(v === actuel ? -1 : v);
+    };
+  });
+  modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+  modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+  document.body.appendChild(modale);
+}
+
 export async function vueLancerSeance(params) {
   render(loading('Préparation de la séance'));
   const moi = await currentUser();
@@ -168,6 +198,7 @@ export async function vueLancerSeance(params) {
     if (snap.mode === 'MINUTEUR' && snap.phase === 'OVERFLOW') {
       corps.querySelector('[data-derniere]').hidden = true;
       prepareSaisie(session.exercises[exIndex]);
+      dessinerSousligne(true);
     }
   }
 
@@ -356,7 +387,7 @@ export async function vueLancerSeance(params) {
       ex.sets.push({ weight: poids, reps, tensionMs, rir: rirChoisi });
       afficherSaisie(false);
       redessinerSeries();
-      dessinerSousligne();
+      dessinerSousligne(false);
 
       /* Bannière de record (PrBanner) : comparée aux séances passées, jamais
          à cette même séance en cours (meilleursAvant est figé au lancement). */
@@ -378,10 +409,15 @@ export async function vueLancerSeance(params) {
     };
   }
 
-  /** Sous-ligne « Exo X/Y · série X/Y · cible Xreps · r X:XX » — RunWorkout.kt. */
-  function dessinerSousligne() {
+  /** Sous-ligne « Exo X/Y · série X/Y · cible Xreps · r X:XX » — RunWorkout.kt.
+   *  `surLePoint` distingue « sur le point de faire la série N » (true — après
+   *  Démarrer/Série suivante, ou dès que la tension repart automatiquement en
+   *  mode MINUTEUR) de « viens de faire la série N, en récupération » (false) —
+   *  natif : le nombre affiché ne bondit à N+1 qu'au moment où la tension
+   *  suivante démarre réellement, jamais pendant le décompte de récupération. */
+  function dessinerSousligne(surLePoint = true) {
     const ex = session.exercises[exIndex];
-    const numSerie = Math.min(ex.sets.length + (warmup ? 0 : 1), ex.mode === 'TABATA' ? 1 : ex.plannedSets);
+    const numSerie = Math.min(ex.sets.length + (surLePoint ? 1 : 0), ex.mode === 'TABATA' ? 1 : ex.plannedSets);
     const bits = [
       `Exo ${exIndex + 1}/${session.exercises.length}`,
       `série ${numSerie || 1}/${ex.mode === 'TABATA' ? 1 : ex.plannedSets}`
@@ -455,7 +491,11 @@ export async function vueLancerSeance(params) {
             kind: 'reps',
             onValider: (v2) => {
               if (v2) { const n2 = parseInt(v2, 10); if (Number.isInteger(n2) && n2 > 0) s.reps = n2; }
-              redessinerSeries();
+              // Poids et reps se corrigeaient déjà ainsi, mais pas le RIR —
+              // signalé par Nicolas (« on n'a pas la possibilité de noter le
+              // RIR de la série qu'on vient d'effectuer »). Même choix à 6
+              // puces que la saisie initiale (RIR const), en 3e étape.
+              ouvrirChoixRir(s.rir, (rir) => { s.rir = rir; redessinerSeries(); });
             }
           });
         }
@@ -517,6 +557,7 @@ export async function vueLancerSeance(params) {
         engine.mode = 'CHRONO';
         engine.chronoReset();
         prepareSaisie(ex);
+        dessinerSousligne(true);
         zone.replaceChildren();
       }, 'btn-lg'));
     }
@@ -625,6 +666,7 @@ export async function vueLancerSeance(params) {
       if (confirm('Quitter sans enregistrer cette séance ?')) {
         termine = true;
         arreterDirect(moi.id).catch(() => {});
+        modale.remove();
         location.hash = '#/seances';
       }
     };

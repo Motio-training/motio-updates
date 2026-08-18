@@ -1,12 +1,14 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
-         listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile } from '../api.js';
+         listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
+         kudosFor, commentCounts } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
 import { reset as reinitialiserOnboarding } from './onboarding.js';
-import { muscleLoadOf } from '../muscle-lexicon.js';
+import { muscleLoadOf, titreSeance } from '../muscle-lexicon.js';
+import { carteSeance } from './fil.js';
 import { drawMuscleMap, drawLegend, MuscleScale } from '../muscle-map.js';
 import { CHANGELOG } from '../changelog.js';
 import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, definirObjectif,
@@ -146,13 +148,13 @@ export async function vueProfil(params) {
         <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>
 
         <div class="bloc">
-          <p class="bloc-titre">Records estimés</p>
-          <div data-records></div>
+          <p class="bloc-titre">Séances récentes</p>
+          <div data-seances></div>
         </div>
 
         <div class="bloc">
-          <p class="bloc-titre">Séances récentes</p>
-          <div data-seances></div>
+          <p class="bloc-titre">Records estimés</p>
+          <div data-records></div>
         </div>`}
     </section>`);
 
@@ -215,26 +217,38 @@ export async function vueProfil(params) {
     }
   }
 
+  /* Séances récentes : cartes cliquables (carteSeance, fil.js) au lieu de
+     lignes mortes — Nicolas : « je veux qu'on puisse y voir le détail ».
+     5 visibles d'emblée, jusqu'à 15 (déjà chargées) derrière « Autres
+     séances », même idée que FriendProfileScreen.kt côté natif. */
   const zoneS = el.querySelector('[data-seances]');
   if (zoneS) {
     if (!seances.length) {
       zoneS.appendChild(h(`<p class="etat-mono">Aucune séance partagée.</p>`));
     } else {
-      const ul = h('<ul class="liste"></ul>');
-      for (const s of seances.slice(0, 15)) {
-        ul.appendChild(h(`
-          <li class="ligne">
-            <div class="ligne-tete">
-              <span class="ligne-titre">${esc(s.workout_name || 'Séance')}</span>
-              <span class="ligne-meta">${esc(dateCourte(s.started_at))}</span>
-            </div>
-            <p class="ligne-stats">
-              <span>${esc(duree((s.duration_ms || 0) / 1000))}</span>
-              <span>${esc(kg(s.volume_kg))}</span>
-            </p>
-          </li>`));
+      const quinze = seances.slice(0, 15).map(s => ({ ...s, username: profil.username }));
+      const ids = quinze.map(s => s.id).filter(Boolean);
+      const [kud, nbCom, titres] = await Promise.all([
+        kudosFor(ids, moi.id).catch(() => ({})),
+        commentCounts(ids).catch(() => ({})),
+        Promise.all(quinze.map(s => titreSeance(s)))
+      ]);
+      let toutesVisibles = false;
+      const conteneur = h('<div></div>');
+      function dessinerSeances() {
+        conteneur.replaceChildren();
+        const liste = h('<div class="rangee-feed"></div>');
+        const visibles = toutesVisibles ? quinze : quinze.slice(0, 5);
+        visibles.forEach((s, i) => liste.appendChild(carteSeance(s, moi, kud[s.id], nbCom[s.id] || 0, titres[i])));
+        conteneur.appendChild(liste);
+        if (!toutesVisibles && quinze.length > 5) {
+          const lien = h(`<button class="lien-inline" type="button" style="margin-top:.6rem">Autres séances (${quinze.length - 5})</button>`);
+          lien.onclick = () => { toutesVisibles = true; dessinerSeances(); };
+          conteneur.appendChild(lien);
+        }
       }
-      zoneS.appendChild(ul);
+      dessinerSeances();
+      zoneS.appendChild(conteneur);
     }
   }
 

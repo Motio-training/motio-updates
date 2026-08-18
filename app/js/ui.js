@@ -113,11 +113,10 @@ export function socialHeader(titre, actif, unread = 0, onActualiser = null) {
   }).join('');
   const el = h(`
     <div class="social-entete">
-      <div class="social-titre-rangee">
-        <p class="eyebrow" style="margin:0">Social</p>
-        ${onActualiser ? '<button class="lien-inline" data-actualiser type="button">Actualiser</button>' : ''}
-      </div>
-      <h1>${esc(titre)}</h1>
+      ${onActualiser ? `
+      <div class="social-titre-rangee" style="justify-content:flex-end">
+        <button class="lien-inline" data-actualiser type="button">Actualiser</button>
+      </div>` : ''}
       <div class="social-tabs">${chips}</div>
     </div>`);
   if (onActualiser) {

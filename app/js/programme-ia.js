@@ -176,3 +176,26 @@ export async function genererProgrammeIA({ goalText, level, daysPerWeek, weeks, 
   }
   return { draft, notes: (data.notes || '').trim() };
 }
+
+/**
+ * Génération d'UNE séance isolée par IA — pas de programme ni de
+ * planification, juste un modèle prêt à enregistrer (équivalent du bouton
+ * « Générer une séance » de TrainingList côté natif, qui appelle lui
+ * l'algorithme maison ProgramGenerator.generateSingle() sans IA ; ici on
+ * réutilise plutôt l'infrastructure IA déjà branchée — c'est ce que Nicolas
+ * a explicitement demandé : « génération de séance individuelle par IA »).
+ * Sous le capot : la même fonction Edge `generate-program`, appelée avec
+ * weeks=1/daysPerWeek=1 ; on ne garde que le premier workout du résultat et
+ * on jette tout ce qui est planification (program/sessions datées).
+ */
+export async function genererSeanceIA({ goalText, level, gears }) {
+  const now = new Date();
+  const { draft, notes } = await genererProgrammeIA({
+    goalText, level, daysPerWeek: 1, weeks: 1, gears,
+    weekdays: [now.getDay()], minuteOfDay: now.getHours() * 60 + now.getMinutes(),
+    startMs: now.getTime()
+  });
+  const workout = draft.workouts[0];
+  if (!workout) throw new Error('Aucune séance reçue.');
+  return { workout, notes };
+}

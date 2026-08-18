@@ -8,8 +8,11 @@
 import { h, render } from '../ui.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
+import { ouvrirPave } from '../numpad.js';
 
 const MODES = [['CHRONO', 'Chrono'], ['MINUTEUR', 'Minuteur'], ['TABATA', 'Tabata']];
+const PRESETS_MINUTEUR_1 = [30, 60, 90, 120];
+const PRESETS_MINUTEUR_2 = [180, 300];
 
 export function vueMinuteurs() {
   let mode = 'CHRONO';
@@ -66,29 +69,78 @@ export function vueMinuteurs() {
     }
   }
 
-  function champNombre(label, valeur, onChange, { min = 0, max = 999, step = 1 } = {}) {
-    const wrap = h(`<label class="champ champ-mini"><span>${label}</span><input type="number"></label>`);
-    const input = wrap.querySelector('input');
-    input.min = min; input.max = max; input.step = step; input.value = valeur;
-    input.addEventListener('change', () => {
-      const v = Math.min(max, Math.max(min, parseInt(input.value, 10) || min));
-      input.value = v; onChange(v);
-    });
-    return wrap;
+  /** NumberRow (MainActivity.kt) : label + − + valeur + + — même stepper pour
+   *  les trois champs de Tabata, portage exact (pas de « Blocs » : « Séries »
+   *  comme le natif, pas 5, mais 1). */
+  function stepper(label, valeur, onChange, { pas = 5, min = 0, max = 999, unite = '' } = {}) {
+    const rangee = h(`
+      <div class="minuteur-stepper">
+        <span class="minuteur-stepper-label">${label}</span>
+        <button type="button" class="minuteur-stepper-bouton" data-moins aria-label="Diminuer">−</button>
+        <span class="minuteur-stepper-valeur" data-valeur>${valeur}${unite}</span>
+        <button type="button" class="minuteur-stepper-bouton" data-plus aria-label="Augmenter">+</button>
+      </div>`);
+    const affiche = rangee.querySelector('[data-valeur]');
+    function appliquer(v) {
+      valeur = Math.min(max, Math.max(min, v));
+      affiche.textContent = `${valeur}${unite}`;
+      onChange(valeur);
+    }
+    rangee.querySelector('[data-moins]').onclick = () => appliquer(valeur - pas);
+    rangee.querySelector('[data-plus]').onclick = () => appliquer(valeur + pas);
+    return rangee;
   }
 
+  /** Puce de durée pré-réglée — même valeurs que MinuteurScreen (MainActivity.kt) :
+   *  0:30/1:00/1:30/2:00 puis 3:00/5:00/Autre…, plus -15s/+15s. Remplace l'ancien
+   *  champ numérique brut : Nicolas voulait les trois modes « semblables dans
+   *  l'utilisation et l'aspect visuel » — Minuteur et Tabata partagent maintenant
+   *  le même vocabulaire visuel (puces/steppers) que Chrono partageait déjà
+   *  (aucun réglage, juste le cadran). */
   function dessinerReglages() {
     zoneReglages.replaceChildren();
     if (mode === 'MINUTEUR') {
-      const rangee = h('<div class="rangee rangee-serree"></div>');
-      rangee.appendChild(champNombre('Récup (s)', recupSec, (v) => { recupSec = v; }, { min: 5, max: 600, step: 5 }));
-      zoneReglages.appendChild(rangee);
+      const chips1 = h('<div class="rangee rangee-serree" style="margin-bottom:.5rem"></div>');
+      const chips2 = h('<div class="rangee rangee-serree" style="margin-bottom:.5rem"></div>');
+      const ajustes = h('<div class="rangee rangee-serree"></div>');
+      function dessinerChips() {
+        chips1.replaceChildren();
+        PRESETS_MINUTEUR_1.forEach(s => {
+          const b = h(`<button class="chip-cat ${recupSec === s ? 'on' : ''}" type="button">${fmtSec(s)}</button>`);
+          b.onclick = () => { recupSec = s; dessinerChips(); };
+          chips1.appendChild(b);
+        });
+        chips2.replaceChildren();
+        PRESETS_MINUTEUR_2.forEach(s => {
+          const b = h(`<button class="chip-cat ${recupSec === s ? 'on' : ''}" type="button">${fmtSec(s)}</button>`);
+          b.onclick = () => { recupSec = s; dessinerChips(); };
+          chips2.appendChild(b);
+        });
+        const autre = h(`<button class="chip-cat ${[...PRESETS_MINUTEUR_1, ...PRESETS_MINUTEUR_2].includes(recupSec) ? '' : 'on'}" type="button">Autre…</button>`);
+        autre.onclick = () => ouvrirPave({
+          kind: 'secondes',
+          onValider: (v) => {
+            const n = parseInt(v, 10);
+            if (Number.isInteger(n) && n >= 5) { recupSec = Math.min(3600, n); dessinerChips(); }
+          }
+        });
+        chips2.appendChild(autre);
+      }
+      dessinerChips();
+      const moins15 = h('<button class="chip-cat" type="button">-15 s</button>');
+      moins15.onclick = () => { recupSec = Math.max(5, recupSec - 15); dessinerChips(); };
+      const plus15 = h('<button class="chip-cat" type="button">+15 s</button>');
+      plus15.onclick = () => { recupSec += 15; dessinerChips(); };
+      ajustes.append(moins15, plus15);
+      zoneReglages.append(chips1, chips2, ajustes);
     } else if (mode === 'TABATA') {
-      const rangee = h('<div class="rangee rangee-serree"></div>');
-      rangee.appendChild(champNombre('Travail (s)', workSec, (v) => { workSec = v; }, { min: 5, max: 300 }));
-      rangee.appendChild(champNombre('Repos (s)', restSec, (v) => { restSec = v; }, { min: 0, max: 300 }));
-      rangee.appendChild(champNombre('Blocs', series, (v) => { series = v; }, { min: 1, max: 30 }));
-      zoneReglages.appendChild(rangee);
+      const col = h('<div style="display:flex;flex-direction:column;gap:.5rem"></div>');
+      col.append(
+        stepper('Travail', workSec, (v) => { workSec = v; }, { pas: 5, min: 5, max: 600, unite: 's' }),
+        stepper('Repos', restSec, (v) => { restSec = v; }, { pas: 5, min: 0, max: 600, unite: 's' }),
+        stepper('Séries', series, (v) => { series = v; }, { pas: 1, min: 1, max: 50, unite: '' })
+      );
+      zoneReglages.appendChild(col);
     }
   }
 

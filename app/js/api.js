@@ -586,6 +586,15 @@ export async function finishSession(userId, session) {
   return unwrap(await sb.from(T.sharedSessions).upsert(row, { onConflict: 'user_id,local_id' }).select().single());
 }
 
+/** Retire la copie serveur d'une séance supprimée localement — kudos et
+ *  commentaires partent avec elle (FK ON DELETE CASCADE côté Supabase), donc
+ *  la séance disparaît aussi du fil et du classement de ses abonnés. Même
+ *  clé que finishSession() : local_id = session.uid. */
+export async function deleteSharedSession(userId, localId) {
+  if (!localId) return;
+  await sb.from(T.sharedSessions).delete().eq('user_id', userId).eq('local_id', localId);
+}
+
 /* ==========================================================================
    Suivi en direct — LiveSessions (Social.kt) : une ligne par utilisateur dans
    live_sessions, remplacée (jamais mise à jour partiellement) au lancement
