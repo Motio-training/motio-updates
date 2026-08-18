@@ -44,7 +44,16 @@
 
   --f-display:"Outfit",system-ui,sans-serif;
   --f-body:"Inter",system-ui,sans-serif;
-  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+  /* L'application n'utilise AUCUNE police à chasse fixe : ses libellés, ses
+     métadonnées et ses chronos sont tous dans la police du corps. L'espace web
+     en mettait partout (une quarantaine d'endroits), ce qui lui donnait une
+     tout autre allure — évident en comparant les deux écrans côte à côte sur
+     le même téléphone. Plutôt que de reprendre chaque règle, la variable
+     pointe désormais sur la police du corps : les tailles, les graisses et les
+     espacements de lettres restent ceux qui ont été réglés écran par écran.
+     (La variable garde son nom, utilisé dans tout le fichier ; les chiffres
+     restent alignés grâce à font-variant-numeric:tabular-nums là où il faut.) */
+  --f-mono:"Inter",system-ui,sans-serif;
 
   --ressort:cubic-bezier(.22,.72,.28,1);
 
