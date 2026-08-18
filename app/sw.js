@@ -22,7 +22,7 @@
    par le cache.
    ========================================================================== */
 
-const CACHE = 'motio-app-v26';
+const CACHE = 'motio-app-v27';
 
 const COQUILLE = [
   './',
@@ -46,6 +46,14 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then((c) => c.addAll(COQUILLE)).then(() => self.skipWaiting())
   );
+});
+
+/* La page peut demander à une version en attente de prendre la main tout de
+   suite (main.js). skipWaiting() est déjà appelé à l'installation, mais un
+   service worker installé AVANT cette ligne, lui, attend toujours : ce
+   message est le seul moyen de le débloquer sans fermer l'application. */
+self.addEventListener('message', (e) => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {

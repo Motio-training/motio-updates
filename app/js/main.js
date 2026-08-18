@@ -151,8 +151,37 @@ onAuthChange(() => resolve());
 start();
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+  window.addEventListener('load', async () => {
+    let reg;
+    try { reg = await navigator.serviceWorker.register('sw.js'); } catch { return; }
+
+    /* CHERCHER la mise à jour, explicitement.
+       Constaté sur le téléphone de Nicolas : l'application installée depuis
+       l'espace web (WebAPK Samsung Internet) restait bloquée sur une version
+       vieille de plusieurs publications, alors que le même lien ouvert dans
+       Chrome affichait la dernière — deux redémarrages complets n'y ont rien
+       changé. Enregistrer le service worker ne suffit pas : tant que
+       personne ne demande `update()`, le navigateur peut garder le sien
+       pendant très longtemps. On le demande donc au démarrage, à chaque
+       retour au premier plan, et une fois par heure si l'app reste ouverte.
+       Le rechargement, lui, est déjà géré par `controllerchange` ci-dessous. */
+    const chercherMaj = () => reg.update().catch(() => {});
+    chercherMaj();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') chercherMaj();
+    });
+    setInterval(chercherMaj, 60 * 60 * 1000);
+
+    /* Une version déjà téléchargée qui attend son tour ne doit pas attendre
+       la fermeture de tous les onglets : on lui dit de prendre la main. */
+    const activerEnAttente = () => reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
+    activerEnAttente();
+    reg.addEventListener('updatefound', () => {
+      const nouveau = reg.installing;
+      nouveau?.addEventListener('statechange', () => {
+        if (nouveau.state === 'installed' && navigator.serviceWorker.controller) activerEnAttente();
+      });
+    });
   });
   // Dès qu'une nouvelle version prend la main (activate + clients.claim()
   // côté sw.js), on recharge une fois : sans ça, l'onglet déjà ouvert garde
