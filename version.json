@@ -1,6 +1,6 @@
 {
-  "versionCode": 136,
-  "versionName": "2.33",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.33/motio.apk",
-  "notes": "Notifications pour les likes, commentaires et messages, avec réglages individuels. 1RM testé saisissable à la main, utilisé par Moti pour les charges et les programmes."
+  "versionCode": 137,
+  "versionName": "2.34",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.34/motio.apk",
+  "notes": "Entrainement libre : demarre sans plan et ajoute les exercices au fur et a mesure. L'ecran Entrainement ne montre plus que les seances epinglees et celles d'un programme. Nouveau Profil > Entrainements : toutes tes seances effectuees."
 }
