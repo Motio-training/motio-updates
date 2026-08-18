@@ -64,30 +64,50 @@ function catColor(cat) {
 }
 const ICONE_HALTERE = '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>';
 
-export async function vueSeances() {
+/** Liste des séances. `toutes` = écran secondaire « Toutes mes séances » ;
+ *  l'écran principal, lui, ne montre que les séances épinglées et celles qui
+ *  viennent d'un programme (demande de Nicolas : le carnet complet encombrait
+ *  l'accueil, tout l'historique des séances FAITES vivant de son côté dans
+ *  Profil → Entraînements). */
+export async function vueSeances(_params, toutes = false) {
   render(loading('Chargement des séances'));
   const moi = await currentUser();
 
-  let rows;
-  try { rows = await listWorkouts(moi.id); }
+  let rows, programmes = [];
+  try {
+    rows = await listWorkouts(moi.id);
+    programmes = await listPrograms(moi.id);
+  }
   catch (e) { return render(failure(e, "Les séances n'ont pas pu être chargées")); }
+
+  /* Une séance « issue d'un programme » est une séance dont l'id figure dans
+     les workoutIds d'un programme (ProgramModel.kt / programme-ia.js). */
+  const idsProgramme = new Set();
+  programmes.forEach(p => (p.data?.workoutIds || []).forEach(id => idsProgramme.add(String(id))));
+  const misesEnAvant = rows.filter(s => (s.data || {}).pinned || idsProgramme.has(String((s.data || {}).id)));
+  const affichees = toutes ? rows : misesEnAvant;
 
   const el = h(`
     <section class="page">
-      <h1 style="margin:0 0 1rem">ENTRAÎNEMENT</h1>
+      <h1 style="margin:0 0 1rem">${toutes ? 'TOUTES MES SÉANCES' : 'ENTRAÎNEMENT'}</h1>
 
+      ${toutes ? '<a class="lien-inline" href="#/seances" style="display:inline-block;margin-bottom:1rem">‹ Retour à Entraînement</a>' : `
       <a class="moti-card" href="#/coach">
         <img src="../assets/img/moti_avatar.jpg" alt="">
         <span class="corps"><b>Moti</b><span>Ton coach IA — motivation, conseils, où tu en es</span></span>
         <span class="chevron">›</span>
-      </a>
+      </a>`}
 
       <div data-reprise></div>
+
+      ${toutes ? '' : `
+      <a class="btn btn-lg libre-bouton" href="#/seances/libre/lancer">Entraînement libre</a>
+      <p class="libre-aide">Démarre sans plan : tu ajoutes les exercices au fur et à mesure.</p>
 
       <div class="rangee rangee-serree" style="margin-bottom:1rem">
         <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
         <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance</button>
-      </div>
+      </div>`}
 
       <div data-corps></div>
     </section>`);
@@ -126,7 +146,7 @@ export async function vueSeances() {
   /* Génération d'UNE séance par IA (genererSeanceIA, programme-ia.js) —
      manquait sur l'écran principal côté web alors que TrainingList (natif)
      a ce bouton juste à côté de « Programme », signalé par Nicolas. */
-  el.querySelector('[data-generer-seance]').onclick = () => ouvrirGenerationSeanceIA();
+  el.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeanceIA());
 
   function ouvrirGenerationSeanceIA() {
     let goalText = '', niveau = niveauActuel(), gears = [];
@@ -232,7 +252,7 @@ export async function vueSeances() {
   if (!rows.length) {
     corps.appendChild(empty(
       'Aucune séance',
-      'Une séance est un modèle : des exercices, des séries et des temps de repos, à relancer autant de fois que tu veux.',
+      'Une séance est un modèle : des exercices, des séries et des temps de repos, à relancer autant de fois que tu veux. Sinon, lance un entraînement libre et construis-la en t’entraînant.',
       { href: '#/seances/nouvelle', label: 'Créer une séance' }
     ));
     return render(el);
@@ -407,12 +427,17 @@ export async function vueSeances() {
 
   function dessinerListe() {
     zoneListe.replaceChildren();
-    if (!rows.length) {
-      zoneListe.appendChild(h('<p class="etat-mono">Aucun entraînement pour l\'instant.</p>'));
+    /* Recalculé à chaque redessin : épingler ou détacher une séance depuis le
+       menu d'action la fait entrer ou sortir de l'écran principal aussitôt. */
+    const liste = toutes ? rows : rows.filter(s => (s.data || {}).pinned || idsProgramme.has(String((s.data || {}).id)));
+    if (!liste.length) {
+      zoneListe.appendChild(h(`<p class="etat-mono">${toutes
+        ? "Aucun entraînement pour l'instant."
+        : "Rien d'épinglé pour l'instant. Épingle une séance depuis « Toutes mes séances » pour la garder ici, ou lance un entraînement libre."}</p>`));
     } else {
       const blocs = new Map();
       const isolees = [];
-      rows.forEach(s => {
+      liste.forEach(s => {
         const section = (s.data || {}).section;
         if (section) { if (!blocs.has(section)) blocs.set(section, []); blocs.get(section).push(s); }
         else isolees.push(s);
@@ -430,6 +455,10 @@ export async function vueSeances() {
     const pied = h(`
       <div style="margin-top:1.5rem">
         <a class="btn btn-lg" href="#/seances/nouvelle" style="display:block;text-align:center">＋ Nouvel entraînement</a>
+        ${toutes ? '' : `<a class="menu-ligne" href="#/seances/toutes" style="margin-top:.8rem">
+          <span class="corps"><b>Toutes mes séances</b><span>${rows.length} au total — celles qui ne sont ni épinglées ni dans un programme</span></span>
+          <span class="chevron">›</span>
+        </a>`}
       </div>`);
     zoneListe.appendChild(pied);
   }
@@ -437,6 +466,9 @@ export async function vueSeances() {
   dessinerListe();
   render(el);
 }
+
+/** Écran secondaire : le carnet complet, sans filtre. */
+export function vueToutesSeances(params) { return vueSeances(params, true); }
 
 /* ================================================== import par lien/code */
 

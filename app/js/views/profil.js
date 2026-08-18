@@ -110,6 +110,13 @@ export async function vueProfil(params) {
         <div class="bloc">
           <p class="bloc-titre">Entraînement</p>
           <div class="menu-groupe">
+            <!-- Toutes les séances RÉELLEMENT faites, la plus récente d'abord :
+                 l'écran principal ne montre plus que les séances épinglées et
+                 celles d'un programme, c'est ici que vit le reste. -->
+            <a class="menu-ligne" href="#/historique">
+              <span class="corps"><b>Entraînements</b><span>Toutes tes séances effectuées, dans l'ordre</span></span>
+              <span class="chevron">›</span>
+            </a>
             <a class="menu-ligne" href="#/profil/analyse">
               <span class="corps"><b>Analyse et records</b><span>Volume par groupe, courbes, records</span></span>
               <span class="chevron">›</span>

@@ -13,7 +13,7 @@ import { vueConnexion } from './views/connexion.js';
 import { vueFil } from './views/fil.js';
 import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte,
          vueProfilMaj, vueProfilNouveautes } from './views/profil.js';
-import { vueSeances, vueSeanceEdition, vueProgrammes,
+import { vueSeances, vueToutesSeances, vueSeanceEdition, vueProgrammes,
          vueProgrammeNouveau, vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
 import { vueLancerSeance } from './views/lancer.js';
 import { vueCoach } from './views/coach.js';
@@ -48,6 +48,9 @@ route('/groupes/rejoindre/:code', vueGroupeRejoindre);
 route('/groupes/:id', vueGroupeDetail);
 route('/defis', vueDefis);
 route('/seances', vueSeances);
+/* Avant /seances/:id : sans ça, « toutes » serait pris pour l'id d'une séance
+   à éditer (même précaution que les sous-écrans de /profil). */
+route('/seances/toutes', vueToutesSeances);
 route('/seances/importer/:code', vueImporterSeance);
 route('/seances/:id', vueSeanceEdition);
 route('/seances/:id/lancer', vueLancerSeance);

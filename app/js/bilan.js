@@ -23,9 +23,12 @@ import { drawMuscleMap, drawLegend, MuscleScale } from './muscle-map.js';
  * @param {object} p.moi utilisateur courant (currentUser())
  * @param {object} p.modele workout.data (le modèle, dont modele.history contient `session`)
  * @param {object} p.session la réalisation à afficher — objet à l'intérieur de modele.history
+ * @param {boolean} [p.libre] entraînement libre : aucun modèle derrière cette
+ *        séance, donc rien à réécrire dans le carnet — à la place, le bilan
+ *        propose d'en garder une séance si elle mérite d'être refaite.
  * @param {() => void} p.onFermer appelé à la fermeture (retour séances, ou redessiner l'historique)
  */
-export async function ouvrirBilan({ moi, modele, session, onFermer }) {
+export async function ouvrirBilan({ moi, modele, session, libre = false, onFermer }) {
   /* Un identifiant stable est requis pour synchroniser shared_sessions —
      les réalisations enregistrées avant l'introduction du champ n'en ont
      pas, on en dérive un de la date (esprit de la migration native). */
@@ -66,7 +69,8 @@ export async function ouvrirBilan({ moi, modele, session, onFermer }) {
      cohérents avec l'historique local. */
   async function saveAll() {
     try {
-      await saveWorkout(moi.id, modele);
+      // Entraînement libre : aucun modèle en base à réécrire.
+      if (!libre) await saveWorkout(moi.id, modele);
       await finishSession(moi.id, session);
     } catch (err) { toast(err.message); }
     redessiner();
@@ -171,6 +175,7 @@ export async function ouvrirBilan({ moi, modele, session, onFermer }) {
   let variantSaved = 0; // 0 rien fait, 1 modèle mis à jour, 2 variante enregistrée
   function dessinerDiverge() {
     const zone = el.querySelector('[data-diverge]');
+    if (libre) return dessinerGarderModele(zone);
     const diverged = session.exercises.map(e => e.name).join('|') !== (modele.exercises || []).map(e => e.name).join('|');
     if (!diverged) { zone.replaceChildren(); return; }
     const texte = variantSaved === 1 ? 'La séance a été mise à jour avec cette version.'
@@ -204,6 +209,58 @@ export async function ouvrirBilan({ moi, modele, session, onFermer }) {
         dessinerDiverge();
       };
     }
+  }
+
+  /* Entraînement libre : la séance vient d'être rangée dans le fil et
+     l'historique, mais rien n'a été ajouté au carnet — c'est le principe.
+     Ce bloc est la seule façon d'en garder un modèle, avec son nom et,
+     éventuellement, son bloc d'entraînement (section) : c'est l'exception
+     que Nicolas a posée (« à part si ils ont été mis lors de leur création
+     dans un bloc d'entraînement »). */
+  function dessinerGarderModele(zone) {
+    if (variantSaved) {
+      zone.replaceChildren(h(`
+        <div class="bilan-diverge">
+          <h3>Séance enregistrée</h3>
+          <p>Tu la retrouveras dans tes entraînements.</p>
+        </div>`));
+      return;
+    }
+    // Déjà affiché : ne pas réécrire la zone à chaque redessin, sinon le nom
+    // en cours de saisie disparaîtrait dès qu'on corrige une série.
+    if (zone.querySelector('[data-garder]')) return;
+    zone.replaceChildren(h(`
+      <div class="bilan-diverge">
+        <h3>Garder cette séance ?</h3>
+        <p>Cet entraînement libre est déjà dans ton fil et ton historique. Tu peux
+           aussi en faire une séance à relancer plus tard.</p>
+        <label class="champ"><span>Nom de la séance</span>
+          <input type="text" data-nom placeholder="Ex. : Haut du corps improvisé" maxlength="60"></label>
+        <label class="champ"><span>Bloc d'entraînement (facultatif)</span>
+          <input type="text" data-section placeholder="Ex. : Semaine A" maxlength="40"></label>
+        <button class="btn" data-garder type="button">Enregistrer dans mes séances</button>
+      </div>`));
+    zone.querySelector('[data-garder]').onclick = async (e) => {
+      const nom = zone.querySelector('[data-nom]').value.trim();
+      if (!nom) return toast('Donne un nom à la séance.');
+      const section = zone.querySelector('[data-section]').value.trim();
+      e.target.disabled = true;
+      const nv = {
+        id: Date.now(), name: nom,
+        category: session.category || 'Libre',
+        section,
+        /* Une séance épinglée reste visible sur l'écran principal, qui ne
+           montre plus que les épinglées et celles issues d'un programme. */
+        pinned: true,
+        exercises: session.exercises.map(ex => ({ ...ex, sets: [] })),
+        history: []
+      };
+      try { await saveWorkout(moi.id, nv); }
+      catch (err) { e.target.disabled = false; return toast(err.message); }
+      variantSaved = 3;
+      dessinerGarderModele(zone);
+      toast('Séance enregistrée ✓');
+    };
   }
 
   /* Même gabarit que le partage depuis l'historique (partage.js) — juste

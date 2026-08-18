@@ -1099,6 +1099,11 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .run-fleche-ronde:disabled{opacity:.35;cursor:default}
 .run-suivant{flex:1}
 
+/* Entraînement libre : première action de l'écran Entraînement, avant même la
+   liste — on part s'entraîner, on remplit la séance en la faisant. */
+.libre-bouton{display:block;text-align:center;margin-bottom:.4rem}
+.libre-aide{margin:0 0 1rem;text-align:center;font-family:var(--f-mono);font-size:.7rem;color:var(--encre-2)}
+
 /* Bandeau « Séance en cours » sur l'écran Entraînement — une séance mise en
    arrière-plan (run-state.js) doit sauter aux yeux et se reprendre d'un
    appui, pas se perdre. */

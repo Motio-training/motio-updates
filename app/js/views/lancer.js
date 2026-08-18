@@ -40,7 +40,7 @@ import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
 import { getWorkout, saveWorkout, finishSession, sessionsOf,
          demarrerDirect, battementDirect, arreterDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
-import { libelleRir, kg, dureeSeance, estime1RM } from '../model.js';
+import { libelleRir, kg, dureeSeance, estime1RM, nouvelExercice } from '../model.js';
 import { devineMateriel } from '../catalog.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
@@ -88,16 +88,28 @@ export async function vueLancerSeance(params) {
   render(loading('Préparation de la séance'));
   const moi = await currentUser();
 
-  let row;
-  try { row = await getWorkout(moi.id, params.id); }
-  catch (e) { return render(failure(e, "La séance n'a pas pu être chargée")); }
-  if (!row) return render(empty('Séance introuvable', 'Elle a peut-être été supprimée.',
-    { href: '#/seances', label: 'Retour aux séances' }));
+  /* Entraînement libre (id réservé « libre ») : on part sans modèle et sans
+     aucun exercice, on arrive directement sur l'écran d'échauffement et on
+     ajoute les exercices au fil de la séance. Rien n'est écrit dans les
+     séances du carnet — la réalisation part dans le fil et les données, et
+     c'est le bilan qui propose, éventuellement, d'en garder un modèle. */
+  const libre = params.id === 'libre';
 
-  const modele = row.data;
-  if (!modele.exercises?.length) return render(empty('Séance vide',
-    'Ajoute au moins un exercice avant de la lancer.',
-    { href: `#/seances/${esc(params.id)}`, label: "Modifier la séance" }));
+  let modele;
+  if (libre) {
+    modele = { id: Date.now(), name: 'Entraînement libre', category: 'Libre', exercises: [], history: [] };
+  } else {
+    let row;
+    try { row = await getWorkout(moi.id, params.id); }
+    catch (e) { return render(failure(e, "La séance n'a pas pu être chargée")); }
+    if (!row) return render(empty('Séance introuvable', 'Elle a peut-être été supprimée.',
+      { href: '#/seances', label: 'Retour aux séances' }));
+
+    modele = row.data;
+    if (!modele.exercises?.length) return render(empty('Séance vide',
+      'Ajoute au moins un exercice avant de la lancer.',
+      { href: `#/seances/${esc(params.id)}`, label: "Modifier la séance" }));
+  }
 
   const session = {
     uid: crypto.randomUUID(),
@@ -207,7 +219,9 @@ export async function vueLancerSeance(params) {
     if (termine) return;
     const ecoule = Math.floor((Date.now() - session.startedAt) / 1000);
     chronoGlobal.textContent = fmtClock(ecoule);
-    resteEl.textContent = `reste ~${fmtReste(Math.max(0, totalEstimeSec - ecoule))}`;
+    /* Pas de « reste ~ » en entraînement libre : la séance n'a pas de plan,
+       donc aucune durée à annoncer. */
+    resteEl.textContent = libre ? '' : `reste ~${fmtReste(Math.max(0, totalEstimeSec - ecoule))}`;
     sauver();
   }
   ticGlobal();
@@ -371,8 +385,41 @@ export async function vueLancerSeance(params) {
       : `→ ${esc(kg(dernier.weight))} conseillés · comme la dernière fois`;
   }
 
+  /** Entraînement libre encore vide : l'écran d'échauffement, avec pour seule
+   *  action l'ajout du premier exercice. */
+  function dessinerVide() {
+    titreEl.textContent = 'Entraînement libre';
+    pauseBtn.hidden = true;
+    sousligneEl.textContent = 'Aucun exercice pour l’instant';
+    corps.replaceChildren(h(`
+      <div>
+        <div class="run-cadran run-cad-warmup">
+          <span class="run-cadran-value">ÉCHAUFFEMENT</span>
+        </div>
+        <p class="run-saisie-aide">Ajoute ton premier exercice quand tu es prêt.</p>
+        <div class="run-bas">
+          <button class="btn btn-lg run-suivant" data-ajouter type="button">＋ Ajouter un exercice</button>
+        </div>
+      </div>`));
+    corps.querySelector('[data-ajouter]').onclick = () => ajouterExercice();
+  }
+
+  /** Ajout d'un exercice en cours de séance (entraînement libre) : même
+   *  catalogue que l'édition d'une séance, l'exercice s'insère à la suite et
+   *  devient l'exercice courant. */
+  function ajouterExercice() {
+    ouvrirCatalogue((nom) => {
+      session.exercises.push(nouvelExercice(nom));
+      exIndex = session.exercises.length - 1;
+      engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
+      dessinerExercice();
+      sauver();
+    });
+  }
+
   function dessinerExercice() {
     const ex = session.exercises[exIndex];
+    if (!ex) return dessinerVide();
     warmup = ex.sets.length === 0;
     poidsVal = 0; repsVal = 0; rirChoisi = -1; serieEnEdition = -1;
 
@@ -421,7 +468,8 @@ export async function vueLancerSeance(params) {
 
         <div class="run-bas">
           <button class="run-fleche-ronde" data-precedent type="button" ${exIndex === 0 ? 'disabled' : ''}>‹</button>
-          <button class="btn btn-lg run-suivant" data-suivant type="button">Exercice suivant ▶</button>
+          ${libre ? '<button class="run-fleche-ronde" data-ajouter type="button" aria-label="Ajouter un exercice">＋</button>' : ''}
+          <button class="btn btn-lg run-suivant" data-suivant type="button">${libre && exIndex === session.exercises.length - 1 ? 'Terminer la séance' : 'Exercice suivant ▶'}</button>
         </div>
       </div>`));
 
@@ -436,6 +484,7 @@ export async function vueLancerSeance(params) {
       exIndex--; dessinerExercice();
     };
     corps.querySelector('[data-suivant]').onclick = () => passerExercice();
+    corps.querySelector('[data-ajouter]')?.addEventListener('click', () => ajouterExercice());
 
     /* Taper le cadran = action principale et UNIQUE façon de valider une
        série (centerTap, TrainingScreens.kt) — le bouton « Série faite » a été
@@ -835,14 +884,19 @@ export async function vueLancerSeance(params) {
     enregistrement = true;
     render(loading('Enregistrement de la séance'));
     try {
-      const dansModele = {
-        startedAt: session.startedAt, endedAt: session.endedAt,
-        uid: session.uid, note: session.note, mood: session.mood,
-        exercises: session.exercises
-      };
-      modele.history = modele.history || [];
-      modele.history.push(dansModele);
-      await saveWorkout(moi.id, modele);
+      /* Entraînement libre : rien n'entre dans le carnet de séances — la
+         réalisation part uniquement dans le fil et les données (le bilan
+         propose ensuite d'en garder un modèle si on le veut). */
+      if (!libre) {
+        const dansModele = {
+          startedAt: session.startedAt, endedAt: session.endedAt,
+          uid: session.uid, note: session.note, mood: session.mood,
+          exercises: session.exercises
+        };
+        modele.history = modele.history || [];
+        modele.history.push(dansModele);
+        await saveWorkout(moi.id, modele);
+      }
       await finishSession(moi.id, session);
     } catch (err) {
       return render(failure(err, "La séance n'a pas pu être enregistrée"));
@@ -850,7 +904,7 @@ export async function vueLancerSeance(params) {
 
     /* Le bilan (charge totale, carte musculaire, détail modifiable par
        exercice) est partagé avec l'historique par séance — voir bilan.js. */
-    await ouvrirBilan({ moi, modele, session, onFermer: () => { location.hash = '#/seances'; } });
+    await ouvrirBilan({ moi, modele, session, libre, onFermer: () => { location.hash = '#/seances'; } });
   }
 
   /** Remonte à l'écran l'état exact d'une séance reprise : exercice courant,
