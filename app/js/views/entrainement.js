@@ -63,6 +63,9 @@ function catColor(cat) {
   return cat === 'Push' ? 'var(--accent)' : cat === 'Pull' ? 'var(--accent2)' : cat === 'Legs' ? 'var(--dore)' : 'var(--encre-2)';
 }
 const ICONE_HALTERE = '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>';
+/** Punaise d'épinglage — même tracé que ic_pin.xml (drawable natif). */
+const ICONE_PIN = '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M16,3L16,5L15,5L15,10.5L17.5,13L17.5,15L12.9,15L12.9,21L11.1,21L11.1,15L6.5,15L6.5,13L9,10.5L9,5L8,5L8,3z"/></svg>';
 
 /** Liste des séances. `toutes` = écran secondaire « Toutes mes séances » ;
  *  l'écran principal, lui, ne montre que les séances épinglées et celles qui
@@ -102,12 +105,7 @@ export async function vueSeances(_params, toutes = false) {
 
       ${toutes ? '' : `
       <a class="btn btn-lg libre-bouton" href="#/seances/libre/lancer">Entraînement libre</a>
-      <p class="libre-aide">Démarre sans plan : tu ajoutes les exercices au fur et à mesure.</p>
-
-      <div class="rangee rangee-serree" style="margin-bottom:1rem">
-        <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
-        <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance</button>
-      </div>`}
+      <p class="libre-aide">Démarre sans plan : tu ajoutes les exercices au fur et à mesure.</p>`}
 
       <div data-corps></div>
     </section>`);
@@ -146,7 +144,8 @@ export async function vueSeances(_params, toutes = false) {
   /* Génération d'UNE séance par IA (genererSeanceIA, programme-ia.js) —
      manquait sur l'écran principal côté web alors que TrainingList (natif)
      a ce bouton juste à côté de « Programme », signalé par Nicolas. */
-  el.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeanceIA());
+  /* Le bouton « Générer une séance » vit maintenant dans le pied de liste,
+     reconstruit à chaque dessin : son écouteur est branché là-bas. */
 
   function ouvrirGenerationSeanceIA() {
     let goalText = '', niveau = niveauActuel(), gears = [];
@@ -270,7 +269,7 @@ export async function vueSeances(_params, toutes = false) {
         </span>
         <span class="corps">
           <span class="titre-row">
-            ${w.pinned ? '<span class="pin">📌</span>' : ''}
+            ${w.pinned ? ICONE_PIN : ''}
             <b>${esc(dansBloc ? s.category : (s.name || `Séance ${s.category}`))}</b>
             ${aFaire ? '<span class="badge-faire">à faire</span>' : ''}
           </span>
@@ -452,14 +451,22 @@ export async function vueSeances(_params, toutes = false) {
         isolees.forEach(s => zoneListe.appendChild(carteSeance(s, false, false)));
       }
     }
+    /* Générer un programme / une séance vivent en PIED de liste, comme dans
+       l'application : ce sont des gestes occasionnels, ils passent après les
+       séances qu'on vient lancer. Ils occupaient le haut de l'écran côté web. */
     const pied = h(`
       <div style="margin-top:1.5rem">
+        ${toutes ? '' : `<div class="rangee rangee-serree" style="margin-bottom:.8rem">
+          <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
+          <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance</button>
+        </div>`}
         <a class="btn btn-lg" href="#/seances/nouvelle" style="display:block;text-align:center">＋ Nouvel entraînement</a>
         ${toutes ? '' : `<a class="menu-ligne" href="#/seances/toutes" style="margin-top:.8rem">
           <span class="corps"><b>Toutes mes séances</b><span>${rows.length} au total — celles qui ne sont ni épinglées ni dans un programme</span></span>
           <span class="chevron">›</span>
         </a>`}
       </div>`);
+    pied.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeanceIA());
     zoneListe.appendChild(pied);
   }
 

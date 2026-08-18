@@ -299,19 +299,16 @@ body:not(.connecte) .icon-btn{display:none}
   letter-spacing:.18em;text-transform:uppercase;color:var(--accent);
   margin:0 0 .6rem;
 }
+/* Taille alignée sur les titres d'écran de l'application (22sp, gras, un peu
+   d'interlettrage) : le web montait jusqu'à 2,6rem, presque le double. */
 h1{
-  font-family:var(--f-display);font-weight:600;
-  font-size:clamp(1.85rem,3.6vw,2.6rem);line-height:1.08;
-  letter-spacing:-.015em;
-  margin:0 0 1.1rem;
+  font-family:var(--f-display);font-weight:700;
+  font-size:clamp(1.35rem,3vw,1.6rem);line-height:1.15;
+  letter-spacing:.04em;
+  margin:0 0 1rem;
 }
-/* graduation de cadran : le motif directeur, discret et répété */
-h1::after{
-  content:"";display:block;
-  width:4.5rem;height:8px;margin-top:.65rem;
-  background:repeating-linear-gradient(90deg,var(--accent) 0 1.5px,transparent 1.5px 8px);
-  opacity:.6;
-}
+/* La « graduation de cadran » sous les titres n'existe pas dans
+   l'application : retirée pour que les deux écrans se superposent. */
 h2{
   font-family:var(--f-display);font-weight:600;
   font-size:1.12rem;letter-spacing:-.005em;
@@ -1233,10 +1230,16 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .wcard:hover{box-shadow:var(--ombre-2)}
 .wcard-ico{width:44px;height:44px;border-radius:var(--r-m);display:flex;align-items:center;justify-content:center;flex:none}
 .wcard-ico svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
-.wcard .corps{flex:1;min-width:0}
+/* Colonne, pas des spans inline qui se suivaient : la durée se retrouvait au
+   bout de la ligne de méta et repassait à la ligne en plein milieu
+   (« … ⏱ 1 h 08 en / moyenne »), là où l'application lui donne sa propre
+   ligne. */
+.wcard .corps{flex:1;min-width:0;display:flex;flex-direction:column}
 .wcard .titre-row{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
 .wcard .titre-row b{color:var(--encre);font-size:1.05rem}
-.wcard .pin{color:var(--dore);font-size:.85rem}
+/* Punaise reprise de ic_pin.xml : petite, dorée, discrète — l'emoji 📌 rouge
+   n'avait rien à voir avec le marqueur de l'application. */
+.wcard .pin{width:13px;height:13px;flex:none;fill:var(--dore)}
 .wcard .badge-faire{background:var(--accent);color:var(--accent-sur);font-size:.62rem;font-weight:700;padding:.15rem .55rem;border-radius:var(--r-l)}
 .wcard .meta{color:var(--encre-2);font-size:.8rem;margin-top:.15rem}
 .wcard .duree{color:var(--dore);font-weight:700;font-size:.8rem;margin-top:.1rem}
