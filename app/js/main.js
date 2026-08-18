@@ -170,7 +170,19 @@ start();
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '34';
+const VERSION = '35';
+
+/* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
+   la fermeture de l'application. Une version publiée ne peut donc déclencher
+   qu'UN SEUL rechargement par lancement.
+
+   Sans ce verrou, la première version de ce contrôle a boucle : elle vidait
+   les caches, désinscrivait le service worker et rechargeait ; le navigateur
+   resservait le même ancien main.js depuis son propre cache HTTP (GitHub
+   Pages répond avec une durée de fraîcheur de quelques minutes), donc la
+   version embarquée ne changeait pas et le rechargement repartait aussitôt.
+   Écran blanc, application inutilisable. Vu sur le téléphone, corrigé ici. */
+const CLE_MAJ = 'motio.maj-tentee';
 
 let dejaRecharge = false;
 
@@ -183,13 +195,17 @@ async function verifierVersion() {
     publiee = (await rep.text()).trim();
   } catch { return; }               // hors ligne : on garde ce qu'on a
   if (!publiee || publiee === VERSION) return;
+  try { if (sessionStorage.getItem(CLE_MAJ) === publiee) return; } catch { return; }
 
   dejaRecharge = true;
+  try { sessionStorage.setItem(CLE_MAJ, publiee); } catch { /* stockage refusé */ }
+  /* On ne vide RIEN et on ne désinscrit RIEN : le service worker va déjà
+     chercher le réseau en premier, et tout casser pour une mise à jour
+     laisserait l'application sans coquille hors ligne. On demande juste au
+     service worker de se mettre à jour, puis on recharge une fois. */
   try {
-    const clefs = await caches.keys();
-    await Promise.all(clefs.map(k => caches.delete(k)));
     const regs = await navigator.serviceWorker?.getRegistrations?.() ?? [];
-    await Promise.all(regs.map(r => r.unregister()));
+    await Promise.all(regs.map(r => r.update()));
   } catch { /* on recharge quand même */ }
   location.reload();
 }
