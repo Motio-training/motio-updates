@@ -608,6 +608,12 @@ a.ligne-titre:hover{color:var(--accent)}
 .rangee-serree{gap:.6rem}
 .champ-mini{flex:0 0 7.5rem;max-width:7.5rem}
 
+/* Réglages de notification (Compte) : libellé + explication + bascule. */
+.notif-ligne{display:flex;align-items:center;gap:.8rem;padding:.5rem 0}
+.notif-corps{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem}
+.notif-corps b{font-family:var(--f-display);font-weight:700;font-size:.9rem;color:var(--encre)}
+.notif-corps span{font-family:var(--f-mono);font-size:.72rem;color:var(--encre-2);line-height:1.35}
+
 /* Minuteurs — stepper Tabata (NumberRow, MainActivity.kt) : label + − + valeur + +. */
 .minuteur-stepper{display:flex;align-items:center;gap:.7rem;width:100%}
 .minuteur-stepper-label{flex:0 0 5.5rem;font-family:var(--f-mono);font-size:.85rem;color:var(--encre-2)}

@@ -20,6 +20,7 @@ import { sb, currentUser } from '../supabase.js';
 import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread } from '../api.js';
 import { nouvelleSeance, MODE_LABELS } from '../model.js';
 import { saveWorkout } from '../api.js';
+import { tousOneRmManuels } from '../reglages.js';
 
 const FENETRE = 12;
 
@@ -60,7 +61,17 @@ async function construireContexte(moi) {
       lignes.push('Aucune séance enregistrée pour l’instant.');
     }
   } catch { /* pas bloquant */ }
-  lignes.push('(Connecté depuis l’espace web : le programme actif et les records ne sont visibles que dans l’application.)');
+
+  /* 1RM réellement testés (saisis dans Analyse et records) : la donnée la plus
+     fiable dont dispose le coach pour calibrer des charges — à distinguer
+     explicitement des 1RM estimés par formule, qui sous-estiment un vrai maxi. */
+  const rms = Object.entries(tousOneRmManuels()).filter(([, v]) => v > 0);
+  if (rms.length) {
+    lignes.push('1RM réellement testés (valeurs saisies par l’utilisateur, plus fiables que toute estimation) :');
+    rms.forEach(([exercice, v]) => lignes.push(`- ${exercice} : ${v} kg`));
+  }
+
+  lignes.push('(Connecté depuis l’espace web : le programme actif et les records estimés ne sont visibles que dans l’application.)');
   return lignes.join('\n');
 }
 

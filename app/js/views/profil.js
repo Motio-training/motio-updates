@@ -2,7 +2,7 @@ import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, soci
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
          listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
-         kudosFor, commentCounts } from '../api.js';
+         kudosFor, commentCounts, setNotifPref } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -12,7 +12,8 @@ import { carteSeance } from './fil.js';
 import { drawMuscleMap, drawLegend, MuscleScale } from '../muscle-map.js';
 import { CHANGELOG } from '../changelog.js';
 import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, definirObjectif,
-         recordsEpingles, estRecordEpingle, toggleRecordEpingle } from '../reglages.js';
+         recordsEpingles, estRecordEpingle, toggleRecordEpingle,
+         oneRmManuel, definirOneRmManuel } from '../reglages.js';
 import { buildBackupJson, parseBackupJson } from '../backup.js';
 
 export async function vueProfil(params) {
@@ -378,15 +379,19 @@ export async function vueProfilAnalyse() {
     const ul = h('<ul class="liste"></ul>');
     for (const r of tries) {
       const epingle = epingles.includes(r.nom);
+      const manuel = oneRmManuel(r.nom);
       const li = h(`
         <li class="ligne record-ligne ${epingle ? 'epingle' : ''}">
           <button type="button" class="record-etoile" aria-label="${epingle ? 'Désépingler' : 'Épingler'} ${esc(r.nom)}">${epingle ? '★' : '☆'}</button>
           <span class="record-corps">
             <span class="ligne-titre">${esc(r.nom)}</span>
-            <span class="ligne-meta">${esc(kg(r.rm))} · 1RM estimé</span>
+            <span class="ligne-meta">${esc(kg(manuel ?? r.rm))} · ${manuel != null ? '1RM testé' : '1RM estimé'}</span>
           </span>
+          <button type="button" class="lien-inline" data-modifier>Modifier</button>
         </li>`);
       li.querySelector('.record-etoile').onclick = () => { toggleRecordEpingle(r.nom); dessinerRecords(); };
+      li.querySelector('[data-modifier]').onclick = () =>
+        ouvrirSaisie1RM(r.nom, manuel, (v) => { definirOneRmManuel(r.nom, v); dessinerRecords(); });
       ul.appendChild(li);
     }
     zoneRec.appendChild(ul);
@@ -396,10 +401,43 @@ export async function vueProfilAnalyse() {
   render(el);
 }
 
+/** Saisie du 1RM réellement testé (OneRmDialog, StatsScreens.kt) : champ
+ *  simple plutôt que le pavé numérique de la séance en direct — on renseigne
+ *  un maxi de temps en temps, assis, pas entre deux séries. Vider le champ
+ *  efface la saisie et redonne la main à l'estimation. */
+function ouvrirSaisie1RM(exercice, actuel, onValider) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="1RM testé">
+      <div class="modale-boite">
+        <div class="modale-tete"><h2>1RM testé</h2></div>
+        <p style="font-weight:700;margin:0 0 .3rem">${esc(exercice)}</p>
+        <p class="etat-mono">Le maxi que tu as réellement soulevé une fois, en kg. Moti s'en
+          sert pour les charges conseillées et pour construire tes programmes. Laisse vide
+          pour revenir à l'estimation.</p>
+        <label class="champ" style="margin-top:.8rem"><span>Poids (kg)</span>
+          <input type="number" inputmode="decimal" step="0.5" min="0" data-valeur
+                 value="${actuel != null ? actuel : ''}"></label>
+        <div class="modale-pied">
+          <button class="lien-inline" data-annuler type="button">Annuler</button>
+          <button class="btn" data-ok type="button">Valider</button>
+        </div>
+      </div>
+    </div>`);
+  modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+  modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+  modale.querySelector('[data-ok]').onclick = () => {
+    const brut = modale.querySelector('[data-valeur]').value.trim();
+    modale.remove();
+    onValider(brut === '' ? null : parseFloat(brut.replace(',', '.')));
+  };
+  document.body.appendChild(modale);
+}
+
 /** Compte et données (AccountScreens.kt) : identité, pseudo, niveau/objectif
- *  d'entraînement, copie sur fichier, déconnexion, suppression du compte.
- *  Écart assumé face au natif : pas de notification « ami en direct »
- *  (réglage FCM local, sans équivalent web). */
+ *  d'entraînement, visibilité, notifications, copie sur fichier, déconnexion,
+ *  suppression du compte. Les notifications elles-mêmes n'arrivent que sur
+ *  l'appli Android (pas de push web), mais les réglages sont côté compte :
+ *  les changer ici agit sur le téléphone. */
 export async function vueProfilCompte() {
   render(loading('Chargement'));
   const moi = await currentUser();
@@ -433,6 +471,14 @@ export async function vueProfilCompte() {
         <p class="etat-mono">En profil public, tes séances apparaissent dans le fil et le
           classement de tout le monde (onglet « Tous »), pas seulement de tes abonnés.</p>
         <div class="rangee rangee-serree" data-visibilite style="margin-top:.7rem"></div>
+      </div>
+
+      <div class="bloc">
+        <p class="bloc-titre">Notifications</p>
+        <p class="etat-mono">Choisis ce pour quoi tu veux être prévenu. Les notifications
+          arrivent sur l'application Android — ce réglage vaut pour ton compte, donc
+          le modifier ici agit aussi sur ton téléphone.</p>
+        <div data-notifs style="margin-top:.7rem"></div>
       </div>
 
       <div class="bloc">
@@ -487,6 +533,42 @@ export async function vueProfilCompte() {
     });
   }
   dessinerVisibilite();
+
+  /* Notifications : un réglage par type (AccountScreens.kt, bloc Notifications).
+     Chaque colonne est lue par `notify-live-session`/`notify-engagement` avant
+     d'envoyer un push — le web n'affiche pas de notification lui-même, mais
+     c'est le même compte, donc le même réglage. */
+  const NOTIFS = [
+    ['notify_messages', 'Messages', "Quand quelqu'un t'écrit."],
+    ['notify_kudos', "J'aime sur mes séances", "Quand quelqu'un aime une de tes séances."],
+    ['notify_comments', 'Commentaires', "Quand quelqu'un commente une de tes séances."],
+    ['notify_friend_sessions', "Séance d'un ami",
+     "Quand un abonnement commence une séance — tu peux la suivre en direct."]
+  ];
+  const zoneNotifs = el.querySelector('[data-notifs]');
+  NOTIFS.forEach(([colonne, titre, aide]) => {
+    let actif = profil[colonne] !== false;
+    const ligne = h(`
+      <div class="notif-ligne">
+        <span class="notif-corps"><b>${esc(titre)}</b><span>${esc(aide)}</span></span>
+        <button class="chip-cat ${actif ? 'on' : ''}" type="button">${actif ? 'Activé' : 'Coupé'}</button>
+      </div>`);
+    const bouton = ligne.querySelector('button');
+    bouton.onclick = async () => {
+      const avant = actif;
+      actif = !actif;
+      bouton.classList.toggle('on', actif);
+      bouton.textContent = actif ? 'Activé' : 'Coupé';
+      try { await setNotifPref(moi.id, colonne, actif); }
+      catch (err) {
+        actif = avant;
+        bouton.classList.toggle('on', actif);
+        bouton.textContent = actif ? 'Activé' : 'Coupé';
+        toast(err.message);
+      }
+    };
+    zoneNotifs.appendChild(ligne);
+  });
 
   /* Copie sur fichier : Profile.kt::buildBackupJson/restoreBackupJson, mais
      import/export du compte cloud (pas de stockage local séparé côté web) —

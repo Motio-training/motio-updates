@@ -478,4 +478,10 @@ export const CHANGELOG = [
                 "Génération d'une séance individuelle par IA, directement depuis l'écran Entraînement",
                 "Moti (coach IA) répond avec plus de précision aux questions techniques de préparation physique, et garde un ton plus tenu"
             ] },
+  { date: "18 août 2026", versions: "v2.33", items: [
+                "Notification quand quelqu'un aime ou commente une de tes séances, et quand tu reçois un message",
+                "Nouveau menu Notifications dans Compte et données : chaque type se coupe ou s'active séparément",
+                "1RM testé : touche « Modifier » dans Analyse et records pour saisir ton vrai maxi",
+                "Moti connaît tes 1RM testés et s'en sert pour les charges conseillées et tes programmes"
+            ] },
 ];

@@ -37,7 +37,19 @@ function unwrap({ data, error }) {
 
 export async function getProfile(userId) {
   return unwrap(await sb.from(T.profiles)
-    .select('id,username,display_name,avatar_url,is_public').eq('id', userId).maybeSingle());
+    .select('id,username,display_name,avatar_url,is_public,' +
+            'notify_friend_sessions,notify_kudos,notify_comments,notify_messages')
+    .eq('id', userId).maybeSingle());
+}
+
+/** Réglages de notification, un par type d'événement — mêmes colonnes que
+ *  lisent les fonctions `notify-live-session`/`notify-engagement` avant
+ *  d'envoyer un push. Les notifications elles-mêmes n'arrivent que sur
+ *  l'application Android (pas de push web pour l'instant), mais le réglage
+ *  est le même compte : le modifier ici vaut pour le téléphone. */
+export async function setNotifPref(userId, colonne, valeur) {
+  return unwrap(await sb.from(T.profiles)
+    .update({ [colonne]: valeur }).eq('id', userId).select().single());
 }
 
 /** Profil public (AccountScreens.kt) : visible dans le fil et le classement

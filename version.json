@@ -1,6 +1,6 @@
 {
-  "versionCode": 135,
-  "versionName": "2.32",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.32/motio.apk",
-  "notes": "Correctifs de retour terrain : séance en direct qui ne se réinitialise plus en arrière-plan, séances récentes avant les records sur un profil, suppression cascadée, coach IA plus précis."
+  "versionCode": 136,
+  "versionName": "2.33",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.33/motio.apk",
+  "notes": "Notifications pour les likes, commentaires et messages, avec réglages individuels. 1RM testé saisissable à la main, utilisé par Moti pour les charges et les programmes."
 }

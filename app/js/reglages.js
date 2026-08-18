@@ -25,6 +25,7 @@ const CLE_NIVEAU = 'motio_niveau';     // Level.name (ProgramModel.kt)
 const CLE_OBJECTIF = 'motio_objectif'; // Goal.name (ProgramModel.kt), PERSONNALISE exclue (réservée à l'IA)
 const CLE_RECORDS_EPINGLES = 'motio_records_epingles'; // PinnedRecords (Stats.kt) : liste ordonnée, séparée par « | »
 const CLE_FIL_PORTEE = 'motio_fil_portee'; // 'amis' | 'tous' — filtre du fil et du classement
+const CLE_ONE_RM = 'motio_one_rm';         // ManualOneRm (Stats.kt) : {exercice: kg}
 
 const BIPS_DEFAUT = {
   freq: 2750, trill: 43, volume: 1.0,
@@ -125,6 +126,28 @@ export function filPortee() {
 export function definirFilPortee(v) {
   localStorage.setItem(CLE_FIL_PORTEE, v === 'tous' ? 'tous' : 'amis');
 }
+
+/* ------------------------------------------------------------ 1RM testés */
+
+/** ManualOneRm (Stats.kt) : le maxi RÉELLEMENT testé sur un exercice, saisi à
+ *  la main. Prime sur le 1RM estimé (formule d'Epley) partout où la valeur
+ *  sert à décider — charges conseillées, contexte envoyé au coach IA. Local
+ *  par appareil, comme côté natif (SharedPreferences). */
+function tousOneRm() {
+  try { return JSON.parse(localStorage.getItem(CLE_ONE_RM) || '{}'); }
+  catch { return {}; }
+}
+export function oneRmManuel(exercice) {
+  const v = tousOneRm()[exercice];
+  return typeof v === 'number' && v > 0 ? v : null;
+}
+export function definirOneRmManuel(exercice, valeur) {
+  const tous = tousOneRm();
+  if (valeur == null || !(valeur > 0)) delete tous[exercice];
+  else tous[exercice] = valeur;
+  localStorage.setItem(CLE_ONE_RM, JSON.stringify(tous));
+}
+export function tousOneRmManuels() { return tousOneRm(); }
 
 /* ------------------------------------------------------- records épinglés */
 
