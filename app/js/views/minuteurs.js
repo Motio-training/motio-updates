@@ -30,7 +30,7 @@ export function vueMinuteurs() {
       <div data-reglages></div>
 
       <div class="run-cadran run-neutral" data-cadran>
-        <span class="run-cadran-label" data-label>Prêt</span>
+        <span class="run-cadran-label" data-label>Chrono</span>
         <span class="run-cadran-value" data-value>0:00</span>
       </div>
 

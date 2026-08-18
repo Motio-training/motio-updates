@@ -170,7 +170,7 @@ start();
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '32';
+const VERSION = '33';
 
 let dejaRecharge = false;
 
