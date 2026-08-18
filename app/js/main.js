@@ -150,6 +150,55 @@ onAuthChange(() => resolve());
 
 start();
 
+/* ==========================================================================
+   CONTRÔLE DE VERSION — la ceinture, en plus des bretelles du service worker.
+
+   Constaté sur le téléphone de Nicolas : dans l'application installée depuis
+   l'espace web (WebAPK Samsung Internet), demander `registration.update()` ne
+   suffit PAS. Plusieurs redémarrages complets d'affilée continuaient
+   d'afficher une version dépassée ; seul un « tirer pour rafraîchir » manuel
+   faisait avancer d'une version. Autrement dit : compter sur le cycle de vie
+   du service worker pour livrer une mise à jour n'est pas fiable ici.
+
+   Ce contrôle-ci ne dépend de rien : on demande un petit fichier texte avec
+   une URL toujours différente (donc jamais servie par un cache, ni HTTP ni
+   service worker), et si le numéro ne correspond pas à celui embarqué dans ce
+   fichier, on vide les caches, on désinscrit le service worker et on recharge.
+   Une seule fois : `dejaRecharge` empêche toute boucle si quelque chose se
+   passe mal.
+
+   À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
+   le cache de sw.js, qui suit le même numéro).
+   ========================================================================== */
+const VERSION = '31';
+
+let dejaRecharge = false;
+
+async function verifierVersion() {
+  if (dejaRecharge) return;
+  let publiee;
+  try {
+    const rep = await fetch(`version.txt?t=${Date.now()}`, { cache: 'no-store' });
+    if (!rep.ok) return;
+    publiee = (await rep.text()).trim();
+  } catch { return; }               // hors ligne : on garde ce qu'on a
+  if (!publiee || publiee === VERSION) return;
+
+  dejaRecharge = true;
+  try {
+    const clefs = await caches.keys();
+    await Promise.all(clefs.map(k => caches.delete(k)));
+    const regs = await navigator.serviceWorker?.getRegistrations?.() ?? [];
+    await Promise.all(regs.map(r => r.unregister()));
+  } catch { /* on recharge quand même */ }
+  location.reload();
+}
+
+verifierVersion();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') verifierVersion();
+});
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     let reg;
@@ -186,7 +235,8 @@ if ('serviceWorker' in navigator) {
   // Dès qu'une nouvelle version prend la main (activate + clients.claim()
   // côté sw.js), on recharge une fois : sans ça, l'onglet déjà ouvert garde
   // en mémoire le JS de l'ancienne version jusqu'à sa prochaine fermeture.
-  let dejaRecharge = false;
+  // Même drapeau que le contrôle de version ci-dessus : un seul rechargement,
+  // quel que soit celui des deux mécanismes qui déclenche.
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (dejaRecharge) return;
     dejaRecharge = true;
