@@ -1,4 +1,5 @@
-import { h, render, loading, empty, failure, esc, toast, socialHeader, duree } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, socialHeader, duree,
+         dureeMin, kgBrut, quandLabel } from '../ui.js';
 import { feed, kudosFor, commentCounts, comments, addKudo, removeKudo,
          addComment, deleteComment, unreadMessagesCount, amisEnDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
@@ -9,17 +10,11 @@ import { filPortee, definirFilPortee } from '../reglages.js';
 const COULEUR_CAT = { Push: 'var(--accent)', Pull: 'var(--accent2)', Legs: 'var(--dore)' };
 function catColor(cat) { return COULEUR_CAT[cat] || 'var(--encre-2)'; }
 
-/** whenLabel (SocialScreens.kt) : « à l'instant »/« il y a Xmin »/date courte au-delà. */
+/** whenLabel (SocialScreens.kt) : « aujourd'hui 10:29 » / « hier 09:22 » /
+ *  « dim. 16 août ». L'ancienne version maison (« il y a 5 h ») ne disait pas
+ *  la même chose que l'application, écart visible sur chaque carte. */
 function whenLabel(iso) {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60000) return "à l'instant";
-  const min = Math.floor(ms / 60000);
-  if (min < 60) return `il y a ${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `il y a ${h} h`;
-  const j = Math.floor(h / 24);
-  if (j < 7) return `il y a ${j} j`;
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  return quandLabel(new Date(iso).getTime());
 }
 
 export async function vueFil() {
@@ -135,18 +130,23 @@ export function carteSeance(s, moi, kudo, nbCommentaires, titre) {
   const aDuDetail = detail.some(e => (e.s || []).length);
   const mien = s.user_id === moi.id;
   const initiale = mien ? 'T' : (s.username || '?')[0].toUpperCase();
+  /* Vraie photo de profil quand il y en a une (FeedCard, SocialScreens.kt) —
+     l'initiale n'est qu'un repli, comme côté natif. */
+  const avatar = s.avatar_url
+    ? `<img class="feed-avatar" src="${esc(s.avatar_url)}" alt="">`
+    : `<span class="feed-avatar">${esc(initiale)}</span>`;
 
   const carte = h(`
     <article class="feed-carte" data-ouvrir>
       <div class="feed-tete">
-        <span class="feed-avatar">${esc(initiale)}</span>
+        ${avatar}
         <span class="feed-pastille" style="background:${catColor(s.category)}"></span>
         <a class="feed-auteur ${mien ? 'feed-auteur-moi' : ''}" href="#/profil/${esc(s.user_id)}">${mien ? 'Toi' : esc(s.username)}</a>
         <span class="feed-quand">${esc(whenLabel(s.started_at))}</span>
       </div>
 
       <p class="feed-titre">${esc(titre || s.workout_name || 'Séance')}</p>
-      <p class="feed-stats-ligne">${esc(duree((s.duration_ms || 0) / 1000))} · ${esc(kg(s.volume_kg))} · ${s.set_count || 0} séries · ${s.exercise_count || 0} exos</p>
+      <p class="feed-stats-ligne">${esc(dureeMin(s.duration_ms))} · ${esc(kgBrut(s.volume_kg))} · ${s.set_count || 0} séries · ${s.exercise_count || 0} exos</p>
 
       <div class="feed-bas">
         <span class="feed-kudo ${k.mine ? 'feed-kudo-on' : ''}" data-kudo>

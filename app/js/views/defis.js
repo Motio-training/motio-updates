@@ -6,10 +6,10 @@
    suit — voir standings() dans api.js.
    ========================================================================== */
 
-import { h, render, loading, failure, esc, socialHeader } from '../ui.js';
+import { h, render, loading, failure, esc, socialHeader, kgBrut } from '../ui.js';
 import { standings, unreadMessagesCount } from '../api.js';
 import { currentUser } from '../supabase.js';
-import { kg } from '../model.js';
+
 import { filPortee, definirFilPortee } from '../reglages.js';
 
 const PERIODES = [7, 30, 90];
@@ -34,7 +34,9 @@ export async function vueDefis() {
   const zonePortee = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');
   const explication = h('<p class="etat-mono" style="margin-bottom:1rem"></p>');
   const zoneListe = h('<div></div>');
-  el.append(zoneChips1, zoneChips2, zonePortee, explication, zoneListe);
+  /* Amis/Tous EN PREMIER, comme le natif (SocialScreens.kt) : c'est le filtre
+     le plus structurant, il commande tout le reste du classement. */
+  el.append(zonePortee, zoneChips1, zoneChips2, explication, zoneListe);
 
   let periode = 30, genre = 'tonnage', portee = filPortee();
 
@@ -82,7 +84,7 @@ export async function vueDefis() {
     return st.activeDays;
   }
   function texteValeur(st) {
-    if (genre === 'tonnage') return kg(st.volume);
+    if (genre === 'tonnage') return kgBrut(st.volume);
     if (genre === 'sessions') return `${st.sessions}`;
     return `${st.activeDays} j`;
   }

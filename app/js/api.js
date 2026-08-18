@@ -101,6 +101,21 @@ export async function usernamesFor(ids) {
   return Object.fromEntries(rows.map(r => [r.id, r.username]));
 }
 
+/**
+ * Photos de profil correspondant à une liste d'identifiants.
+ *
+ * À part, plutôt que dans usernamesFor : celui-ci renvoie une simple chaîne
+ * et est appelé depuis huit endroits. Les cartes du fil affichaient une
+ * initiale là où l'application affiche la vraie photo — c'est l'écart le plus
+ * visible quand on met les deux écrans côte à côte.
+ */
+export async function avatarsFor(ids) {
+  const clean = [...new Set(ids.filter(Boolean))];
+  if (!clean.length) return {};
+  const rows = unwrap(await sb.from(T.profiles).select('id,avatar_url').in('id', clean));
+  return Object.fromEntries(rows.filter(r => r.avatar_url).map(r => [r.id, r.avatar_url]));
+}
+
 /* ------------------------------------------------------------ abonnements */
 
 export async function following(userId) {
@@ -155,8 +170,9 @@ export async function feed({ limit = 60, before = null, scope = 'amis', moiId } 
     rows = rows.filter(r => r.user_id === moiId || amis.has(r.user_id));
   }
   rows = rows.slice(0, limit);
-  const noms = await usernamesFor(rows.map(r => r.user_id));
-  return rows.map(r => ({ ...r, username: noms[r.user_id] || '?' }));
+  const ids = rows.map(r => r.user_id);
+  const [noms, avatars] = await Promise.all([usernamesFor(ids), avatarsFor(ids)]);
+  return rows.map(r => ({ ...r, username: noms[r.user_id] || '?', avatar_url: avatars[r.user_id] || null }));
 }
 
 /** Historique d'une personne : le mien, ou celui d'un abonné. */

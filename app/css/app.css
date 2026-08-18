@@ -574,7 +574,7 @@ a.ligne-titre:hover{color:var(--accent)}
 .etat h2{font-size:1.25rem;margin-bottom:.4rem}
 .etat p{color:var(--encre-2);margin:0 0 1rem}
 .etat .btn{margin-top:.25rem}
-.etat-mono{font-family:var(--f-mono);font-size:.8rem;color:var(--encre-2)}
+.etat-mono{font-family:var(--f-body);font-size:.85rem;color:var(--encre-2)}
 .etat-erreur{border-style:solid;border-color:rgba(140,59,36,.35)}
 .etat-erreur h2{color:var(--alerte)}
 
@@ -1167,7 +1167,7 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .standing-corps{flex:1;min-width:0;display:flex;flex-direction:column}
 .standing-corps b{font-family:var(--f-display);font-weight:700;font-size:1rem;color:var(--encre)}
 .standing-nom-moi{color:var(--dore)}
-.standing-meta{font-family:var(--f-mono);font-size:.7rem;color:var(--encre-2)}
+.standing-meta{font-family:var(--f-body);font-size:.78rem;color:var(--encre-2);white-space:nowrap}
 .standing-valeur{font-family:var(--f-display);font-weight:700;font-size:1.05rem;color:var(--accent)}
 
 .rangee-feed{display:flex;flex-direction:column;gap:.5rem}
@@ -1181,14 +1181,17 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   width:20px;height:20px;border-radius:50%;background:var(--creme-2);
   display:flex;align-items:center;justify-content:center;flex:none;
   font-family:var(--f-display);font-weight:700;font-size:.66rem;color:var(--encre);
+  object-fit:cover;   /* quand c'est une vraie photo et non l'initiale */
 }
 .feed-pastille{width:7px;height:7px;border-radius:50%;flex:none}
 .feed-auteur{font-family:var(--f-display);font-weight:700;font-size:.82rem;color:var(--accent);text-decoration:none}
 .feed-auteur-moi{color:var(--dore)}
-.feed-quand{margin-left:auto;font-family:var(--f-mono);font-size:.66rem;color:var(--encre-2)}
+/* Police du corps, pas la mono : l'application n'utilise nulle part de police
+   à chasse fixe, et l'écart sautait aux yeux en comparant les deux fils. */
+.feed-quand{margin-left:auto;font-family:var(--f-body);font-size:.7rem;color:var(--encre-2)}
 .feed-titre{margin:0;font-family:var(--f-display);font-weight:700;font-size:.94rem;color:var(--encre)}
 .feed-stats-ligne{
-  margin:0;font-family:var(--f-mono);font-size:.7rem;color:var(--encre-2);
+  margin:0;font-family:var(--f-body);font-size:.78rem;color:var(--encre-2);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .feed-bas{display:flex;align-items:center;gap:.8rem}

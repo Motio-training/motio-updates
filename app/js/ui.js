@@ -85,6 +85,52 @@ export function duree(secondes) {
   return h_ ? `${h_}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
 }
 
+/* ==========================================================================
+   Formats du fil et du classement — portage EXACT de SocialScreens.kt
+   (durLabel, kgLabel, whenLabel) et de ProgramModel.kt (shortDate).
+
+   Le web affichait ses propres formats (« 25:59 », « 6000 kg », « il y a
+   5 h ») là où l'application affiche « 25 min », « 6 000 kg », « aujourd'hui
+   10:29 ». Comparés côte à côte sur le même téléphone, ces trois écarts
+   sautaient aux yeux sur chaque carte du fil.
+   ========================================================================== */
+
+const JOURS_COURTS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+const MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avril', 'mai', 'juin',
+                     'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+/** shortDate (ProgramModel.kt) : « dim. 16 août ». */
+export function dateBreve(ms) {
+  const d = new Date(ms);
+  return `${JOURS_COURTS[d.getDay()]} ${d.getDate()} ${MOIS_COURTS[d.getMonth()]}`;
+}
+
+/** durLabel (SocialScreens.kt) : « 25 min » ou « 1 h 13 ». */
+export function dureeMin(ms) {
+  const m = Math.floor((ms || 0) / 60000);
+  return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}` : `${m} min`;
+}
+
+/** kgLabel (SocialScreens.kt) : entier, espace comme séparateur de milliers. */
+export function kgBrut(kg) {
+  const v = Math.trunc(kg || 0);
+  return v >= 1000 ? `${v.toLocaleString('fr-FR').replace(/ | /g, ' ')} kg` : `${v} kg`;
+}
+
+/** whenLabel (SocialScreens.kt) : « aujourd'hui 10:29 », « hier 09:22 », sinon date brève. */
+export function quandLabel(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const now = new Date();
+  const memeJour = (a, b) => a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const heure = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  if (memeJour(d, now)) return `aujourd'hui ${heure}`;
+  const hier = new Date(now); hier.setDate(hier.getDate() - 1);
+  if (memeJour(d, hier)) return `hier ${heure}`;
+  return dateBreve(ms);
+}
+
 /* ------------------------------------------------------------ onglets Social */
 
 /**
