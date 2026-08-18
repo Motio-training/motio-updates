@@ -1,6 +1,6 @@
 {
-  "versionCode": 137,
-  "versionName": "2.34",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.34/motio.apk",
-  "notes": "Entrainement libre : demarre sans plan et ajoute les exercices au fur et a mesure. L'ecran Entrainement ne montre plus que les seances epinglees et celles d'un programme. Nouveau Profil > Entrainements : toutes tes seances effectuees."
+  "versionCode": 138,
+  "versionName": "2.35",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.35/motio.apk",
+  "notes": "Tes categories sont maintenant liees a ton compte : les memes dans l'application et sur l'espace web. Push, Pull et Legs au depart, et tu peux en creer, renommer ou supprimer des deux cotes."
 }
