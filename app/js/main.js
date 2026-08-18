@@ -2,6 +2,7 @@ import { route, setNotFound, before, start, resolve, currentPath } from './route
 import { currentSession, onAuthChange } from './supabase.js';
 import { $, $$, h, render, empty } from './ui.js';
 import { appliquerTheme, ouvrirTheme, ouvrirReglagesBips } from './reglages.js';
+import { etatBrut as seanceEnCours } from './run-state.js';
 import * as beeper from './beeper.js';
 
 /* Avant tout le reste : évite un flash du mauvais thème au premier rendu. */
@@ -100,7 +101,37 @@ function majChrome(connecte, path) {
   $$('.bottombar a').forEach(a => {
     a.setAttribute('aria-current', a.dataset.groupe === groupe ? 'page' : 'false');
   });
+  majOngletEntrainement();
+  mesurerBarreBas();
 }
+
+/* Tant qu'une séance est en cours (run-state.js), l'onglet Entraînement de la
+   barre du bas ramène À CETTE SÉANCE, pas à la liste — comme l'onglet natif,
+   qui retrouve l'écran là où on l'avait laissé. Sans ça, un aller-retour par
+   Social ou Profil faisait retomber sur la liste, séance perdue. */
+function majOngletEntrainement() {
+  const lien = document.querySelector('.bottombar a[data-groupe="entrainement"]');
+  if (!lien) return;
+  const seance = seanceEnCours();
+  lien.setAttribute('href', seance ? `#/seances/${seance.workoutId}/lancer` : '#/seances');
+}
+
+/* Hauteur réelle de la barre du bas, publiée en variable CSS : les éléments
+   qui doivent se poser JUSTE au-dessus (champ de saisie d'une discussion,
+   écran de séance) s'y adossent au pixel près au lieu de deviner une valeur
+   en rem — c'est ce décalage deviné qui laissait un grand vide entre le champ
+   de message et la barre, signalé par Nicolas. */
+function mesurerBarreBas() {
+  const barre = document.querySelector('.bottombar');
+  const visible = barre && getComputedStyle(barre).display !== 'none';
+  document.documentElement.style.setProperty('--barre-bas', visible ? `${barre.offsetHeight}px` : '0px');
+  /* L'en-tête est sticky : il mange en permanence le haut du viewport. Un
+     écran qui veut occuper toute la hauteur utile (la séance en direct) doit
+     retirer cette hauteur en plus de celle de la barre du bas. */
+  const entete = document.querySelector('.appbar');
+  document.documentElement.style.setProperty('--haut-appbar', entete ? `${entete.offsetHeight}px` : '0px');
+}
+addEventListener('resize', mesurerBarreBas);
 
 $('#menu')?.addEventListener('click', () => {
   document.body.classList.toggle('menu-ouvert');

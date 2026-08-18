@@ -59,12 +59,19 @@ export async function vueProfil(params) {
     ? `<img class="profil-avatar" src="${esc(profil.avatar_url)}" alt="">`
     : `<span class="profil-avatar">${esc(initiale)}</span>`;
   /* IdentityHeader (Profile.kt ~487-499) : l'avatar n'est cliquable que sur
-     son propre profil, jamais sur celui d'un ami. */
+     son propre profil, jamais sur celui d'un ami.
+
+     Le champ fichier est un FRÈRE du bouton, jamais son enfant : un <input>
+     dans un <button> est du HTML interdit (contenu interactif imbriqué), et
+     surtout le click() programmatique remontait jusqu'au bouton, qui
+     rappelait click()… — la boucle était coupée par le navigateur et le
+     sélecteur de fichier ne s'ouvrait jamais. C'était le « je clique sur ma
+     photo de profil et rien ne se passe » signalé par Nicolas. */
   const avatarHtml = estMoi
     ? `<button type="button" class="profil-avatar-bouton" data-avatar-bouton aria-label="Changer la photo de profil">
         ${avatarInner}<span class="profil-avatar-crayon">✎</span>
-        <input type="file" accept="image/*" data-avatar-fichier hidden>
-      </button>`
+      </button>
+      <input type="file" accept="image/*" data-avatar-fichier hidden>`
     : avatarInner;
 
   const el = h(`
@@ -182,8 +189,11 @@ export async function vueProfil(params) {
      final (carré centré, même taille, même compression) est identique. */
   const boutonAvatar = el.querySelector('[data-avatar-bouton]');
   if (boutonAvatar) {
-    const champFichier = boutonAvatar.querySelector('[data-avatar-fichier]');
-    boutonAvatar.addEventListener('click', (e) => { e.preventDefault(); champFichier.click(); });
+    const champFichier = el.querySelector('[data-avatar-fichier]');
+    boutonAvatar.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      champFichier.click();
+    });
     champFichier.addEventListener('change', async () => {
       const fichier = champFichier.files?.[0];
       champFichier.value = '';

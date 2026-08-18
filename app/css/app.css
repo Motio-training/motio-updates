@@ -47,6 +47,16 @@
   --f-mono:"JetBrains Mono",ui-monospace,monospace;
 
   --ressort:cubic-bezier(.22,.72,.28,1);
+
+  /* Marge intérieure de l'aire de contenu (#vue) : nommée pour que les écrans
+     qui doivent prendre TOUTE la largeur (séance en direct) puissent
+     l'annuler exactement, sans redevinner la valeur. */
+  --pad-vue:clamp(1.5rem,3.5vw,3rem);
+  /* Hauteurs réelles des deux barres fixes, mesurées au chargement par
+     main.js (mesurerBarreBas) : la barre du bas (0 en desktop, où elle est
+     cachée) et l'en-tête sticky, toujours présent. */
+  --barre-bas:0px;
+  --haut-appbar:3.2rem;
 }
 
 /* Palette sombre "motio", éclaircie (Theme.kt) : le fond quasi noir d'origine
@@ -217,7 +227,7 @@ body:not(.connecte) .icon-btn{display:none}
   font-size:.8rem;line-height:1.5;color:var(--encre-2);
 }
 
-#vue{padding:clamp(1.5rem,3.5vw,3rem);outline:none}
+#vue{padding:var(--pad-vue);outline:none}
 .page{max-width:58rem}
 .page-etroite{max-width:30rem}
 
@@ -253,6 +263,9 @@ body:not(.connecte) .icon-btn{display:none}
 .bottombar a[aria-current="page"] .bb-ico{background:rgba(169,194,94,.18)}
 
 @media (max-width:820px){
+  /* Valeur de repli tant que main.js n'a pas mesuré la barre (ou si le JS
+     échoue) : la mesure inline sur <html> prend ensuite le dessus. */
+  :root{--barre-bas:4.4rem}
   .coque{grid-template-columns:minmax(0,1fr)}
   .menu-btn{display:flex}
   .nav{
@@ -263,7 +276,7 @@ body:not(.connecte) .icon-btn{display:none}
     transition:max-height .32s var(--ressort),opacity .25s ease,padding .32s var(--ressort);
   }
   body.menu-ouvert .nav{max-height:30rem;padding-top:1rem;padding-bottom:1.25rem;opacity:1}
-  body.connecte{padding-bottom:4.4rem}   /* place pour la barre du bas */
+  body.connecte{padding-bottom:var(--barre-bas)}   /* place pour la barre du bas */
   .bottombar{display:flex}
 }
 
@@ -906,9 +919,49 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .rangee-titre{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .rangee-titre h1{margin:0}
 
+/* La séance occupe TOUT l'écran (demande explicite de Nicolas : « il faut que
+   toutes les informations s'étalent sur tout l'écran plutôt que d'être
+   regroupées au centre »). Les marges de #vue sont annulées puis reprises en
+   plus serré, et la colonne s'étire sur toute la hauteur : en-tête en haut,
+   cadran au milieu de l'espace libre, saisie et navigation posées en bas. */
+.page.run{
+  max-width:none;
+  /* La marge négative du bas annule le padding que body.connecte réserve pour
+     la barre : la séance gère elle-même cette réserve dans son propre
+     padding-bottom, ce qui garantit que « Exercice suivant » reste au-dessus
+     de la barre même quand le contenu déborde d'un cheveu. */
+  margin:calc(-1 * var(--pad-vue)) calc(-1 * var(--pad-vue)) calc(-1 * var(--pad-vue) - var(--barre-bas));
+  padding:.85rem .85rem calc(.9rem + var(--barre-bas));
+  min-height:calc(100dvh - var(--haut-appbar));
+  display:flex;flex-direction:column;
+}
+.run > [data-corps]{flex:1;display:flex;flex-direction:column}
+.run > [data-corps] > div{flex:1;display:flex;flex-direction:column}
+/* Le cadran mange l'espace restant, ce qui pousse les cellules et la
+   navigation vers le bas de l'écran plutôt que de tout tasser au centre. */
+.run .run-cadran{flex:1 1 auto;min-height:4rem;margin-bottom:.6rem}
+.run .run-bas{margin-top:auto;padding-top:.4rem}
+/* Écran de séance : on resserre ce qui, ailleurs, respire davantage — tout
+   doit tenir sans défilement pendant qu'on s'entraîne. */
+.run .run-saisie{margin-bottom:.8rem}
+.run .run-cellule{padding:.55rem .5rem}
+.run .run-cellules{margin-bottom:.7rem}
+.run .run-rir{margin-bottom:.6rem}
+/* La liste des séries déjà faites est bornée puis défilante : sans ça, une
+   séance à 5 séries repoussait la navigation loin sous l'écran. */
+.run .run-series{margin-bottom:.6rem;max-height:22vh;overflow-y:auto}
+.run .run-controles{margin-bottom:.6rem}
+.run .run-sousligne{margin-bottom:.6rem}
+
 .run-tete{
   display:flex;align-items:flex-start;gap:.75rem;
   margin-bottom:.35rem;
+}
+/* Retour à la liste SANS terminer la séance : elle reste en cours et se
+   reprend depuis l'onglet Entraînement ou le bandeau de la liste. */
+.run-arriere{
+  margin-top:.2rem;padding:0;background:none;border:none;cursor:pointer;
+  font-family:var(--f-mono);font-size:.66rem;color:var(--encre-2);
 }
 .run-tete-gauche{display:flex;flex-direction:column;align-items:flex-start;flex:none}
 .run-tete-label{
@@ -976,6 +1029,15 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 .run-controles .btn{flex:1 1 12rem}
 
 .run-saisie{margin-bottom:1.5rem}
+/* La zone de saisie reste ouverte pendant la récupération, sur la série qui
+   vient d'être faite : ce titre dit laquelle on est en train de renseigner. */
+.run-saisie-titre{
+  font-family:var(--f-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--encre-2);margin:0 0 .5rem;text-align:center;
+}
+.run-saisie-aide{
+  margin:0;text-align:center;font-family:var(--f-mono);font-size:.68rem;color:var(--encre-2);
+}
 .run-cellules{display:flex;gap:.75rem;margin-bottom:1rem}
 .run-cellule{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:.15rem;
@@ -1001,8 +1063,10 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
   color:var(--encre-2);margin:0 0 .5rem;
 }
-.run-rir{display:flex;gap:.4rem;margin-bottom:1rem}
-.run-rir .puce{padding:.4rem .7rem;font-size:.82rem}
+/* Les 6 puces RIR se partagent toute la largeur au lieu de se serrer à
+   gauche — même logique « on occupe l'écran » que le reste de la séance. */
+.run-rir{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;margin-bottom:1rem}
+.run-rir .puce{padding:.45rem .2rem;font-size:.82rem;text-align:center}
 .run-saisie .btn{width:100%}
 
 .run-series{margin-bottom:1.5rem}
@@ -1034,6 +1098,26 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 }
 .run-fleche-ronde:disabled{opacity:.35;cursor:default}
 .run-suivant{flex:1}
+
+/* Bandeau « Séance en cours » sur l'écran Entraînement — une séance mise en
+   arrière-plan (run-state.js) doit sauter aux yeux et se reprendre d'un
+   appui, pas se perdre. */
+.reprise-carte{margin:0 0 1rem}
+.reprise-principal{
+  width:100%;display:flex;align-items:center;gap:.7rem;text-align:left;
+  padding:.85rem 1rem;border-radius:var(--r-m);cursor:pointer;
+  background:var(--accent-voile);border:1px solid var(--accent);color:var(--encre);
+  font:inherit;
+}
+.reprise-principal .corps{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem}
+.reprise-principal .corps b{font-family:var(--f-display);font-size:.95rem}
+.reprise-principal .corps span{font-family:var(--f-mono);font-size:.72rem;color:var(--encre-2)}
+.reprise-principal .chevron{color:var(--accent);font-size:1.2rem}
+.reprise-point{
+  width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none;
+  box-shadow:0 0 0 4px var(--accent-halo);
+}
+.reprise-abandon{display:block;margin:.45rem auto 0;font-size:.75rem}
 
 .run-fin-actions{display:flex;flex-direction:column;gap:.6rem;align-items:stretch;margin-top:1rem}
 .run-fin-actions .lien-inline{text-align:center}
@@ -1267,13 +1351,30 @@ body:not(.connecte) #vue:has(.onb){
 .coach-ligne.mine .msg-quand{color:color-mix(in srgb, var(--accent-sur) 60%, transparent)}
 
 .coach-saisie{display:flex;gap:.6rem;position:sticky;bottom:1rem}
-/* En mobile, la barre du bas est en position:fixed — indépendante du
-   conteneur défilant, donc pas comptée par le « sticky » ci-dessus. Sans
-   cette marge, le champ de saisie (Coach IA, Messages) finissait caché
-   sous la barre — signalé par Nicolas ("la zone d'écriture n'est pas
-   complètement visible"). */
+/* En mobile, la barre du bas est en position:fixed — indépendante du flux,
+   donc invisible pour un « sticky ». Le champ était décalé d'une valeur
+   devinée en rem, ce qui laissait un grand vide entre lui et la barre
+   (signalé par Nicolas) : il s'appuie maintenant sur la hauteur réelle
+   mesurée de la barre (--barre-bas), sans écart deviné. */
 @media (max-width:820px){
-  .coach-saisie{bottom:calc(4.4rem + .6rem)}
+  /* Le champ se cale sur la hauteur mesurée de la barre, plus aucun écart
+     deviné en rem. */
+  .coach-saisie{bottom:var(--barre-bas)}
+
+  /* Mais le vrai coupable du « grand espace » était ailleurs : une page de
+     discussion courte s'arrêtait au milieu de l'écran, et un élément collant
+     ne descend jamais plus bas que sa position dans le flux. L'écran de
+     discussion occupe donc maintenant TOUTE la hauteur utile, fil extensible
+     et champ posé au fond — comme l'écran natif. La marge négative annule le
+     padding de #vue sous la page pour que le champ touche la barre.
+     (position:fixed serait plus direct, mais l'animation d'entrée de #vue>*
+     pose un transform qui en fait le référentiel des éléments fixes.) */
+  .page.msg-thread,.page.coach{
+    min-height:calc(100dvh - var(--barre-bas) - var(--haut-appbar) - var(--pad-vue));
+    margin-bottom:calc(-1 * var(--pad-vue));
+    display:flex;flex-direction:column;
+  }
+  .msg-thread .msg-fil,.coach .coach-fil{flex:1;min-height:0;max-height:none;margin-bottom:.8rem}
 }
 .coach-saisie input{
   flex:1;padding:.72rem .9rem;font-family:var(--f-body);font-size:.94rem;

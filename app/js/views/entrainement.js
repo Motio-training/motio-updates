@@ -10,6 +10,7 @@ import { ouvrirPartage } from '../partage.js';
 import { encode as encoderSeance } from '../workout-share.js';
 import { ouvrirBilan } from '../bilan.js';
 import { niveauActuel } from '../reglages.js';
+import { etatBrut as seanceEnCours, effacerEtat as oublierSeanceEnCours } from '../run-state.js';
 import { genererProgrammeIA, genererSeanceIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
 
 /* ======================================================== liste des séances
@@ -81,6 +82,8 @@ export async function vueSeances() {
         <span class="chevron">›</span>
       </a>
 
+      <div data-reprise></div>
+
       <div class="rangee rangee-serree" style="margin-bottom:1rem">
         <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
         <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance</button>
@@ -88,6 +91,37 @@ export async function vueSeances() {
 
       <div data-corps></div>
     </section>`);
+
+  /* Séance laissée en cours (run-state.js) : elle doit se voir et se
+     reprendre d'un appui, sans repartir de zéro. L'onglet Entraînement de la
+     barre du bas y mène aussi directement (main.js). */
+  const enCours = seanceEnCours();
+  if (enCours && enCours.userId === moi.id) {
+    const series = (enCours.session?.exercises || []).reduce((t, e) => t + (e.sets?.length || 0), 0);
+    const depuis = Math.max(0, Math.round((Date.now() - (enCours.session?.startedAt || Date.now())) / 60000));
+    const bandeau = h(`
+      <div class="reprise-carte">
+        <button class="reprise-principal" type="button" data-reprendre>
+          <span class="reprise-point"></span>
+          <span class="corps">
+            <b>Séance en cours — ${esc(enCours.nom || 'Séance')}</b>
+            <span>${series} série${series > 1 ? 's' : ''} · commencée il y a ${depuis} min</span>
+          </span>
+          <span class="chevron">›</span>
+        </button>
+        <button class="lien-inline reprise-abandon" type="button" data-abandonner>Abandonner cette séance</button>
+      </div>`);
+    bandeau.querySelector('[data-reprendre]').onclick = () => {
+      location.hash = `#/seances/${enCours.workoutId}/lancer`;
+    };
+    bandeau.querySelector('[data-abandonner]').onclick = () => {
+      if (!confirm('Abandonner la séance en cours ? Les séries déjà faites seront perdues.')) return;
+      oublierSeanceEnCours();
+      bandeau.remove();
+      toast('Séance abandonnée.');
+    };
+    el.querySelector('[data-reprise]').appendChild(bandeau);
+  }
 
   /* Génération d'UNE séance par IA (genererSeanceIA, programme-ia.js) —
      manquait sur l'écran principal côté web alors que TrainingList (natif)

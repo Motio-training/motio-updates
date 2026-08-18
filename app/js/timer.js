@@ -78,6 +78,44 @@ export class Engine {
     this._tick();
   }
 
+  /* Capture/restauration de l'état — permet à une séance en cours de
+     survivre à un changement d'écran ou à un rechargement de page
+     (run-state.js). Tout est en horodatages absolus, donc le décompte
+     reprend à la bonne seconde sans rattrapage à faire. */
+  captureEtat() {
+    return {
+      mode: this.mode,
+      tensionStart: this.tensionStart,
+      chronoStart: this.chronoStart,
+      minDurSec: this.minDurSec, minT0: this.minT0,
+      minRunning: this.minRunning, minPaused: this.minPaused,
+      minPausedElapsed: this.minPausedElapsed,
+      workSec: this.workSec, restSec: this.restSec, series: this.series,
+      tabT0: this.tabT0, tabRunning: this.tabRunning,
+      tabPaused: this.tabPaused, tabPausedElapsed: this.tabPausedElapsed
+    };
+  }
+
+  restaurerEtat(e) {
+    if (!e) return;
+    this.mode = e.mode || 'CHRONO';
+    this.tensionStart = e.tensionStart ?? null;
+    this.chronoStart = e.chronoStart ?? null;
+    this.minDurSec = e.minDurSec ?? 120; this.minT0 = e.minT0 || 0;
+    this.minRunning = !!e.minRunning; this.minPaused = !!e.minPaused;
+    this.minPausedElapsed = e.minPausedElapsed || 0;
+    this.workSec = e.workSec ?? 20; this.restSec = e.restSec ?? 10; this.series = e.series ?? 8;
+    this.tabT0 = e.tabT0 || 0; this.tabRunning = !!e.tabRunning;
+    this.tabPaused = !!e.tabPaused; this.tabPausedElapsed = e.tabPausedElapsed || 0;
+    /* Un décompte déjà écoulé pendant l'absence ne doit pas rejouer ses bips
+       de fin au retour : on le marque comme déjà sonné. */
+    this.minLastRemainSec = Infinity;
+    this.minStartBeeped = this.minRunning && !this.minPaused
+      && (Date.now() - this.minT0) >= this.minDurSec * 1000;
+    this.tabLastPhaseIdx = -Infinity; this.tabLastRemainSec = Infinity; this.tabDoneBeeped = false;
+    if (this.chronoStart != null || this.minRunning || this.tabRunning) { this._startLoop(); this._tick(); }
+  }
+
   _tick() {
     const now = Date.now();
     this._advance(now);

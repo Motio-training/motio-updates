@@ -13,6 +13,18 @@
    précédent, croix = dialogue unique (terminer avec bilan / quitter sans
    enregistrer).
 
+   Trois retours terrain de Nicolas (2026-08-18) :
+   - La séance SURVIT à tout : quitter l'écran (Social, Profil, rechargement)
+     n'efface plus rien, l'état complet est persisté à chaque seconde
+     (run-state.js) et repris à l'identique au retour. « ‹ Mes séances » met
+     la séance en arrière-plan sans l'arrêter ; l'onglet Entraînement et le
+     bandeau de la liste y ramènent.
+   - Le bouton « Série faite » a disparu : toucher le chrono valide la série,
+     c'était déjà le cas et le bouton faisait doublon.
+   - La zone Poids/Reps/RIR ne se referme plus après validation : pendant la
+     récupération elle bascule sur la série qu'on vient d'enregistrer, qui
+     reste corrigeable jusqu'au départ de la suivante.
+
    Écarts encore assumés : pas de modification des réglages (séries/reps
    cible/récup) d'un exercice en cours de séance, seul son remplacement
    complet est possible (ExerciseMenuDialog natif propose les deux, ici
@@ -35,6 +47,7 @@ import * as beeper from '../beeper.js';
 import { ouvrirBilan } from '../bilan.js';
 import { ouvrirPave } from '../numpad.js';
 import { ouvrirCatalogue } from './entrainement.js';
+import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
 
 const RIR = [0, 1, 2, 3, 4, 5];
 const SETUP_SEC = 10;
@@ -97,6 +110,13 @@ export async function vueLancerSeance(params) {
     exercises: modele.exercises.map(e => ({ ...e, sets: [] }))
   };
 
+  /* Reprise d'une séance laissée en plan (run-state.js) : revenir sur cet
+     écran après un détour par le fil, le profil, ou même après un
+     rechargement complet doit retrouver la séance TELLE QU'ELLE ÉTAIT —
+     séries faites, exercice courant, chrono global, décompte en cours. */
+  const repris = lireEtat(moi.id, params.id);
+  if (repris?.session) Object.assign(session, repris.session);
+
   /* Records d'avant cette séance, par nom d'exercice (newRecords/recordsFor,
      Stats.kt) : figés une fois pour toutes au lancement, comme le natif qui
      exclut la session en cours — deux séries plus lourdes l'une que l'autre
@@ -122,11 +142,19 @@ export async function vueLancerSeance(params) {
     }
   } catch { /* pas grave : pas de bannière de record cette fois */ }
 
-  let exIndex = 0;
+  let exIndex = repris ? Math.min(repris.exIndex || 0, session.exercises.length - 1) : 0;
   let warmup = true;      // écran ÉCHAUFFEMENT tant qu'aucune série n'a démarré sur cet exercice
   let termine = false;
   let enregistrement = false;
   let poidsVal = 0, repsVal = 0;   // valeurs des cellules Poids/Reps — pavé numérique, pas d'<input>
+  let rirChoisi = -1;
+  /* Index d'une série DÉJÀ FAITE en cours de correction (-1 = on saisit la
+     série à venir). La zone de saisie ne disparaît plus une fois la série
+     validée : pendant la récupération elle bascule sur la série qu'on vient
+     d'enregistrer, pour pouvoir corriger poids/reps/RIR à ce moment-là —
+     demandé par Nicolas (« le choix du RIR, nombre de reps et poids n'est
+     pas disponible pendant la récupération »). */
+  let serieEnEdition = -1;
 
   const totalEstimeSec = dureeSeance(modele.exercises);
   const engine = new Engine((snap) => majCadran(snap));
@@ -137,6 +165,7 @@ export async function vueLancerSeance(params) {
         <div class="run-tete-gauche">
           <span class="run-tete-label">SÉANCE</span>
           <span class="run-chrono-global" data-chrono-global>0:00</span>
+          <button type="button" class="run-arriere" data-arriere>‹ Mes séances</button>
         </div>
         <button type="button" class="run-titre" data-titre></button>
         <div class="run-tete-droite">
@@ -159,6 +188,19 @@ export async function vueLancerSeance(params) {
   const resteEl = el.querySelector('[data-reste]');
   const pauseBtn = el.querySelector('[data-pause]');
 
+  /* Instantané complet de la séance, réécrit à chaque seconde par le tick du
+     chrono global : c'est lui qui permet de revenir sur cet écran plus tard
+     sans rien avoir perdu (run-state.js). */
+  function sauver() {
+    if (termine) return;
+    ecrireEtat({
+      userId: moi.id, workoutId: params.id,
+      nom: modele.name, categorie: modele.category,
+      session, exIndex, warmup, poidsVal, repsVal, rirChoisi, serieEnEdition,
+      engine: engine.captureEtat()
+    });
+  }
+
   /* Chrono global de séance — tourne du "Démarrer" au "Terminer", même hors
      de tout exercice précis (RunWorkout.kt : globalMs). */
   function ticGlobal() {
@@ -166,11 +208,21 @@ export async function vueLancerSeance(params) {
     const ecoule = Math.floor((Date.now() - session.startedAt) / 1000);
     chronoGlobal.textContent = fmtClock(ecoule);
     resteEl.textContent = `reste ~${fmtReste(Math.max(0, totalEstimeSec - ecoule))}`;
+    sauver();
   }
   ticGlobal();
-  const tickGlobal = setInterval(() => { if (termine) clearInterval(tickGlobal); else ticGlobal(); }, 1000);
+  const tickGlobal = setInterval(() => {
+    // Écran quitté (autre route) : le compteur s'arrête là, l'état déjà
+    // sauvegardé suffit à reprendre la séance au retour.
+    if (termine || !document.body.contains(el)) clearInterval(tickGlobal);
+    else ticGlobal();
+  }, 1000);
 
   el.querySelector('[data-quitter]').onclick = () => ouvrirFin();
+  /* Mise en arrière-plan : la séance continue de vivre dans run-state.js,
+     l'écran Entraînement affiche « Séance en cours · Reprendre » et l'onglet
+     du bas y ramène directement. Rien n'est perdu, rien n'est enregistré. */
+  el.querySelector('[data-arriere]').onclick = () => { sauver(); location.hash = '#/seances'; };
   pauseBtn.onclick = () => engine.minuteurTogglePause();
   titreEl.onclick = () => ouvrirRemplacement();
 
@@ -194,9 +246,12 @@ export async function vueLancerSeance(params) {
     }
 
     /* MINUTEUR : la fin du décompte démarre la tension toute seule (moteur) —
-       on fait juste suivre l'UI sans action de l'utilisateur. */
+       on fait juste suivre l'UI sans action de l'utilisateur. La correction
+       de la série précédente s'arrête là : la saisie repasse sur la série en
+       train de se faire. */
     if (snap.mode === 'MINUTEUR' && snap.phase === 'OVERFLOW') {
       corps.querySelector('[data-derniere]').hidden = true;
+      if (serieEnEdition >= 0) quitterEdition();
       prepareSaisie(session.exercises[exIndex]);
       dessinerSousligne(true);
     }
@@ -205,6 +260,54 @@ export async function vueLancerSeance(params) {
   function afficherSaisie(visible) {
     const zone = corps.querySelector('[data-saisie]');
     if (zone) zone.hidden = !visible;
+  }
+
+  /** Puces RIR : reflète rirChoisi, qu'il s'agisse de la série à venir ou
+   *  d'une série déjà faite en cours de correction. */
+  function majPucesRir() {
+    corps.querySelectorAll('[data-rir-val]').forEach(x =>
+      x.classList.toggle('puce-active', Number(x.dataset.rirVal) === rirChoisi));
+  }
+
+  function majEtiquetteSaisie() {
+    const t = corps.querySelector('[data-saisie-titre]');
+    const aide = corps.querySelector('[data-saisie-aide]');
+    if (!t) return;
+    if (serieEnEdition >= 0) {
+      t.textContent = `SÉRIE ${serieEnEdition + 1} ENREGISTRÉE`;
+      aide.textContent = 'Corrige poids, reps ou RIR pendant la récupération.';
+    } else {
+      t.textContent = 'SÉRIE EN COURS';
+      aide.textContent = 'Touche le chrono pour valider la série.';
+    }
+  }
+
+  /** Bascule la zone de saisie sur une série déjà faite (pendant la récup). */
+  function editerSerie(i) {
+    const s = session.exercises[exIndex].sets[i];
+    if (!s) return;
+    serieEnEdition = i;
+    poidsVal = s.weight || 0; repsVal = s.reps || 0; rirChoisi = s.rir ?? -1;
+    majCellules(); majPucesRir(); majEtiquetteSaisie();
+    afficherSaisie(true);
+  }
+
+  function quitterEdition() {
+    serieEnEdition = -1;
+    poidsVal = 0; repsVal = 0; rirChoisi = -1;
+    majPucesRir(); majEtiquetteSaisie();
+  }
+
+  /** Reporte les valeurs de la zone de saisie sur la série corrigée. */
+  function appliquerEdition() {
+    if (serieEnEdition < 0) return;
+    const s = session.exercises[exIndex].sets[serieEnEdition];
+    if (!s) return;
+    s.weight = poidsVal || 0;
+    if (repsVal) s.reps = repsVal;
+    s.rir = rirChoisi;
+    redessinerSeries();
+    sauver();
   }
 
   /** Dernières séries connues pour cet exercice (dernière session l'ayant contenu). */
@@ -245,6 +348,8 @@ export async function vueLancerSeance(params) {
       poidsRef.textContent = ''; repsRef.textContent = '';
     }
     majCellules();
+    majPucesRir();
+    majEtiquetteSaisie();
     afficherSaisie(true);
   }
 
@@ -269,7 +374,7 @@ export async function vueLancerSeance(params) {
   function dessinerExercice() {
     const ex = session.exercises[exIndex];
     warmup = ex.sets.length === 0;
-    poidsVal = 0; repsVal = 0;
+    poidsVal = 0; repsVal = 0; rirChoisi = -1; serieEnEdition = -1;
 
     titreEl.innerHTML = `${esc(ex.name)} <span class="run-titre-crayon">✎</span>`;
     pauseBtn.hidden = true;
@@ -292,6 +397,7 @@ export async function vueLancerSeance(params) {
         <div class="run-controles" data-controles></div>
 
         <div class="run-saisie" data-saisie hidden>
+          <p class="run-saisie-titre" data-saisie-titre>SÉRIE EN COURS</p>
           <div class="run-cellules">
             <button type="button" class="run-cellule" data-poids>
               <span class="run-cellule-label">Poids</span>
@@ -308,7 +414,7 @@ export async function vueLancerSeance(params) {
           <div class="run-rir" data-rir>
             ${RIR.map(r => `<button type="button" class="puce" data-rir-val="${r}">${r === 5 ? '5+' : r}</button>`).join('')}
           </div>
-          <button class="btn btn-lg" data-valider-serie type="button">Série faite</button>
+          <p class="run-saisie-aide" data-saisie-aide>Touche le chrono pour valider la série.</p>
         </div>
 
         <ul class="liste run-series" data-liste-series></ul>
@@ -331,14 +437,16 @@ export async function vueLancerSeance(params) {
     };
     corps.querySelector('[data-suivant]').onclick = () => passerExercice();
 
-    /* Taper le cadran = action principale (centerTap, TrainingScreens.kt) :
-       valide la série en cours si la saisie est ouverte, sinon déclenche le
-       bouton principal du moment (Démarrer / Relancer / Série suivante). Rien
-       ne se passe pendant un décompte de récup/mise en place en cours, comme
-       dans le natif. */
+    /* Taper le cadran = action principale et UNIQUE façon de valider une
+       série (centerTap, TrainingScreens.kt) — le bouton « Série faite » a été
+       retiré à la demande de Nicolas, il faisait doublon avec ce geste.
+       Pendant la récupération, la zone de saisie reste ouverte pour corriger
+       la série qu'on vient d'enregistrer : taper le cadran n'en valide donc
+       pas une deuxième, il déclenche le bouton du moment (Série suivante) s'il
+       y en a un. */
     corps.querySelector('[data-cadran]').onclick = () => {
       const saisie = corps.querySelector('[data-saisie]');
-      if (saisie && !saisie.hidden) { corps.querySelector('[data-valider-serie]')?.click(); return; }
+      if (saisie && !saisie.hidden && serieEnEdition < 0) { validerSerie(); return; }
       corps.querySelector('[data-controles] button')?.click();
     };
 
@@ -350,7 +458,7 @@ export async function vueLancerSeance(params) {
         onValider: (v) => {
           if (!v) return;
           const n = parseFloat(v.replace(',', '.'));
-          if (!Number.isNaN(n)) { poidsVal = n; majCellules(); }
+          if (!Number.isNaN(n)) { poidsVal = n; majCellules(); appliquerEdition(); }
         }
       });
     };
@@ -360,22 +468,21 @@ export async function vueLancerSeance(params) {
         onValider: (v) => {
           if (!v) return;
           const n = parseInt(v, 10);
-          if (Number.isInteger(n) && n > 0) { repsVal = n; majCellules(); }
+          if (Number.isInteger(n) && n > 0) { repsVal = n; majCellules(); appliquerEdition(); }
         }
       });
     };
 
-    let rirChoisi = -1;
     corps.querySelectorAll('[data-rir-val]').forEach(b => {
       b.onclick = () => {
         const v = Number(b.dataset.rirVal);
         rirChoisi = rirChoisi === v ? -1 : v;
-        corps.querySelectorAll('[data-rir-val]').forEach(x =>
-          x.classList.toggle('puce-active', Number(x.dataset.rirVal) === rirChoisi));
+        majPucesRir();
+        appliquerEdition();
       };
     });
 
-    corps.querySelector('[data-valider-serie]').onclick = () => {
+    function validerSerie() {
       const poids = poidsVal || 0;
       const reps = repsVal || 0;
       if (!reps) return toast('Renseigne le nombre de répétitions.');
@@ -385,9 +492,11 @@ export async function vueLancerSeance(params) {
       else { tensionMs = engine.chronoStart ? Date.now() - engine.chronoStart : 0; engine.chronoStop(); }
 
       ex.sets.push({ weight: poids, reps, tensionMs, rir: rirChoisi });
-      afficherSaisie(false);
       redessinerSeries();
       dessinerSousligne(false);
+      /* La zone de saisie ne se referme plus : elle bascule sur la série tout
+         juste enregistrée, corrigeable pendant toute la récupération. */
+      editerSerie(ex.sets.length - 1);
 
       /* Bannière de record (PrBanner) : comparée aux séances passées, jamais
          à cette même séance en cours (meilleursAvant est figé au lancement). */
@@ -406,7 +515,8 @@ export async function vueLancerSeance(params) {
         engine.minuteurStart(ex.recupSec);
       }
       dessinerControles();
-    };
+      sauver();
+    }
   }
 
   /** Sous-ligne « Exo X/Y · série X/Y · cible Xreps · r X:XX » — RunWorkout.kt.
@@ -511,7 +621,8 @@ export async function vueLancerSeance(params) {
     const complet = ex.sets.length >= ex.plannedSets && ex.mode !== 'TABATA';
     const tabataFait = ex.mode === 'TABATA' && ex.sets.length > 0;
     zone.replaceChildren();
-    afficherSaisie(false);
+    // Une série en cours de correction garde sa zone de saisie ouverte.
+    if (serieEnEdition < 0) afficherSaisie(false);
 
     if (complet || tabataFait) {
       zone.appendChild(bouton('Exercice suivant', () => passerExercice(), 'btn-lg'));
@@ -556,6 +667,7 @@ export async function vueLancerSeance(params) {
       zone.appendChild(bouton('Série suivante', () => {
         engine.mode = 'CHRONO';
         engine.chronoReset();
+        quitterEdition();
         prepareSaisie(ex);
         dessinerSousligne(true);
         zone.replaceChildren();
@@ -643,6 +755,7 @@ export async function vueLancerSeance(params) {
     const fait = session.exercises.some(e => e.sets.length);
     if (!fait) {
       termine = true;
+      effacerEtat();
       arreterDirect(moi.id).catch(() => {});
       location.hash = '#/seances';
       return;
@@ -665,6 +778,7 @@ export async function vueLancerSeance(params) {
     modale.querySelector('[data-sans-enregistrer]').onclick = () => {
       if (confirm('Quitter sans enregistrer cette séance ?')) {
         termine = true;
+        effacerEtat();
         arreterDirect(moi.id).catch(() => {});
         modale.remove();
         location.hash = '#/seances';
@@ -713,6 +827,7 @@ export async function vueLancerSeance(params) {
   async function finaliser() {
     if (termine || enregistrement) return;
     termine = true;
+    effacerEtat();
     engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
     session.endedAt = Date.now();
     arreterDirect(moi.id).catch(() => {});
@@ -738,7 +853,32 @@ export async function vueLancerSeance(params) {
     await ouvrirBilan({ moi, modele, session, onFermer: () => { location.hash = '#/seances'; } });
   }
 
+  /** Remonte à l'écran l'état exact d'une séance reprise : exercice courant,
+   *  décompte en cours, série en cours de correction. Appelé après
+   *  dessinerExercice(), qui a déjà posé le DOM de l'exercice. */
+  function restaurerSiBesoin() {
+    if (!repris) return;
+    engine.restaurerEtat(repris.engine);
+    if (repris.warmup) return;   // toujours à l'échauffement : rien de plus à remonter
+    warmup = false;
+    corps.querySelector('[data-derniere]').hidden = true;
+    dessinerSousligne(!(repris.serieEnEdition >= 0));
+    dessinerControles();
+    const ex = session.exercises[exIndex];
+    if (repris.serieEnEdition >= 0 && ex.sets[repris.serieEnEdition]) {
+      editerSerie(repris.serieEnEdition);
+    } else {
+      prepareSaisie(ex);
+      if (repris.poidsVal) poidsVal = repris.poidsVal;
+      if (repris.repsVal) repsVal = repris.repsVal;
+      rirChoisi = repris.rirChoisi ?? -1;
+      majCellules(); majPucesRir();
+    }
+    majCadran(engine._snapshot(Date.now()));
+  }
+
   dessinerExercice();
+  restaurerSiBesoin();
   render(el);
 
   /* Suivi en direct (LiveSessions, Social.kt) : annonce le début UNE SEULE
