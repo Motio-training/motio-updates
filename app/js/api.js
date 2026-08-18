@@ -101,6 +101,36 @@ export async function usernamesFor(ids) {
   return Object.fromEntries(rows.map(r => [r.id, r.username]));
 }
 
+/* ------------------------------------------------------- catégories du compte
+
+   Les catégories de séances (Push/Pull/Legs par défaut) appartiennent au
+   COMPTE, pas à l'appareil : créées ici, elles apparaissent dans l'appli, et
+   réciproquement. Elles vivaient auparavant dans le fichier local du
+   téléphone, donc invisibles de l'espace web et perdues au changement
+   d'appareil (demande explicite de Nicolas, 2026-08-18).
+
+   Stockées dans profiles.categories (tableau JSON ordonné) : les policies de
+   profiles limitent déjà l'écriture à son propre profil. */
+
+const CATEGORIES_INITIALES = ['Push', 'Pull', 'Legs'];
+
+/** Liste ordonnée des catégories du compte, jamais vide. */
+export async function getCategories(userId) {
+  const ligne = unwrap(await sb.from(T.profiles).select('categories').eq('id', userId).maybeSingle());
+  const liste = Array.isArray(ligne?.categories)
+    ? ligne.categories.filter(c => typeof c === 'string' && c.trim()).map(c => c.trim())
+    : [];
+  // Comptes créés avant la colonne : mêmes catégories initiales que l'appli.
+  return liste.length ? liste : [...CATEGORIES_INITIALES];
+}
+
+export async function saveCategories(userId, liste) {
+  const propre = [...new Set(liste.map(c => String(c).trim()).filter(Boolean))];
+  if (!propre.length) throw new Error('Il faut au moins une catégorie.');
+  return unwrap(await sb.from(T.profiles)
+    .update({ categories: propre }).eq('id', userId).select('categories').single());
+}
+
 /**
  * Photos de profil correspondant à une liste d'identifiants.
  *

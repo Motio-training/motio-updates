@@ -1,6 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
 import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
-         listPrograms, saveProgram, sessionsOf, deleteSharedSession } from '../api.js';
+         listPrograms, saveProgram, sessionsOf, deleteSharedSession,
+         getCategories, saveCategories } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
@@ -92,7 +93,10 @@ export async function vueSeances(_params, toutes = false) {
 
   const el = h(`
     <section class="page">
-      <h1 style="margin:0 0 1rem">${toutes ? 'TOUTES MES SÉANCES' : 'ENTRAÎNEMENT'}</h1>
+      <div class="rangee-titre" style="margin-bottom:1rem">
+        <h1 style="margin:0">${toutes ? 'TOUTES MES SÉANCES' : 'ENTRAÎNEMENT'}</h1>
+        ${toutes ? '' : '<button class="lien-inline" data-categories type="button">✎ Catégories</button>'}
+      </div>
 
       ${toutes ? '<a class="lien-inline" href="#/seances" style="display:inline-block;margin-bottom:1rem">‹ Retour à Entraînement</a>' : `
       <a class="moti-card" href="#/coach">
@@ -146,6 +150,8 @@ export async function vueSeances(_params, toutes = false) {
      a ce bouton juste à côté de « Programme », signalé par Nicolas. */
   /* Le bouton « Générer une séance » vit maintenant dans le pied de liste,
      reconstruit à chaque dessin : son écouteur est branché là-bas. */
+
+  el.querySelector('[data-categories]')?.addEventListener('click', () => ouvrirCategories(moi, () => vueSeances()));
 
   function ouvrirGenerationSeanceIA() {
     let goalText = '', niveau = niveauActuel(), gears = [];
@@ -477,6 +483,106 @@ export async function vueSeances(_params, toutes = false) {
 /** Écran secondaire : le carnet complet, sans filtre. */
 export function vueToutesSeances(params) { return vueSeances(params, true); }
 
+/* ==================================================== gestion des catégories
+
+   Portage de CategoryManagerDialog (TrainingScreens.kt) : la liste, un bouton
+   Renommer et une croix par ligne, un champ pour en ajouter une. Mêmes règles
+   que le natif — on ne supprime jamais la dernière, et les séances de la
+   catégorie supprimée basculent sur la première restante.
+
+   Différence de fond : les catégories sont désormais rattachées au COMPTE
+   (profiles.categories) et non à l'appareil, donc ce que l'on fait ici se
+   retrouve dans l'application, et inversement. */
+export function ouvrirCategories(moi, onChange) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="Catégories">
+      <div class="modale-boite">
+        <div class="modale-tete"><h2>Catégories</h2></div>
+        <ul class="liste" data-liste><li class="ligne">Chargement…</li></ul>
+        <div class="rangee rangee-serree" style="margin-top:.8rem">
+          <input type="text" data-nouvelle placeholder="Nouvelle catégorie" maxlength="30" style="flex:1">
+          <button class="btn btn-sm" data-ajouter type="button">Ajouter</button>
+        </div>
+        <p class="etat-mono" style="margin-top:.7rem">Elles sont liées à ton compte : les mêmes dans l'application et ici.</p>
+        <div class="modale-pied">
+          <button class="lien-inline" data-fermer type="button">Fermer</button>
+        </div>
+      </div>
+    </div>`);
+
+  const liste = modale.querySelector('[data-liste]');
+  const champ = modale.querySelector('[data-nouvelle]');
+  let cats = [];
+  let modifie = false;
+
+  const fermer = () => { modale.remove(); if (modifie) onChange?.(); };
+  modale.querySelector('[data-fermer]').onclick = fermer;
+  modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+
+  async function enregistrer(nouvelles) {
+    const avant = cats;
+    cats = nouvelles;
+    dessiner();
+    try { await saveCategories(moi.id, nouvelles); modifie = true; }
+    catch (err) { cats = avant; dessiner(); toast(err.message); }
+  }
+
+  /** Bascule les séances d'une catégorie supprimée vers celle de repli —
+   *  deleteCategory (WorkoutStore.kt) fait exactement ça côté natif. */
+  async function rebasculerSeances(ancienne, remplacement) {
+    let rows = [];
+    try { rows = await listWorkouts(moi.id); } catch { return; }
+    const concernees = rows.filter(r => (r.data || {}).category === ancienne);
+    for (const r of concernees) {
+      const w = r.data; w.category = remplacement;
+      try { await saveWorkout(moi.id, w); } catch { /* on continue */ }
+    }
+  }
+
+  function dessiner() {
+    liste.replaceChildren();
+    cats.forEach(c => {
+      const li = h(`
+        <li class="ligne ligne-action">
+          <span class="ligne-titre">${esc(c)}</span>
+          <span class="rangee rangee-serree">
+            <button class="lien-inline" data-renommer type="button">Renommer</button>
+            ${cats.length > 1 ? '<button class="lien-inline lien-danger" data-supprimer type="button">✕</button>' : ''}
+          </span>
+        </li>`);
+      li.querySelector('[data-renommer]').onclick = async () => {
+        const nom = prompt('Nouveau nom de la catégorie', c);
+        if (nom === null) return;
+        const propre = nom.trim();
+        if (!propre || propre === c) return;
+        if (cats.some(x => x.toLowerCase() === propre.toLowerCase())) return toast('Cette catégorie existe déjà.');
+        await rebasculerSeances(c, propre);
+        await enregistrer(cats.map(x => (x === c ? propre : x)));
+      };
+      li.querySelector('[data-supprimer]')?.addEventListener('click', async () => {
+        if (!confirm(`Supprimer la catégorie « ${c} » ? Les séances qui l'utilisent passeront dans « ${cats.find(x => x !== c)} ».`)) return;
+        const repli = cats.find(x => x !== c);
+        await rebasculerSeances(c, repli);
+        await enregistrer(cats.filter(x => x !== c));
+      });
+      liste.appendChild(li);
+    });
+  }
+
+  modale.querySelector('[data-ajouter]').onclick = async () => {
+    const nom = champ.value.trim();
+    if (!nom) return;
+    if (cats.some(x => x.toLowerCase() === nom.toLowerCase())) return toast('Cette catégorie existe déjà.');
+    champ.value = '';
+    await enregistrer([...cats, nom]);
+  };
+
+  document.body.appendChild(modale);
+  getCategories(moi.id)
+    .then(l => { cats = l; dessiner(); })
+    .catch(err => liste.replaceChildren(h(`<li class="ligne">${esc(err.message)}</li>`)));
+}
+
 /* ================================================== import par lien/code */
 
 /** Reçu depuis « Partager » (ouvrirMenuAction, ci-dessus) : décode le code
@@ -525,9 +631,15 @@ export async function vueSeanceEdition(params) {
   const moi = await currentUser();
   const neuve = params.id === 'nouvelle';
 
+  /* Catégories DU COMPTE (profiles.categories), partagées avec l'application —
+     plus la liste figée Push/Pull/Legs d'avant. */
+  let catsCompte = [];
+  try { catsCompte = await getCategories(moi.id); }
+  catch { catsCompte = [...CATEGORIES_DEFAUT]; }
+
   let seance, autres = [];
   if (neuve) {
-    seance = nouvelleSeance('', CATEGORIES_DEFAUT[0]);
+    seance = nouvelleSeance('', catsCompte[0] || CATEGORIES_DEFAUT[0]);
     try { autres = await listWorkouts(moi.id); } catch { /* pas bloquant */ }
   } else {
     render(loading('Chargement de la séance'));
@@ -541,7 +653,10 @@ export async function vueSeanceEdition(params) {
   }
   if (!seance.section) seance.section = '';
 
-  const cats = [...new Set([...CATEGORIES_DEFAUT, ...autres.map(w => w.category).filter(Boolean)])];
+  /* Les catégories du compte, plus celles déjà portées par des séances
+     existantes (une séance importée peut en avoir une qui n'est pas déclarée —
+     on ne la fait pas disparaître du sélecteur). */
+  const cats = [...new Set([...catsCompte, ...autres.map(w => w.category).filter(Boolean)])];
   const sections = [...new Set(autres.map(w => (w.data || {}).section).filter(Boolean))];
 
   const el = h(`

@@ -385,6 +385,8 @@ h2{
   transition:border-color .18s ease;
 }
 .lien-inline:hover{border-bottom-color:var(--accent)}
+/* Croix de suppression dans une liste (catégories) : même orange que le natif. */
+.lien-danger{color:var(--accent2);border-bottom-color:transparent;font-weight:700}
 .lien-inline:disabled{color:var(--encre-2);cursor:default;border-bottom-color:transparent}
 
 /* ==========================================================================
