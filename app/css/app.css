@@ -497,9 +497,12 @@ a.ligne-titre:hover{color:var(--accent)}
 /* Badge hexagonal (Profile.kt : icône + anneau coloré selon l'état) plutôt
    qu'une carte blanche neutre — verrouillé = gris terne, en cours = anneau
    olive, complet = anneau doré avec léger halo. */
+/* L'image est maintenant le vrai dessin de l'application (assets/img/trophees),
+   posé DANS l'hexagone : object-fit + un peu de marge intérieure pour que le
+   badge respire comme côté natif. */
 .trophee-badge{
-  width:58px;height:58px;margin:0 auto;
-  display:flex;align-items:center;justify-content:center;font-size:1.65rem;line-height:1;
+  width:58px;height:58px;margin:0 auto;display:block;
+  object-fit:contain;padding:9px;box-sizing:border-box;
   clip-path:polygon(50% 2%, 95% 26%, 95% 74%, 50% 98%, 5% 74%, 5% 26%);
   background:linear-gradient(150deg,var(--creme-2),var(--carte));
   border:2px solid var(--trait);

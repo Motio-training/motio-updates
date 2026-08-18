@@ -180,7 +180,7 @@ export async function vueProfil(params) {
       const etat = tr.complete ? 'complet' : tr.unlocked ? 'encours' : 'verrouille';
       const carte = h(`
         <div class="trophee-carte ${etat}">
-          <span class="trophee-badge">${tr.icon}</span>
+          <img class="trophee-badge" src="../${esc(tr.icon)}" alt="">
           <span class="nom">${esc(tr.title)}</span>
           <span class="trophee-etoiles">${'★'.repeat(tr.stars)}<span class="off">${'★'.repeat(tr.levels.length - tr.stars)}</span></span>
         </div>`);
@@ -741,7 +741,7 @@ function ouvrirTrophee(tr) {
     <div class="modale" role="dialog" aria-label="${esc(tr.title)}">
       <div class="modale-boite">
         <div class="modale-tete">
-          <h2><span style="margin-right:.5rem">${tr.icon}</span>${esc(tr.title)}</h2>
+          <h2><img src="../${esc(tr.icon)}" alt="" style="width:34px;height:34px;vertical-align:middle;margin-right:.5rem">${esc(tr.title)}</h2>
         </div>
         <p class="trophee-etoiles" style="font-size:1rem">${'★'.repeat(tr.stars)}<span class="off">${'★'.repeat(tr.levels.length - tr.stars)}</span></p>
         <p>${esc(tr.desc)}</p>

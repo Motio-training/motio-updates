@@ -1,9 +1,16 @@
 /* ==========================================================================
    Trophées — portage exact de computeStatsFrom (Profile.kt) : six familles,
    trois paliers chacune, dix-huit étoiles au total. Mêmes seuils, mêmes
-   libellés. Les icônes natives (drawables) n'ont pas d'équivalent ici : un
-   émoji par famille, proche du dessin d'origine.
+   libellés, et depuis 2026-08-18 les MÊMES IMAGES : les drawables de
+   l'application ont été copiés dans assets/img/trophees/. L'émoji de repli a
+   disparu — comparés côte à côte sur le même téléphone, les deux écrans de
+   trophées ne se ressemblaient pas du tout.
+
+   Comme côté natif (Trophy.iconRes), l'image dépend du palier atteint : une
+   famille change de dessin à chaque étoile gagnée.
    ========================================================================== */
+
+const IMG = 'assets/img/trophees/';
 
 function weekIndex(ms) {
   const days = Math.floor(ms / 86400000);
@@ -19,14 +26,18 @@ export function fmtQty(v) {
   return String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-function famille(title, unit, icon, levels, descs, value) {
+/** @param {string[]} icones les 3 images de la famille, une par palier. */
+function famille(title, unit, icones, levels, descs, value) {
   const stars = levels.filter(l => value >= l).length;
   const complete = stars >= levels.length;
   const target = levels[Math.min(stars, levels.length - 1)];
   const ratio = complete ? 1 : Math.max(0, Math.min(1, value / target));
   const progress = complete ? '' : `${fmtQty(Math.min(value, target))} / ${fmtQty(target)} ${unit}`;
   return {
-    title, unit, icon, levels, descs, value, stars,
+    title, unit, levels, descs, value, stars,
+    // iconRes (Profile.kt) : l'image du dernier palier atteint, celle du 1er
+    // palier tant que rien n'est gagné.
+    icon: IMG + icones[Math.max(0, Math.min(stars - 1, icones.length - 1))],
     unlocked: stars > 0, complete,
     desc: descs[Math.min(stars, descs.length - 1)],
     ratio, progress
@@ -62,18 +73,31 @@ export function computeStatsFrom(entries) {
     prev = w;
   }
 
+  /* Mêmes familles, mêmes seuils et MÊMES IMAGES que Profile.kt. */
   const trophies = [
-    famille('Assiduité', 'séances', '🏆', [1, 25, 100],
+    famille('Assiduité', 'séances',
+      ['ic_troph_premiere.png', 'ic_troph_25_seances.png', 'ic_troph_100_seances.png'],
+      [1, 25, 100],
       ['Terminer sa 1re séance', '25 séances au total', '100 séances au total'], totalSessions),
-    famille('Semaine chargée', '/sem', '📅', [3, 5, 7],
+    famille('Semaine chargée', '/sem',
+      ['ic_troph_semaine_chargee.png', 'ic_troph_semaine_intense.png', 'ic_troph_semaine_parfaite.png'],
+      [3, 5, 7],
       ['3 séances dans une semaine', '5 séances dans une semaine', '7 séances dans une semaine'], maxWeek),
-    famille('Régularité', 'sem.', '🔗', [2, 4, 8],
+    famille('Régularité', 'sem.',
+      ['ic_troph_regulier.png', 'ic_troph_assidu.png', 'ic_troph_machine.png'],
+      [2, 4, 8],
       ["2 semaines d'affilée", "4 semaines d'affilée", "8 semaines d'affilée"], maxStreak),
-    famille('Gros mois', '/mois', '📈', [12, 16, 20],
+    famille('Gros mois', '/mois',
+      ['ic_troph_mois_complet.png', 'ic_troph_mois_complet.png', 'ic_troph_mois_complet.png'],
+      [12, 16, 20],
       ['12 séances dans un mois', '16 séances dans un mois', '20 séances dans un mois'], maxMonth),
-    famille('Tonnage', 'kg', '⛰️', [1000, 10000, 100000],
+    famille('Tonnage', 'kg',
+      ['ic_troph_1_tonne.png', 'ic_troph_10_tonnes.png', 'ic_troph_100_tonnes.png'],
+      [1000, 10000, 100000],
       ['1 tonne déplacée au total', '10 tonnes déplacées au total', '100 tonnes déplacées au total'], totalTonnage),
-    famille('Temps de fer', 'h', '⏱️', [10, 50, 100],
+    famille('Temps de fer', 'h',
+      ['ic_troph_10_heures.png', 'ic_troph_50_heures.png', 'ic_troph_50_heures.png'],
+      [10, 50, 100],
       ['10 h de séance cumulées', '50 h de séance cumulées', '100 h de séance cumulées'], totalHours)
   ];
 
