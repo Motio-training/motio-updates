@@ -20,12 +20,13 @@ export function vueMinuteurs() {
   let workSec = 20, restSec = 10, series = 8;
   const engine = new Engine((snap) => majCadran(snap));
 
+  /* Disposition reprise de MinuteurScreen (MainActivity.kt) : trois onglets
+     soulignés tout en haut, et le cadran seul au milieu de l'écran. Le web
+     ajoutait un sur-titre « Entraînement » et un grand « Minuteurs » qui
+     n'existent pas dans l'application et repoussaient le chrono vers le bas. */
   const el = h(`
-    <section class="page">
-      <p class="eyebrow">Entraînement</p>
-      <h1>Minuteurs</h1>
-
-      <div class="rangee" style="gap:.5rem" data-modes></div>
+    <section class="page minuteurs">
+      <div class="min-onglets" data-modes></div>
       <div data-reglages></div>
 
       <div class="run-cadran run-neutral" data-cadran>
@@ -55,7 +56,7 @@ export function vueMinuteurs() {
   function dessinerModes() {
     zoneModes.replaceChildren();
     for (const [id, label] of MODES) {
-      const b = h(`<button class="puce ${mode === id ? 'puce-active' : ''}" type="button">${label}</button>`);
+      const b = h(`<button class="min-onglet ${mode === id ? 'on' : ''}" type="button">${label}</button>`);
       b.onclick = () => {
         arreterTout();
         mode = id; engine.mode = id;

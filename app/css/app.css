@@ -638,6 +638,25 @@ a.ligne-titre:hover{color:var(--accent)}
 
 /* Minuteurs — stepper Tabata (NumberRow, MainActivity.kt) : label + − + valeur + +. */
 .minuteur-stepper{display:flex;align-items:center;gap:.7rem;width:100%}
+/* Onglets Chrono/Minuteur/Tabata — TabRow de MinuteurScreen (MainActivity.kt) :
+   trois libellés à égalité, celui qui est actif souligné en vert. Le web
+   utilisait des puces en pilule, ce qui ne ressemblait à rien de l'appli. */
+.minuteurs{display:flex;flex-direction:column;min-height:calc(100dvh - var(--haut-appbar) - var(--barre-bas) - var(--pad-vue))}
+.min-onglets{
+  display:flex;margin:calc(-1 * var(--pad-vue)) calc(-1 * var(--pad-vue)) 1rem;
+  border-bottom:1px solid var(--trait);
+}
+.min-onglet{
+  flex:1;padding:.85rem .3rem;background:none;border:none;cursor:pointer;
+  font-family:var(--f-display);font-weight:700;font-size:1rem;color:var(--encre-2);
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.min-onglet.on{color:var(--encre);border-bottom-color:var(--accent)}
+/* Le cadran occupe l'espace libre, comme l'écran natif où le chrono trône
+   seul au centre. */
+.minuteurs .run-cadran{flex:1;justify-content:center}
+.minuteurs .run-cadran-value{font-size:clamp(4rem,20vw,6.5rem)}
+
 .minuteur-stepper-label{flex:0 0 5.5rem;font-family:var(--f-mono);font-size:.85rem;color:var(--encre-2)}
 .minuteur-stepper-bouton{
   width:2.2rem;height:2.2rem;flex:none;border-radius:50%;border:1px solid var(--trait);
