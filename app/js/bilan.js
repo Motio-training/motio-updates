@@ -69,8 +69,10 @@ export async function ouvrirBilan({ moi, modele, session, libre = false, onFerme
      cohérents avec l'historique local. */
   async function saveAll() {
     try {
-      // Entraînement libre : aucun modèle en base à réécrire.
-      if (!libre) await saveWorkout(moi.id, modele);
+      /* En entraînement libre, `modele` est le conteneur `free` : une
+         correction faite ici doit y être réécrite comme pour une séance
+         ordinaire, sinon l'historique garderait les valeurs d'origine. */
+      await saveWorkout(moi.id, modele);
       await finishSession(moi.id, session);
     } catch (err) { toast(err.message); }
     redessiner();

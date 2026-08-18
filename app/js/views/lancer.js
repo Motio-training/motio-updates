@@ -37,7 +37,7 @@
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
-import { getWorkout, saveWorkout, finishSession, sessionsOf,
+import { getWorkout, saveWorkout, finishSession, sessionsOf, conteneurLibre,
          demarrerDirect, battementDirect, arreterDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { libelleRir, kg, dureeSeance, estime1RM, nouvelExercice } from '../model.js';
@@ -883,20 +883,22 @@ export async function vueLancerSeance(params) {
 
     enregistrement = true;
     render(loading('Enregistrement de la séance'));
+    let cible;
     try {
-      /* Entraînement libre : rien n'entre dans le carnet de séances — la
-         réalisation part uniquement dans le fil et les données (le bilan
-         propose ensuite d'en garder un modèle si on le veut). */
-      if (!libre) {
-        const dansModele = {
-          startedAt: session.startedAt, endedAt: session.endedAt,
-          uid: session.uid, note: session.note, mood: session.mood,
-          exercises: session.exercises
-        };
-        modele.history = modele.history || [];
-        modele.history.push(dansModele);
-        await saveWorkout(moi.id, modele);
-      }
+      const dansModele = {
+        startedAt: session.startedAt, endedAt: session.endedAt,
+        uid: session.uid, note: session.note, mood: session.mood,
+        exercises: session.exercises
+      };
+      /* Entraînement libre : aucun modèle n'entre dans le carnet — la
+         réalisation est rangée dans le conteneur `free`, invisible des listes
+         mais lu partout où comptent les séances FAITES (Profil →
+         Entraînements, y compris dans l'appli). Le bilan proposera ensuite
+         d'en garder une vraie séance si elle mérite d'être refaite. */
+      cible = libre ? await conteneurLibre(moi.id) : modele;
+      cible.history = cible.history || [];
+      cible.history.push(dansModele);
+      await saveWorkout(moi.id, cible);
       await finishSession(moi.id, session);
     } catch (err) {
       return render(failure(err, "La séance n'a pas pu être enregistrée"));
@@ -904,7 +906,7 @@ export async function vueLancerSeance(params) {
 
     /* Le bilan (charge totale, carte musculaire, détail modifiable par
        exercice) est partagé avec l'historique par séance — voir bilan.js. */
-    await ouvrirBilan({ moi, modele, session, libre, onFermer: () => { location.hash = '#/seances'; } });
+    await ouvrirBilan({ moi, modele: cible, session, libre, onFermer: () => { location.hash = '#/seances'; } });
   }
 
   /** Remonte à l'écran l'état exact d'une séance reprise : exercice courant,

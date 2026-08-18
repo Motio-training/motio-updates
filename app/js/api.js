@@ -273,11 +273,34 @@ export async function standings(jours, { scope = 'amis', moiId } = {}) {
    Kotlin ne demandera donc aucune migration SQL.
    ========================================================================== */
 
+/**
+ * Le CARNET : les séances-modèles, celles qu'on peut lancer, modifier,
+ * partager. Le conteneur des entraînements libres (`data.free`, créé par
+ * l'appli comme par le web) n'en fait pas partie : ce n'est pas un modèle mais
+ * un tiroir d'historique, il n'a rien à faire dans une liste de séances.
+ * Même distinction que WorkoutStore.carnet() côté Kotlin.
+ */
 export async function listWorkouts(userId) {
-  return unwrap(await sb.from(T.workouts)
+  const rows = unwrap(await sb.from(T.workouts)
     .select('id,local_id,name,category,data,updated_at')
     .eq('user_id', userId).is('deleted_at', null)
     .order('updated_at', { ascending: false }));
+  return rows.filter(r => !(r.data || {}).free);
+}
+
+/**
+ * Le conteneur des entraînements libres, créé au premier besoin — mêmes
+ * champs que WorkoutStore.freeContainer côté Kotlin, pour qu'une séance libre
+ * faite sur le web apparaisse aussi dans « Profil → Entraînements » de
+ * l'appli, et réciproquement.
+ */
+export async function conteneurLibre(userId) {
+  const rows = unwrap(await sb.from(T.workouts)
+    .select('id,local_id,name,category,data,updated_at')
+    .eq('user_id', userId).is('deleted_at', null));
+  const trouve = rows.find(r => (r.data || {}).free);
+  if (trouve) return trouve.data;
+  return { id: Date.now(), name: 'Entraînement libre', category: 'Libre', free: true, exercises: [], history: [] };
 }
 
 export async function getWorkout(userId, localId) {
