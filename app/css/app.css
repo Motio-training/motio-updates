@@ -1182,7 +1182,10 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   -webkit-overflow-scrolling:touch;padding-bottom:.15rem;
 }
 .social-tabs::-webkit-scrollbar{display:none}
-.social-tab{text-decoration:none;flex:none}
+/* Les cinq onglets Social tiennent maintenant dans la largeur : le cinquième
+   (« Amis ») était coupé net par le bord de l'écran, alors que l'application
+   les montre tous. Un peu moins de marge intérieure et de corps suffisent. */
+.social-tab{text-decoration:none;flex:none;padding:.45rem .7rem;font-size:.8rem}
 
 .liste-serree{display:flex;flex-direction:column;gap:.5rem;list-style:none;margin:0;padding:0}
 .standing{
