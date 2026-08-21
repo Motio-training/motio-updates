@@ -1,6 +1,6 @@
 {
-  "versionCode": 138,
-  "versionName": "2.35",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.35/motio.apk",
-  "notes": "Tes categories sont maintenant liees a ton compte : les memes dans l'application et sur l'espace web. Push, Pull et Legs au depart, et tu peux en creer, renommer ou supprimer des deux cotes."
+  "versionCode": 139,
+  "versionName": "2.36",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.36/motio.apk",
+  "notes": "Motio arrive sur les montres Garmin fenix : tes seances au poignet, sans sortir le telephone. Meme ecran de seance qu'ici, START valide la serie et lance la recup, et ce que tu fais a la montre revient dans ton carnet. Pour appairer : Profil, Compte, Montre Garmin."
 }
