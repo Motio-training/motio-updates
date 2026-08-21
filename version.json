@@ -1,6 +1,6 @@
 {
-  "versionCode": 139,
-  "versionName": "2.36",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.36/motio.apk",
-  "notes": "Motio arrive sur les montres Garmin fenix : tes seances au poignet, sans sortir le telephone. Meme ecran de seance qu'ici, START valide la serie et lance la recup, et ce que tu fais a la montre revient dans ton carnet. Pour appairer : Profil, Compte, Montre Garmin."
+  "versionCode": 140,
+  "versionName": "2.37",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.37/motio.apk",
+  "notes": "Motio arrive sur les montres Garmin fenix : tes seances au poignet, sans sortir le telephone. Pour appairer, ouvre Motio sur la montre, elle affiche un code a huit chiffres, et recopie-le dans Profil, Compte, Montre Garmin."
 }
