@@ -72,12 +72,20 @@ export async function vueGroupes() {
     }
     const ul = h('<ul class="liste"></ul>');
     for (const g of groupes) {
+      /* Avatar carré : bannière si le groupe en a une, sinon son initiale —
+         comme GroupCard (GroupScreens.kt), absent du web jusqu'ici. */
+      const avatar = g.banner_url
+        ? `<img class="groupe-carte-avatar" src="${esc(g.banner_url)}" alt="">`
+        : `<span class="groupe-carte-avatar">${esc((g.name.trim()[0] || '•').toUpperCase())}</span>`;
       /* Toute la carte navigue — avant, seul le nom (dans un <a>) réagissait
          au clic, le reste de la ligne (méta) ne faisait rien. */
       const li = h(`
-        <li class="ligne ligne-action" style="cursor:pointer">
-          <span class="ligne-titre">${esc(g.name)}</span>
-          <span class="ligne-meta">${g.memberCount} membre${g.memberCount > 1 ? 's' : ''}${g.mine ? ' · toi' : ''}</span>
+        <li class="ligne ligne-action" style="cursor:pointer;display:flex;align-items:center;gap:.75rem">
+          ${avatar}
+          <span style="flex:1;min-width:0">
+            <span class="ligne-titre" style="display:block">${esc(g.name)}</span>
+            <span class="ligne-meta">${g.memberCount} membre${g.memberCount > 1 ? 's' : ''}${g.mine ? ' · toi' : ''}</span>
+          </span>
         </li>`);
       li.onclick = () => { location.hash = `#/groupes/${g.id}`; };
       ul.appendChild(li);
@@ -137,9 +145,15 @@ export async function vueGroupes() {
           return;
         }
         for (const g of trouves) {
-          const li = h(`<li class="ligne ligne-action">
-            <span class="ligne-titre">${esc(g.name)}</span>
-            <span class="ligne-meta">${g.memberCount} membre${g.memberCount > 1 ? 's' : ''}</span>
+          const avatar = g.banner_url
+            ? `<img class="groupe-carte-avatar groupe-carte-avatar-sm" src="${esc(g.banner_url)}" alt="">`
+            : `<span class="groupe-carte-avatar groupe-carte-avatar-sm">${esc((g.name.trim()[0] || '•').toUpperCase())}</span>`;
+          const li = h(`<li class="ligne ligne-action" style="display:flex;align-items:center;gap:.6rem">
+            ${avatar}
+            <span style="flex:1;min-width:0">
+              <span class="ligne-titre" style="display:block">${esc(g.name)}</span>
+              <span class="ligne-meta">${g.memberCount} membre${g.memberCount > 1 ? 's' : ''}</span>
+            </span>
             <button class="btn btn-sm" type="button">Rejoindre</button></li>`);
           li.querySelector('button').onclick = async (ev) => {
             ev.target.disabled = true;
