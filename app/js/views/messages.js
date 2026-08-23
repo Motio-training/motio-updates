@@ -7,7 +7,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, socialHeader } from '../ui.js';
 import { conversations, messageThread, sendText, sendWorkoutMessage,
          markThreadRead, listWorkouts, usernamesFor, getProfile,
-         reactionsFor, toggleReaction, REACTION_EMOJIS } from '../api.js';
+         reactionsFor, toggleReaction, REACTION_EMOJIS, following } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
 import { saveWorkout } from '../api.js';
@@ -35,8 +35,10 @@ export async function vueMessages() {
   catch (e) { return render(failure(e, "Les messages n'ont pas pu être chargés")); }
 
   const unread = convs.reduce((t, c) => t + (c.unread || 0), 0);
+  let amisCount = null;
+  try { amisCount = (await following(moi.id)).length; } catch { /* pas bloquant */ }
   const el = h(`<section class="page"></section>`);
-  el.appendChild(socialHeader('Messages', 'messages', unread, () => vueMessages()));
+  el.appendChild(socialHeader('Messages', 'messages', unread, () => vueMessages(), amisCount));
 
   if (!convs.length) {
     el.appendChild(empty('Aucun message',

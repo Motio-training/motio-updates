@@ -152,9 +152,15 @@ const SOCIAL_TABS = [
  *  (chaque vue refait déjà son propre fetch au montage, donc « recharger
  *  l'écran » revient au même effet visible que le refresh multi-ressources
  *  natif). Le bouton se désactive et affiche « … » pendant l'appel. */
-export function socialHeader(titre, actif, unread = 0, onActualiser = null) {
+export function socialHeader(titre, actif, unread = 0, onActualiser = null, amisCount = null) {
   const chips = SOCIAL_TABS.map(([id, label, href]) => {
-    const texte = id === 'messages' && unread ? `${label} (${unread})` : label;
+    // « Amis (N) » comme le natif (SocialScreens.kt : `Amis (${friends.size})`) —
+    // N = nombre de personnes suivies, jamais affiché tant qu'il n'est pas
+    // fourni par l'écran appelant (évite un « Amis (0) » qui clignote avant
+    // que le chargement ne réponde).
+    const texte = id === 'messages' && unread ? `${label} (${unread})`
+      : id === 'amis' && amisCount != null ? `${label} (${amisCount})`
+      : label;
     return `<a class="chip-cat social-tab ${id === actif ? 'on' : ''}" href="${href}">${esc(texte)}</a>`;
   }).join('');
   const el = h(`

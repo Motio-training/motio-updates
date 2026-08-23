@@ -800,7 +800,13 @@ function calculerStats(seances) {
 
 export async function vueAmis() {
   const moi = await currentUser();
-  const unread = await unreadMessagesCount(moi.id).catch(() => 0);
+  let unread = 0, mesAmis = null, erreurAbos = null;
+  try {
+    [unread, mesAmis] = await Promise.all([
+      unreadMessagesCount(moi.id).catch(() => 0),
+      following(moi.id)
+    ]);
+  } catch (e) { erreurAbos = e; }
 
   const el = h(`
     <section class="page">
@@ -813,7 +819,7 @@ export async function vueAmis() {
         <div data-abos></div>
       </div>
     </section>`);
-  el.insertBefore(socialHeader('Amis', 'amis', unread, () => vueAmis()), el.firstChild);
+  el.insertBefore(socialHeader('Amis', 'amis', unread, () => vueAmis(), mesAmis?.length ?? null), el.firstChild);
 
   const res = el.querySelector('[data-resultats]');
   let t;
@@ -835,16 +841,15 @@ export async function vueAmis() {
   });
 
   const zone = el.querySelector('[data-abos]');
-  try {
-    const liste = await following(moi.id);
-    if (!liste.length) {
-      zone.appendChild(h(`<p class="etat-mono">Tu ne suis personne. Cherche un pseudo ci-dessus.</p>`));
-    } else {
-      const ul = h('<ul class="liste"></ul>');
-      for (const p of liste) ul.appendChild(lignePersonne(p, moi, true));
-      zone.appendChild(ul);
-    }
-  } catch (e) { zone.appendChild(failure(e, "Les abonnements n'ont pas pu être chargés")); }
+  if (erreurAbos) {
+    zone.appendChild(failure(erreurAbos, "Les abonnements n'ont pas pu être chargés"));
+  } else if (!mesAmis.length) {
+    zone.appendChild(h(`<p class="etat-mono">Tu ne suis personne. Cherche un pseudo ci-dessus.</p>`));
+  } else {
+    const ul = h('<ul class="liste"></ul>');
+    for (const p of mesAmis) ul.appendChild(lignePersonne(p, moi, true));
+    zone.appendChild(ul);
+  }
 
   render(el);
 }

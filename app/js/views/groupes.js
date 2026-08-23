@@ -15,7 +15,7 @@ import {
   groupsMine, groupsSearch, groupCreate, groupJoin, groupLeave, groupDelete,
   groupPreviewByCode, groupMembersList, groupRemoveMember, groupUpdateInfo, groupRegenerateCode,
   groupFeed, groupStandings, groupMessageThread, groupSendText, groupSendWorkout,
-  listWorkouts, unreadMessagesCount, kudosFor, commentCounts
+  listWorkouts, unreadMessagesCount, kudosFor, commentCounts, following
 } from '../api.js';
 import { kg } from '../model.js';
 import { encode as encoderSeance, decode as decoderSeance } from '../workout-share.js';
@@ -35,12 +35,15 @@ export async function vueGroupes() {
   render(loading('Chargement des groupes'));
   const moi = await currentUser();
 
-  let groupes, unread = 0;
+  let groupes, unread = 0, amisCount = null;
   try {
-    [groupes, unread] = await Promise.all([
+    let mesAmis;
+    [groupes, unread, mesAmis] = await Promise.all([
       groupsMine(moi.id),
-      unreadMessagesCount(moi.id).catch(() => 0)
+      unreadMessagesCount(moi.id).catch(() => 0),
+      following(moi.id).catch(() => null)
     ]);
+    if (mesAmis) amisCount = mesAmis.length;
   }
   catch (e) { return render(failure(e, "Les groupes n'ont pas pu être chargés")); }
 
@@ -61,7 +64,7 @@ export async function vueGroupes() {
 
       <div class="bloc" data-liste-groupes></div>
     </section>`);
-  el.insertBefore(socialHeader('Groupes', 'groupes', unread, () => vueGroupes()), el.firstChild);
+  el.insertBefore(socialHeader('Groupes', 'groupes', unread, () => vueGroupes(), amisCount), el.firstChild);
 
   const zone = el.querySelector('[data-liste-groupes]');
   function dessinerListe() {

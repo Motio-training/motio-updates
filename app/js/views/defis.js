@@ -7,7 +7,7 @@
    ========================================================================== */
 
 import { h, render, loading, failure, esc, socialHeader, kgBrut } from '../ui.js';
-import { standings, unreadMessagesCount } from '../api.js';
+import { standings, unreadMessagesCount, following } from '../api.js';
 import { currentUser } from '../supabase.js';
 
 import { filPortee, definirFilPortee } from '../reglages.js';
@@ -23,11 +23,18 @@ export async function vueDefis() {
   render(loading('Chargement des défis'));
   const moi = await currentUser();
 
-  let unread = 0;
-  try { unread = await unreadMessagesCount(moi.id); } catch { /* pas bloquant */ }
+  let unread = 0, amisCount = null;
+  try {
+    const [u, mesAmis] = await Promise.all([
+      unreadMessagesCount(moi.id).catch(() => 0),
+      following(moi.id).catch(() => null)
+    ]);
+    unread = u;
+    if (mesAmis) amisCount = mesAmis.length;
+  } catch { /* pas bloquant */ }
 
   const el = h(`<section class="page"></section>`);
-  el.appendChild(socialHeader('Défis', 'defis', unread, () => vueDefis()));
+  el.appendChild(socialHeader('Défis', 'defis', unread, () => vueDefis(), amisCount));
 
   const zoneChips1 = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');
   const zoneChips2 = h('<div class="rangee rangee-serree" style="margin-bottom:.6rem"></div>');

@@ -1194,10 +1194,14 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   -webkit-overflow-scrolling:touch;padding-bottom:.15rem;
 }
 .social-tabs::-webkit-scrollbar{display:none}
-/* Les cinq onglets Social tiennent maintenant dans la largeur : le cinquième
-   (« Amis ») était coupé net par le bord de l'écran, alors que l'application
-   les montre tous. Un peu moins de marge intérieure et de corps suffisent. */
-.social-tab{text-decoration:none;flex:none;padding:.45rem .7rem;font-size:.8rem}
+/* Correction du 2026-08-19 : les onglets avaient d'abord été RÉTRÉCIS pour
+   tous tenir sans défiler, sur l'hypothèse (jamais vérifiée sur l'appli)
+   que le natif les montrait tous à la fois. Faux : SocialScreens.kt les met
+   dans un `Row(...horizontalScroll...)` avec des PresetChip de taille
+   NORMALE — le natif fait défiler, il ne rétrécit pas. `.social-tabs` était
+   déjà scrollable (overflow-x:auto) avant ce rétrécissement inutile ; seule
+   la taille des puces revient à celle de `.chip-cat`. */
+.social-tab{text-decoration:none;flex:none}
 
 .liste-serree{display:flex;flex-direction:column;gap:.5rem;list-style:none;margin:0;padding:0}
 .standing{

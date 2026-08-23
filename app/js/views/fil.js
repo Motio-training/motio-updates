@@ -1,7 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, socialHeader, duree,
          dureeMin, kgBrut, quandLabel } from '../ui.js';
 import { feed, kudosFor, commentCounts, comments, addKudo, removeKudo,
-         addComment, deleteComment, unreadMessagesCount, amisEnDirect } from '../api.js';
+         addComment, deleteComment, unreadMessagesCount, amisEnDirect, following } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { kg, libelleRir } from '../model.js';
 import { titreSeance } from '../muscle-lexicon.js';
@@ -22,16 +22,19 @@ export async function vueFil() {
   const moi = await currentUser();
   let portee = filPortee();
 
-  let unread = 0, direct = [];
+  let unread = 0, direct = [], amisCount = null;
   try {
-    [unread, direct] = await Promise.all([
+    let mesAmis;
+    [unread, direct, mesAmis] = await Promise.all([
       unreadMessagesCount(moi.id).catch(() => 0),
-      amisEnDirect(moi.id).catch(() => [])
+      amisEnDirect(moi.id).catch(() => []),
+      following(moi.id).catch(() => null)
     ]);
+    if (mesAmis) amisCount = mesAmis.length;
   } catch { /* pas bloquant */ }
 
   const el = h(`<section class="page"></section>`);
-  el.appendChild(socialHeader('Fil', 'fil', unread, () => vueFil()));
+  el.appendChild(socialHeader('Fil', 'fil', unread, () => vueFil(), amisCount));
 
   const zoneDirect = h('<div></div>');
   el.appendChild(zoneDirect);
