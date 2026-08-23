@@ -275,7 +275,17 @@ body:not(.connecte) .icon-btn{display:none}
   /* Valeur de repli tant que main.js n'a pas mesuré la barre (ou si le JS
      échoue) : la mesure inline sur <html> prend ensuite le dessus. */
   :root{--barre-bas:4.4rem}
-  .coque{grid-template-columns:minmax(0,1fr)}
+  /* En mobile, .nav et #vue passent de deux COLONNES à deux LIGNES (nav en
+     accordéon au-dessus du contenu). `.coque` garde son min-height pour
+     remplir l'écran, mais sans grid-template-rows explicite les deux lignes
+     restent en `auto` : l'espace excédentaire (min-height moins le contenu
+     réel) se répartissait alors sur LES DEUX lignes par défaut
+     (align-content:normal ≈ stretch), y compris celle du nav REPLIÉ — un vide
+     de plusieurs centaines de pixels s'ouvrait au-dessus de chaque écran,
+     visible en comparant le fil web au même écran natif. `1fr` sur la ligne
+     de #vue absorbe tout cet excédent à sa place ; `auto` sur celle du nav le
+     laisse à sa vraie taille de contenu (repliée ou déployée). */
+  .coque{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
   .menu-btn{display:flex}
   .nav{
     position:static;
