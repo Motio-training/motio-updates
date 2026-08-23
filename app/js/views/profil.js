@@ -815,7 +815,7 @@ export async function vueAmis() {
       <ul class="liste" data-resultats></ul>
 
       <div class="bloc">
-        <p class="bloc-titre">Abonnements</p>
+        <p class="bloc-titre">Je suis</p>
         <div data-abos></div>
       </div>
     </section>`);
@@ -856,9 +856,17 @@ export async function vueAmis() {
 
 function lignePersonne(p, moi, suivi0) {
   let suivi = suivi0;
+  const initiale = (p.username || '?')[0].toUpperCase();
+  /* Avatar (photo ou initiale, 34px) : PersonRow (SocialScreens.kt ~672-705)
+     en a un devant chaque nom, absent du web jusqu'ici — cette ligne n'était
+     que du texte nu, comparé au natif sur le téléphone. */
+  const avatar = p.avatar_url
+    ? `<img class="msg-avatar" src="${esc(p.avatar_url)}" alt="">`
+    : `<span class="msg-avatar">${esc(initiale)}</span>`;
   const li = h(`
-    <li class="ligne ligne-action">
-      <a class="ligne-titre" href="#/profil/${esc(p.id)}">${esc(p.username || 'sans pseudo')}</a>
+    <li class="ligne ligne-action" style="display:flex;align-items:center;gap:.65rem">
+      ${avatar}
+      <a class="ligne-titre" style="flex:1;min-width:0" href="#/profil/${esc(p.id)}">${esc(p.username || 'sans pseudo')}</a>
       <a class="btn btn-sm btn-ghost" href="#/messages/${esc(p.id)}">Message</a>
       <button class="btn btn-sm ${suivi ? 'btn-ghost' : ''}">${suivi ? 'Ne plus suivre' : 'Suivre'}</button>
     </li>`);

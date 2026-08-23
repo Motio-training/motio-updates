@@ -90,7 +90,7 @@ export async function searchProfiles(terme) {
   const q = terme.trim().toLowerCase();
   if (q.length < 2) return [];
   return unwrap(await sb.from(T.profiles)
-    .select('id,username').ilike('username', `%${q}%`).limit(20));
+    .select('id,username,avatar_url').ilike('username', `%${q}%`).limit(20));
 }
 
 /** Pseudos correspondant à une liste d'identifiants, en une requête. */
@@ -153,7 +153,7 @@ export async function following(userId) {
     .select('following_id').eq('follower_id', userId));
   const ids = liens.map(l => l.following_id).filter(Boolean);
   if (!ids.length) return [];
-  const profils = unwrap(await sb.from(T.profiles).select('id,username').in('id', ids));
+  const profils = unwrap(await sb.from(T.profiles).select('id,username,avatar_url').in('id', ids));
   return profils.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
 }
 
