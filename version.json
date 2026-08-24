@@ -1,6 +1,6 @@
 {
-  "versionCode": 141,
-  "versionName": "2.38",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.38/motio.apk",
-  "notes": "Nouveau mode de chronometrage : EMOM. Tu choisis un intervalle (une minute par exemple) et un nombre de tours ; le top sonne a chaque intervalle et le temps qui reste sert de recuperation. Disponible dans l'appli, sur l'espace web et sur la montre Garmin."
+  "versionCode": 142,
+  "versionName": "2.39",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.39/motio.apk",
+  "notes": "Quatrieme onglet EMOM dans les Minuteurs, a droite de Tabata. Tu regles l'intervalle et le nombre de tours, et c'est parti. Meme ecran sur l'espace web."
 }
