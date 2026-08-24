@@ -6,12 +6,13 @@
    que le web écrit. Si tu modifies WorkoutModel.kt, ce fichier suit.
    ========================================================================== */
 
-export const MODES = ['CHRONO', 'MINUTEUR', 'TABATA'];
+export const MODES = ['CHRONO', 'MINUTEUR', 'TABATA', 'EMOM'];
 
 export const MODE_LABELS = {
   CHRONO: 'Chrono',
   MINUTEUR: 'Minuteur',
-  TABATA: 'Tabata'
+  TABATA: 'Tabata',
+  EMOM: 'EMOM'
 };
 
 /* Constantes d'estimation — WorkoutModel.kt */
@@ -54,6 +55,8 @@ export function dureeExercice(e) {
     case 'MINUTEUR': base = SETUP_SEC + (n - 1) * e.recupSec + tension; break;
     case 'CHRONO': base = SETUP_SEC + tension; break;
     case 'TABATA': base = e.tabataSeries * (e.workSec + e.restSec); break;
+    /* EMOM : l'intervalle EST la duree, recuperation comprise. */
+    case 'EMOM': base = n * e.workSec; break;
     default: base = 0;
   }
   return EX_WARMUP_SEC + base;
