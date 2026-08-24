@@ -1496,6 +1496,42 @@ body:not(.connecte) #vue:has(.onb){
 .bilan-degrade{flex:1;border-radius:4px;display:block}
 .bilan-inconnus{margin:.6rem 0 0;font-size:.74rem;color:var(--encre-2)}
 
+/* ==========================================================================
+   Analyse — onglets Records/Volume/Progression (StatsScreens.kt), navigation
+   semaine, calculateur de disques.
+   ========================================================================== */
+
+.analyse-entete{display:flex;align-items:baseline;justify-content:space-between;gap:1rem}
+.analyse-entete h1{margin:0}
+
+.semaine-nav{display:flex;align-items:center;gap:.75rem;margin:.25rem 0 1rem}
+.semaine-nav button{
+  width:2.3rem;height:2.3rem;border-radius:50%;border:1px solid var(--encre-2);
+  background:transparent;color:var(--encre);font-size:1.05rem;cursor:pointer;flex:none;
+  font-family:var(--f-display);
+}
+.semaine-nav button:disabled{opacity:.35;cursor:default}
+.semaine-nav span{flex:1;text-align:center;font-family:var(--f-display);font-weight:700;font-size:.92rem}
+
+.groupe-volume{margin-bottom:.85rem}
+.groupe-volume-tete{display:flex;align-items:baseline;gap:.4rem}
+.groupe-volume-tete .nom{flex:1;color:var(--encre);font-size:.92rem}
+.groupe-volume-tete .sets{color:var(--dore);font-weight:700;font-size:.92rem}
+.groupe-volume-tete .kg{color:var(--encre-2);font-size:.78rem}
+.groupe-volume-barre{height:8px;border-radius:4px;background:var(--creme-2);margin-top:.35rem;overflow:hidden}
+.groupe-volume-barre>span{display:block;height:100%;background:var(--accent);border-radius:4px}
+
+.sparkline-wrap{margin-top:.5rem}
+.sparkline-minmax{display:flex;justify-content:space-between;font-size:.72rem;color:var(--encre-2)}
+.sparkline-canvas{width:100%;height:150px;display:block}
+
+.progression-trio{display:flex;gap:1rem;margin-top:1.1rem}
+.progression-trio>div{flex:1;min-width:0}
+.progression-trio span{display:block;font-size:.68rem;color:var(--encre-2)}
+.progression-trio b{display:block;font-size:1rem;color:var(--encre);margin:.15rem 0;font-family:var(--f-display)}
+.progression-trio .evolution-pos{color:var(--accent)}
+.progression-trio .evolution-neg{color:var(--accent2)}
+
 .bilan-exo{
   padding:.9rem 1rem;margin-bottom:.6rem;
   background:var(--carte);border:1px solid var(--trait);border-radius:var(--r-m);

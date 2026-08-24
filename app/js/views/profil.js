@@ -1,4 +1,4 @@
-import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, socialHeader } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, dateCourte, dateBreve, duree, socialHeader } from '../ui.js';
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
          listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
@@ -15,6 +15,9 @@ import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, defini
          recordsEpingles, estRecordEpingle, toggleRecordEpingle,
          oneRmManuel, definirOneRmManuel } from '../reglages.js';
 import { buildBackupJson, parseBackupJson } from '../backup.js';
+import { weekStart, plusDays, volumeHebdo, exercicesPratiques, progressionDe,
+         calculerDisques, totalDisques, libelleDisques, echauffementPour,
+         tonnageEchauffement, kgCourt } from '../stats.js';
 
 export async function vueProfil(params) {
   render(loading('Chargement du profil'));
@@ -323,8 +326,13 @@ async function recadrerAvatar(file) {
     (blob) => blob ? resolve(blob) : reject(new Error('Image illisible.')), 'image/jpeg', 0.85));
 }
 
-/** Analyse et records (StatsScreens.kt) : répartition musculaire de la
- *  semaine + records estimés — vivaient avant en vrac sur l'écran principal. */
+/** Analyse et records (StatsScreens.kt) : trois onglets — Records, Volume
+ *  (séries et tonnage par groupe musculaire, semaine par semaine), Progression
+ *  (courbe par exercice) — plus le calculateur de disques (« Disques »),
+ *  ouvert en modale plutôt qu'en écran séparé comme AlertDialog côté natif.
+ *  Tout est recalculé à l'affichage depuis les séances déjà chargées (comme
+ *  Stats.kt recalcule depuis le carnet local) : rien n'est stocké, rien ne
+ *  peut devenir faux. */
 export async function vueProfilAnalyse() {
   render(loading('Chargement'));
   const moi = await currentUser();
@@ -333,89 +341,350 @@ export async function vueProfilAnalyse() {
   try { seances = await sessionsOf(moi.id, { limit: 200 }); }
   catch (e) { return render(failure(e, "L'analyse n'a pas pu être chargée")); }
 
-  const septJours = Date.now() - 7 * 86400000;
-  const recentes = seances.filter(s => new Date(s.started_at).getTime() >= septJours);
-  const sessionLike = {
-    exercises: recentes.flatMap(s => Array.isArray(s.details) ? s.details : [])
-      .map(ex => ({ name: ex.n, sets: (ex.s || []).map(st => ({ reps: st.r })) }))
-  };
-  const { zones, unknown, isEmpty } = await muscleLoadOf(sessionLike);
   const records = tousLesRecords(seances);
 
   const el = h(`
     <section class="page">
-      ${enTete('Analyse et records')}
-
-      <p class="bloc-titre" style="margin-top:1.5rem">Répartition musculaire — 7 derniers jours</p>
-      <div data-muscles></div>
-
-      <div class="bloc">
-        <p class="bloc-titre">Records estimés</p>
-        ${records.length ? '<p class="etat-mono">Touche l\'étoile pour épingler un record en tête de liste.</p>' : ''}
-        <div data-records></div>
+      <p class="eyebrow"><a class="lien-inline" href="#/profil">‹ Profil</a></p>
+      <div class="analyse-entete">
+        <h1>Analyse et records</h1>
+        <button class="lien-inline" data-disques type="button">Disques</button>
       </div>
+
+      <div class="social-tabs" data-onglets style="margin:1rem 0 1.25rem">
+        <button class="chip-cat on" data-onglet="records" type="button">Records</button>
+        <button class="chip-cat" data-onglet="volume" type="button">Volume</button>
+        <button class="chip-cat" data-onglet="progression" type="button">Progression</button>
+      </div>
+
+      <div data-contenu></div>
     </section>`);
 
-  const zoneMuscles = el.querySelector('[data-muscles]');
-  if (isEmpty && !unknown.length) {
-    zoneMuscles.appendChild(h('<p class="etat-mono">Aucune séance sur les 7 derniers jours.</p>'));
-  } else {
-    const bloc = h(`
-      <div>
-        ${!isEmpty ? `
-          <canvas class="bilan-canvas" data-canvas></canvas>
-          <div class="bilan-faces"><span>Face</span><span>Dos</span></div>
-          <div class="bilan-degrade-row"><span>0</span><canvas class="bilan-degrade" data-legende></canvas><span>${MuscleScale.WEEK}+ séries</span></div>` : ''}
-        ${unknown.length ? `<p class="bilan-inconnus">${unknown.length === 1 ? '1 exercice non reconnu' : unknown.length + ' exercices non reconnus'} : ${esc([...new Set(unknown)].join(', '))}</p>` : ''}
-      </div>`);
-    zoneMuscles.appendChild(bloc);
-    if (!isEmpty) {
-      await drawMuscleMap(bloc.querySelector('[data-canvas]'), zones, MuscleScale.WEEK);
-      drawLegend(bloc.querySelector('[data-legende]'), MuscleScale.WEEK);
-    }
+  const zoneOnglets = el.querySelector('[data-onglets]');
+  const zoneContenu = el.querySelector('[data-contenu]');
+  let onglet = 'records';
+
+  function activerOnglet(id) {
+    onglet = id;
+    zoneOnglets.querySelectorAll('[data-onglet]').forEach(b => b.classList.toggle('on', b.dataset.onglet === id));
+    zoneContenu.replaceChildren();
+    if (id === 'records') zoneContenu.appendChild(contenuRecords());
+    else if (id === 'volume') zoneContenu.appendChild(contenuVolume());
+    else zoneContenu.appendChild(contenuProgression());
   }
+  zoneOnglets.querySelectorAll('[data-onglet]').forEach(b => {
+    b.onclick = () => activerOnglet(b.dataset.onglet);
+  });
+
+  /* -------------------------------------------------------------- Records */
 
   /* Records épinglés (PinnedRecords, Stats.kt) : remontent en tête, dans
      l'ordre où ils ont été épinglés ; le reste suit trié par date
      d'amélioration décroissante. Pas de réordonnancement manuel (natif :
      appui long + glissé) — écart assumé. */
-  const zoneRec = el.querySelector('[data-records]');
-  function dessinerRecords() {
-    zoneRec.replaceChildren();
+  function contenuRecords() {
+    const wrap = h('<div></div>');
     if (!records.length) {
-      zoneRec.appendChild(h('<p class="etat-mono">Aucun détail de séries partagé.</p>'));
-      return;
+      wrap.appendChild(h('<p class="etat-mono">Aucun détail de séries partagé.</p>'));
+      return wrap;
     }
-    const epingles = recordsEpingles();
-    const tries = [...records].sort((a, b) => {
-      const pa = epingles.includes(a.nom), pb = epingles.includes(b.nom);
-      if (pa !== pb) return pa ? -1 : 1;
-      if (pa && pb) return epingles.indexOf(a.nom) - epingles.indexOf(b.nom);
-      return b.whenMs - a.whenMs;
-    });
-    const ul = h('<ul class="liste"></ul>');
-    for (const r of tries) {
-      const epingle = epingles.includes(r.nom);
-      const manuel = oneRmManuel(r.nom);
-      const li = h(`
-        <li class="ligne record-ligne ${epingle ? 'epingle' : ''}">
-          <button type="button" class="record-etoile" aria-label="${epingle ? 'Désépingler' : 'Épingler'} ${esc(r.nom)}">${epingle ? '★' : '☆'}</button>
-          <span class="record-corps">
-            <span class="ligne-titre">${esc(r.nom)}</span>
-            <span class="ligne-meta">${esc(kg(manuel ?? r.rm))} · ${manuel != null ? '1RM testé' : '1RM estimé'}</span>
-          </span>
-          <button type="button" class="lien-inline" data-modifier>Modifier</button>
-        </li>`);
-      li.querySelector('.record-etoile').onclick = () => { toggleRecordEpingle(r.nom); dessinerRecords(); };
-      li.querySelector('[data-modifier]').onclick = () =>
-        ouvrirSaisie1RM(r.nom, manuel, (v) => { definirOneRmManuel(r.nom, v); dessinerRecords(); });
-      ul.appendChild(li);
-    }
-    zoneRec.appendChild(ul);
-  }
-  dessinerRecords();
+    wrap.appendChild(h('<p class="etat-mono">Touche l\'étoile pour épingler un record en tête de liste.</p>'));
+    const ul = h('<ul class="liste" style="margin-top:.75rem"></ul>');
+    wrap.appendChild(ul);
 
+    function dessiner() {
+      ul.replaceChildren();
+      const epingles = recordsEpingles();
+      const tries = [...records].sort((a, b) => {
+        const pa = epingles.includes(a.nom), pb = epingles.includes(b.nom);
+        if (pa !== pb) return pa ? -1 : 1;
+        if (pa && pb) return epingles.indexOf(a.nom) - epingles.indexOf(b.nom);
+        return b.whenMs - a.whenMs;
+      });
+      for (const r of tries) {
+        const epingle = epingles.includes(r.nom);
+        const manuel = oneRmManuel(r.nom);
+        const li = h(`
+          <li class="ligne record-ligne ${epingle ? 'epingle' : ''}">
+            <button type="button" class="record-etoile" aria-label="${epingle ? 'Désépingler' : 'Épingler'} ${esc(r.nom)}">${epingle ? '★' : '☆'}</button>
+            <span class="record-corps">
+              <span class="ligne-titre">${esc(r.nom)}</span>
+              <span class="ligne-meta">${esc(kg(manuel ?? r.rm))} · ${manuel != null ? '1RM testé' : '1RM estimé'}</span>
+            </span>
+            <button type="button" class="lien-inline" data-modifier>Modifier</button>
+          </li>`);
+        li.querySelector('.record-etoile').onclick = () => { toggleRecordEpingle(r.nom); dessiner(); };
+        li.querySelector('[data-modifier]').onclick = () =>
+          ouvrirSaisie1RM(r.nom, manuel, (v) => { definirOneRmManuel(r.nom, v); dessiner(); });
+        ul.appendChild(li);
+      }
+    }
+    dessiner();
+    return wrap;
+  }
+
+  /* --------------------------------------------------------------- Volume */
+
+  /* VolumeView (StatsScreens.kt) : navigation semaine par semaine (lundi
+     00:00 à lundi 00:00, pas juste « 7 derniers jours »), carte musculaire de
+     la semaine affichée, puis répartition séries/tonnage par groupe. */
+  function contenuVolume() {
+    const wrap = h('<div></div>');
+    let back = 0; // semaines en arrière, comme `back` dans VolumeView
+
+    async function dessiner() {
+      wrap.replaceChildren();
+      const start = weekStart(plusDays(Date.now(), -7 * back));
+      const fin = plusDays(start, 7);
+      const rows = volumeHebdo(seances, start);
+
+      const nav = h(`
+        <div class="semaine-nav">
+          <button type="button" data-prec aria-label="Semaine précédente">‹</button>
+          <span>semaine du ${esc(dateBreve(start))}</span>
+          <button type="button" data-suiv aria-label="Semaine suivante" ${back === 0 ? 'disabled' : ''}>›</button>
+        </div>`);
+      nav.querySelector('[data-prec]').onclick = () => { back++; dessiner(); };
+      nav.querySelector('[data-suiv]').onclick = () => { if (back > 0) { back--; dessiner(); } };
+      wrap.appendChild(nav);
+
+      wrap.appendChild(h(`<p class="etat-mono">Nombre de séries par groupe musculaire — l'indicateur qui pilote
+        réellement la progression. La silhouette compte des séries pondérées : un rowing vaut une série de
+        dorsaux et une demie de biceps. Repère utile : 10 à 20 séries par muscle et par semaine.</p>`));
+
+      if (!rows.length) {
+        wrap.appendChild(h('<p class="etat-mono" style="margin-top:1rem">Aucune séance cette semaine-là.</p>'));
+        return;
+      }
+
+      const sessionLike = {
+        exercises: seances.filter(s => {
+          const t = new Date(s.started_at).getTime();
+          return t >= start && t < fin;
+        }).flatMap(s => Array.isArray(s.details) ? s.details : [])
+          .map(ex => ({ name: ex.n, sets: (ex.s || []).map(st => ({ reps: st.r })) }))
+      };
+      const { zones, unknown, isEmpty } = await muscleLoadOf(sessionLike);
+      if (!isEmpty) {
+        const bloc = h(`
+          <div style="margin-top:1rem">
+            <canvas class="bilan-canvas" data-canvas></canvas>
+            <div class="bilan-faces"><span>Face</span><span>Dos</span></div>
+            <div class="bilan-degrade-row"><span>0</span><canvas class="bilan-degrade" data-legende></canvas><span>${MuscleScale.WEEK}+ séries</span></div>
+            ${unknown.length ? `<p class="bilan-inconnus">${unknown.length === 1 ? '1 exercice non reconnu' : unknown.length + ' exercices non reconnus'} : ${esc([...new Set(unknown)].join(', '))}</p>` : ''}
+          </div>`);
+        wrap.appendChild(bloc);
+        await drawMuscleMap(bloc.querySelector('[data-canvas]'), zones, MuscleScale.WEEK);
+        drawLegend(bloc.querySelector('[data-legende]'), MuscleScale.WEEK);
+      }
+
+      const maxSets = Math.max(...rows.map(r => r.sets), 1);
+      const listeGroupes = h('<div style="margin-top:1.25rem"></div>');
+      rows.forEach(g => {
+        const pct = Math.min(100, Math.round(g.sets / maxSets * 100));
+        listeGroupes.appendChild(h(`
+          <div class="groupe-volume">
+            <div class="groupe-volume-tete">
+              <span class="nom">${esc(g.groupe)}</span>
+              <span class="sets">${g.sets} séries</span>
+              <span class="kg">·&nbsp;${kgCourt(g.volumeKg)} kg</span>
+            </div>
+            <div class="groupe-volume-barre"><span style="width:${pct}%"></span></div>
+          </div>`));
+      });
+      wrap.appendChild(listeGroupes);
+
+      const totalSets = rows.reduce((t, r) => t + r.sets, 0);
+      const totalVol = rows.reduce((t, r) => t + r.volumeKg, 0);
+      wrap.appendChild(h(`<p class="etat-mono" style="margin-top:.4rem">Total : ${totalSets} séries, ${kgCourt(totalVol)} kg déplacés.</p>`));
+    }
+
+    dessiner();
+    return wrap;
+  }
+
+  /* ----------------------------------------------------------- Progression */
+
+  /* ProgressView (StatsScreens.kt) : sélecteur d'exercice, sélecteur de
+     métrique, courbe (Sparkline), trio Première/Dernière/Évolution. */
+  function contenuProgression() {
+    const wrap = h('<div></div>');
+    const exercices = exercicesPratiques(seances);
+    if (!exercices.length) {
+      wrap.appendChild(h('<p class="etat-mono">Aucun exercice réalisé pour l\'instant.</p>'));
+      return wrap;
+    }
+    let selected = exercices[0][0];
+    let metric = 'ONE_RM';
+    const METRICS = [
+      ['ONE_RM', '1RM estimé'], ['WEIGHT', 'Charge max'], ['VOLUME', 'Volume'], ['REPS', 'Répétitions']
+    ];
+    const valeurDe = (p, m) => m === 'ONE_RM' ? p.oneRm : m === 'WEIGHT' ? p.topWeight : m === 'VOLUME' ? p.volume : p.totalReps;
+
+    function dessiner() {
+      wrap.replaceChildren();
+
+      wrap.appendChild(h('<p class="champ-label" style="text-transform:uppercase;margin-top:0">Exercice</p>'));
+      const chipsExo = h('<div class="rangee rangee-serree"></div>');
+      exercices.slice(0, 20).forEach(([nom, n]) => {
+        const b = h(`<button class="chip-cat ${nom === selected ? 'on' : ''}" type="button">${esc(nom)} (${n})</button>`);
+        b.onclick = () => { selected = nom; dessiner(); };
+        chipsExo.appendChild(b);
+      });
+      wrap.appendChild(chipsExo);
+
+      const chipsMetric = h('<div class="rangee rangee-serree" style="margin-top:.75rem"></div>');
+      METRICS.forEach(([id, label]) => {
+        const b = h(`<button class="chip-cat ${id === metric ? 'on' : ''}" type="button">${esc(label)}</button>`);
+        b.onclick = () => { metric = id; dessiner(); };
+        chipsMetric.appendChild(b);
+      });
+      wrap.appendChild(chipsMetric);
+
+      const points = progressionDe(seances, selected);
+      if (points.length < 2) {
+        wrap.appendChild(h('<p class="etat-mono" style="margin-top:1rem">Il faut au moins deux séances sur cet exercice pour tracer une courbe.</p>'));
+        return;
+      }
+
+      const valeurs = points.map(p => valeurDe(p, metric));
+      const unite = metric === 'REPS' ? '' : ' kg';
+      const min = Math.min(...valeurs), max = Math.max(...valeurs);
+
+      const zoneGraphe = h(`
+        <div class="sparkline-wrap">
+          <div class="sparkline-minmax"><span>${kgCourt(max)}</span><span>${kgCourt(min)}</span></div>
+          <canvas class="sparkline-canvas" data-spark></canvas>
+        </div>`);
+      wrap.appendChild(zoneGraphe);
+      dessinerCourbe(zoneGraphe.querySelector('[data-spark]'), valeurs);
+
+      const premiere = valeurs[0], derniere = valeurs[valeurs.length - 1];
+      const delta = derniere - premiere;
+      wrap.appendChild(h(`
+        <div class="progression-trio">
+          <div><span>Première</span><b>${kgCourt(premiere)}${unite}</b><span>${esc(dateBreve(points[0].whenMs))}</span></div>
+          <div><span>Dernière</span><b>${kgCourt(derniere)}${unite}</b><span>${esc(dateBreve(points[points.length - 1].whenMs))}</span></div>
+          <div><span>Évolution</span><b class="${delta >= 0 ? 'evolution-pos' : 'evolution-neg'}">${delta >= 0 ? '+' : ''}${kgCourt(delta)}${unite}</b><span>${points.length} séances</span></div>
+        </div>`));
+    }
+
+    dessiner();
+    return wrap;
+  }
+
+  el.querySelector('[data-disques]').onclick = () => ouvrirDisques();
+
+  zoneContenu.appendChild(contenuRecords());
   render(el);
+}
+
+/** Sparkline (StatsScreens.kt) : courbe tracée à la main sur un canvas — pas
+ *  de bibliothèque de graphiques pour une ligne et deux repères. L'échelle
+ *  verticale part du minimum, pas de zéro : sur des charges de 80 à 95 kg, un
+ *  axe à zéro écraserait toute la progression. */
+function dessinerCourbe(canvas, valeurs) {
+  const min = Math.min(...valeurs), max = Math.max(...valeurs);
+  const span = (max - min) > 0.0001 ? (max - min) : 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cssW = canvas.clientWidth || 300;
+  const cssH = 150;
+  canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+  canvas.style.height = cssH + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const cs = getComputedStyle(document.documentElement);
+  const ligne = cs.getPropertyValue('--accent').trim() || '#A9C25E';
+  const grille = cs.getPropertyValue('--creme-2').trim() || '#333A24';
+  const pad = 8;
+
+  ctx.strokeStyle = grille; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, pad); ctx.lineTo(cssW, pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, cssH - pad); ctx.lineTo(cssW, cssH - pad); ctx.stroke();
+
+  const x = i => valeurs.length === 1 ? cssW / 2 : i / (valeurs.length - 1) * cssW;
+  const y = v => (cssH - pad) - ((v - min) / span) * (cssH - 2 * pad);
+
+  ctx.strokeStyle = ligne; ctx.lineWidth = 3;
+  ctx.beginPath();
+  valeurs.forEach((v, i) => { const px = x(i), py = y(v); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); });
+  ctx.stroke();
+
+  ctx.fillStyle = ligne;
+  valeurs.forEach((v, i) => { ctx.beginPath(); ctx.arc(x(i), y(v), 4, 0, Math.PI * 2); ctx.fill(); });
+}
+
+/** PlateDialog (StatsScreens.kt) : disques à charger de chaque côté pour une
+ *  charge visée, plus une suggestion d'échauffement par paliers. Ouvert en
+ *  modale (« Disques », en tête de l'écran Analyse) plutôt qu'en écran séparé
+ *  — le web n'a pas la contrainte d'un AlertDialog natif, mais le contenu et
+ *  le comportement sont fidèles. */
+function ouvrirDisques() {
+  const BARRES = [20, 15, 10, 7];
+  let barre = 20;
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="Calculateur de disques">
+      <div class="modale-boite">
+        <div class="modale-tete"><h2>Calculateur de disques</h2></div>
+        <label class="champ"><span>Charge visée (kg)</span>
+          <input type="number" inputmode="decimal" step="0.5" min="0" data-cible></label>
+        <p class="champ-label" style="text-transform:uppercase">Barre</p>
+        <div class="rangee rangee-serree" data-barres></div>
+        <div data-resultat></div>
+        <div class="modale-pied"><button class="lien-inline" data-fermer type="button">Fermer</button></div>
+      </div>
+    </div>`);
+
+  const zoneBarres = modale.querySelector('[data-barres]');
+  const zoneRes = modale.querySelector('[data-resultat]');
+  const champCible = modale.querySelector('[data-cible]');
+
+  function dessinerBarres() {
+    zoneBarres.replaceChildren();
+    BARRES.forEach(b => {
+      const chip = h(`<button class="chip-cat ${barre === b ? 'on' : ''}" type="button">${kgCourt(b)} kg</button>`);
+      chip.onclick = () => { barre = b; dessinerBarres(); dessinerResultat(); };
+      zoneBarres.appendChild(chip);
+    });
+  }
+
+  function dessinerResultat() {
+    zoneRes.replaceChildren();
+    const cible = parseFloat((champCible.value || '').replace(',', '.'));
+    if (!cible || cible <= 0) return;
+    const res = calculerDisques(cible, barre);
+    const warm = echauffementPour(cible, barre);
+
+    zoneRes.appendChild(h(`
+      <div class="bloc" style="margin-top:1.2rem;padding-top:1rem">
+        <p class="champ-label" style="margin:0">De chaque côté</p>
+        <p style="color:var(--dore);font-weight:700;font-size:1.15rem;margin:.2rem 0">${esc(libelleDisques(res))}</p>
+        <p class="etat-mono">soit ${kgCourt(totalDisques(res))} kg au total${res.reste > 0 ? ` — ${kgCourt(res.reste)} kg impossibles à charger avec ces disques` : ''}</p>
+      </div>`));
+
+    if (warm.length) {
+      const zoneWarm = h('<div style="margin-top:1rem"></div>');
+      zoneWarm.appendChild(h('<p class="champ-label" style="margin:0">Échauffement suggéré</p>'));
+      warm.forEach(s => {
+        const p = calculerDisques(s.poids, barre);
+        zoneWarm.appendChild(h(`
+          <div class="rangee" style="gap:.6rem;margin-top:.3rem;flex-wrap:nowrap">
+            <span style="width:6.5rem;flex:none">${kgCourt(s.poids)} kg × ${s.reps}</span>
+            <span class="etat-mono">${esc(libelleDisques(p))}</span>
+          </div>`));
+      });
+      zoneWarm.appendChild(h(`<p class="etat-mono" style="margin-top:.4rem">Tonnage de l'échauffement : ${kgCourt(tonnageEchauffement(warm))} kg</p>`));
+      zoneRes.appendChild(zoneWarm);
+    }
+  }
+
+  dessinerBarres();
+  champCible.addEventListener('input', dessinerResultat);
+  modale.querySelector('[data-fermer]').onclick = () => modale.remove();
+  modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+  document.body.appendChild(modale);
 }
 
 /** Saisie du 1RM réellement testé (OneRmDialog, StatsScreens.kt) : champ
