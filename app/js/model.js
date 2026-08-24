@@ -6,6 +6,8 @@
    que le web écrit. Si tu modifies WorkoutModel.kt, ce fichier suit.
    ========================================================================== */
 
+import { devineMateriel } from './catalog.js';
+
 export const MODES = ['CHRONO', 'MINUTEUR', 'TABATA', 'EMOM'];
 
 export const MODE_LABELS = {
@@ -141,4 +143,56 @@ export function estime1RM(poids, reps) {
 export function kg(v) {
   if (v == null) return '—';
   return (Math.abs(v % 1) < 0.05 ? Math.round(v) : v.toFixed(1)) + ' kg';
+}
+
+/* ==========================================================================
+   CHARGE AU POIDS DU CORPS — portage de « PDC » (TrainingScreens.kt).
+
+   Sur les tractions, les dips ou les pompes, la charge réelle est le poids du
+   pratiquant. Plutôt que de le ressaisir à chaque fois (ou de laisser la case
+   à 0, ce qu'elle affichait ici jusqu'à présent — l'espace web n'avait aucun
+   accès au poids de l'utilisateur, purement local côté natif), on affiche
+   « PDC », et si l'on se leste, seul le SUPPLÉMENT est saisi : « PDC +10 ».
+   La valeur enregistrée reste le total, pour que le tonnage et les records
+   restent comparables aux autres exercices — d'où poidsCorpsKg en paramètre
+   partout : c'est profiles.weight_kg, désormais synchronisé avec le compte.
+   ========================================================================== */
+
+/** Sur les pompes, la charge réellement supportée par les bras n'est pas le
+ *  poids du corps entier : en appui facial, une partie repose sur les pieds.
+ *  Nicolas : « considère que la charge est équivalente à 70% du PDC ». Les
+ *  autres mouvements au poids du corps (tractions, dips, gainage…) restent à
+ *  100 % — c'est bien tout le poids qui est suspendu ou soulevé. */
+function coefficientPdc(nomExercice) {
+  return (nomExercice || '').toLowerCase().includes('pompe') ? 0.7 : 1.0;
+}
+
+/** estPoidsDuCorps (TrainingScreens.kt). */
+export function estPoidsDuCorps(nomExercice, poidsCorpsKg) {
+  return devineMateriel(nomExercice) === 'LIBRE' && (poidsCorpsKg || 0) > 0;
+}
+
+/** Le PDC EFFECTIF pour cet exercice — ce que « PDC » vaut réellement une
+ *  fois saisi, dans le tonnage, les records et le 1RM. L'affichage reste
+ *  « PDC » dans tous les cas (fmtCharge) : seule la valeur derrière change. */
+export function pdcEffectif(nomExercice, poidsCorpsKg) {
+  return (poidsCorpsKg || 0) * coefficientPdc(nomExercice);
+}
+
+/** trimNum (TrainingScreens.kt) : « 10 » et non « 10.0 », arrondi à 2
+ *  décimales pour absorber les artefacts de virgule flottante (w - pdc). */
+function trimNum(v) {
+  const r = Math.round(v * 100) / 100;
+  return String(r);
+}
+
+/** fmtCharge (TrainingScreens.kt) : « PDC », « PDC +10 », ou le poids brut
+ *  quand l'exercice n'est pas au poids du corps (ou qu'on s'est allégé). */
+export function fmtCharge(nomExercice, poidsCorpsKg, w) {
+  if (!estPoidsDuCorps(nomExercice, poidsCorpsKg)) return w === 0 || w == null ? '—' : `${trimNum(w)} kg`;
+  const pdc = pdcEffectif(nomExercice, poidsCorpsKg);
+  const sup = w - pdc;
+  if (sup > 0.05) return `PDC +${trimNum(sup)}`;
+  if (sup < -0.05) return `${trimNum(w)} kg`;
+  return 'PDC';
 }

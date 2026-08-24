@@ -2,7 +2,7 @@ import { h, render, loading, empty, failure, esc, toast, dateCourte, dateBreve, 
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
          listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
-         kudosFor, commentCounts, setNotifPref } from '../api.js';
+         kudosFor, commentCounts, setNotifPref, setWeight } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -750,6 +750,15 @@ export async function vueProfilCompte() {
         <div class="rangee rangee-serree" data-niveaux style="margin-bottom:.7rem"></div>
         <p class="champ-label">Objectif</p>
         <div class="rangee rangee-serree" data-objectifs></div>
+
+        <label class="champ" style="margin-top:1rem"><span>Poids (kg)</span>
+          <input type="number" inputmode="decimal" step="0.5" min="0" data-poids
+                 value="${profil.weight_kg ? esc(String(profil.weight_kg)) : ''}"></label>
+        <p class="etat-mono">Sert de charge par défaut sur les exercices au poids du corps :
+          tractions, dips, pompes. Pendant la séance la case affiche « PDC », et si tu te
+          lestes tu ne saisis que le supplément. Sur les pompes, seuls 70 % de ce poids
+          comptent dans le tonnage — la charge réellement supportée par les bras en appui
+          facial. Le même poids s'applique dans l'application.</p>
       </div>
 
       <div class="bloc">
@@ -798,6 +807,16 @@ export async function vueProfilCompte() {
   }
   dessinerChips(el.querySelector('[data-niveaux]'), NIVEAUX, niveauActuel(), definirNiveau);
   dessinerChips(el.querySelector('[data-objectifs]'), OBJECTIFS, objectifActuel(), definirObjectif);
+
+  /* Poids (Profile.weightKg côté natif, désormais profiles.weight_kg) : un
+     seul compte, donc une seule valeur des deux côtés — la modifier ici vaut
+     pour l'application. Enregistré à la perte de focus plutôt qu'à chaque
+     frappe (évite une écriture par chiffre tapé). */
+  el.querySelector('[data-poids]').addEventListener('change', async (e) => {
+    const v = parseFloat(e.target.value.replace(',', '.'));
+    if (Number.isNaN(v) || v <= 0) return;
+    try { await setWeight(moi.id, v); } catch (err) { toast(err.message); }
+  });
 
   /* Visibilité : profils_read est déjà lisible de tous (recherche par
      pseudo), seule la visibilité des SÉANCES change — sessions_read_public. */

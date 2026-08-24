@@ -37,9 +37,17 @@ function unwrap({ data, error }) {
 
 export async function getProfile(userId) {
   return unwrap(await sb.from(T.profiles)
-    .select('id,username,display_name,avatar_url,is_public,' +
+    .select('id,username,display_name,avatar_url,is_public,weight_kg,' +
             'notify_friend_sessions,notify_kudos,notify_comments,notify_messages')
     .eq('id', userId).maybeSingle());
+}
+
+/** Poids du corps (profiles.weight_kg) : sert de charge par défaut sur les
+ *  exercices « PDC » (Profile.weightKg côté natif, désormais synchronisé sur
+ *  le compte — voir model.js: estPoidsDuCorps/pdcEffectif/fmtCharge). */
+export async function setWeight(userId, kg) {
+  return unwrap(await sb.from(T.profiles)
+    .update({ weight_kg: kg }).eq('id', userId).select().single());
 }
 
 /** Réglages de notification, un par type d'événement — mêmes colonnes que

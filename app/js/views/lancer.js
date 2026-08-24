@@ -38,9 +38,10 @@
 
 import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
 import { getWorkout, saveWorkout, finishSession, sessionsOf, conteneurLibre,
-         demarrerDirect, battementDirect, arreterDirect } from '../api.js';
+         demarrerDirect, battementDirect, arreterDirect, getProfile } from '../api.js';
 import { currentUser } from '../supabase.js';
-import { libelleRir, kg, dureeSeance, estime1RM, nouvelExercice } from '../model.js';
+import { libelleRir, kg, dureeSeance, estime1RM, nouvelExercice,
+         estPoidsDuCorps, pdcEffectif, fmtCharge } from '../model.js';
 import { devineMateriel } from '../catalog.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
@@ -87,6 +88,13 @@ function ouvrirChoixRir(actuel, onValider) {
 export async function vueLancerSeance(params) {
   render(loading('Préparation de la séance'));
   const moi = await currentUser();
+
+  /* Poids du corps (profiles.weight_kg) : sert de charge par défaut sur les
+     exercices « PDC » (tractions, dips, pompes…) — voir model.js. Best-effort :
+     une panne réseau ici n'empêche pas de s'entraîner, ces exercices se
+     saisissent juste comme des poids normaux pour cette séance. */
+  let poidsCorps = 0;
+  try { poidsCorps = (await getProfile(moi.id))?.weight_kg || 0; } catch { /* pas grave */ }
 
   /* Entraînement libre (id réservé « libre ») : on part sans modèle et sans
      aucun exercice, on arrive directement sur l'écran d'échauffement et on
@@ -339,7 +347,12 @@ export async function vueLancerSeance(params) {
   function majCellules() {
     const pv = corps.querySelector('[data-poids-val]');
     const rv = corps.querySelector('[data-reps-val]');
-    if (pv) pv.textContent = poidsVal ? trimNum(poidsVal) : '0';
+    if (pv) {
+      const ex = session.exercises[exIndex];
+      pv.textContent = ex && estPoidsDuCorps(ex.name, poidsCorps)
+        ? fmtCharge(ex.name, poidsCorps, poidsVal || 0)
+        : (poidsVal ? trimNum(poidsVal) : '0');
+    }
     if (rv) rv.textContent = repsVal || '0';
   }
 
@@ -352,10 +365,22 @@ export async function vueLancerSeance(params) {
     const suggestion = dernier ? suggestionCharge(ex.name, dernier) : null;
     const poidsRef = corps.querySelector('[data-poids-ref]');
     const repsRef = corps.querySelector('[data-reps-ref]');
+
+    /* Charge au poids du corps (estPoidsDuCorps, TrainingScreens.kt) : on
+       repart du PDC ACTUEL (pdcEffectif — 70 % sur les pompes), en conservant
+       le lestage éventuel de la dernière fois. Toujours pré-rempli, même sans
+       aucun historique sur cet exercice — contrairement au poids libre, qui
+       reste à 0 tant qu'on n'a rien fait avant. */
+    if (estPoidsDuCorps(ex.name, poidsCorps)) {
+      const pdc = pdcEffectif(ex.name, poidsCorps);
+      if (!poidsVal) poidsVal = pdc + Math.max(0, (dernier ? dernier.weight : pdc) - pdc);
+    } else if (!poidsVal && dernier) {
+      poidsVal = (suggestion?.poids ?? dernier.weight) || 0;
+    }
+
     if (dernier) {
-      if (!poidsVal) poidsVal = (suggestion?.poids ?? dernier.weight) || 0;
       if (!repsVal) repsVal = dernier.reps || ex.targetReps || 0;
-      poidsRef.textContent = kg(dernier.weight);
+      poidsRef.textContent = fmtCharge(ex.name, poidsCorps, dernier.weight);
       repsRef.textContent = `${dernier.reps} reps`;
     } else {
       if (!repsVal && ex.targetReps) repsVal = ex.targetReps;
@@ -375,14 +400,16 @@ export async function vueLancerSeance(params) {
     const liste = zone.querySelector('[data-derniere-liste]');
     liste.replaceChildren();
     sets.forEach((s, i) => liste.appendChild(h(
-      `<li>${i + 1}. ${esc(kg(s.weight))} × ${s.reps}${s.rir >= 0 ? ' · RIR ' + s.rir : ''}</li>`)));
+      `<li>${i + 1}. ${esc(fmtCharge(ex.name, poidsCorps, s.weight))} × ${s.reps}${s.rir >= 0 ? ' · RIR ' + s.rir : ''}</li>`)));
     const dernier = sets[sets.length - 1];
-    const suggestion = suggestionCharge(ex.name, dernier);
+    const pdc = estPoidsDuCorps(ex.name, poidsCorps);
+    const suggestion = pdc ? null : suggestionCharge(ex.name, dernier);
     /* N'affiche la ligne conseillée que si elle dit plus qu'une évidence —
-       même seuil que LastTimeRecap (TrainingScreens.kt). */
+       même seuil que LastTimeRecap (TrainingScreens.kt). Sur un exercice PDC,
+       la charge EST déjà la suggestion (pdcEffectif) : rien à ajouter. */
     zone.querySelector('[data-conseil]').textContent = suggestion && suggestion.raison !== 'comme la dernière fois'
       ? `→ ${esc(kg(suggestion.poids))} conseillés : ${suggestion.raison}`
-      : `→ ${esc(kg(dernier.weight))} conseillés · comme la dernière fois`;
+      : `→ ${esc(fmtCharge(ex.name, poidsCorps, dernier.weight))} conseillés · comme la dernière fois`;
   }
 
   /** Entraînement libre encore vide : l'écran d'échauffement, avec pour seule
@@ -507,7 +534,12 @@ export async function vueLancerSeance(params) {
         onValider: (v) => {
           if (!v) return;
           const n = parseFloat(v.replace(',', '.'));
-          if (!Number.isNaN(n)) { poidsVal = n; majCellules(); appliquerEdition(); }
+          if (Number.isNaN(n)) return;
+          // Exercice PDC : seul le SUPPLÉMENT de lestage se saisit (comme
+          // NumPadDialog côté natif) — le pavé reste générique, l'écart se
+          // fait à l'interprétation de la valeur tapée.
+          poidsVal = estPoidsDuCorps(ex.name, poidsCorps) ? pdcEffectif(ex.name, poidsCorps) + n : n;
+          majCellules(); appliquerEdition();
         }
       });
     };
@@ -604,11 +636,12 @@ export async function vueLancerSeance(params) {
    *  n'est pas terminée, la correction part avec le reste à ce moment-là. */
   function ligneSerieGlissable(s, i) {
     const LARGEUR = 92; // px, largeur de la zone « Modifier » révélée
+    const nomEx = session.exercises[exIndex].name;
     const li = h(`
       <li class="run-serie-rangee">
         <div class="run-serie-action"><button type="button">Modifier</button></div>
         <div class="ligne run-serie-faite">
-          Série ${i + 1} — ${esc(kg(s.weight))} × ${s.reps}
+          Série ${i + 1} — ${esc(fmtCharge(nomEx, poidsCorps, s.weight))} × ${s.reps}
           ${s.rir >= 0 ? `<span class="etiquette">${esc(libelleRir(s.rir))}</span>` : ''}
         </div>
       </li>`);
@@ -648,7 +681,12 @@ export async function vueLancerSeance(params) {
       ouvrirPave({
         kind: 'poids',
         onValider: (v) => {
-          if (v) { const n = parseFloat(v.replace(',', '.')); if (!Number.isNaN(n)) s.weight = n; }
+          if (v) {
+            const n = parseFloat(v.replace(',', '.'));
+            if (!Number.isNaN(n)) {
+              s.weight = estPoidsDuCorps(nomEx, poidsCorps) ? pdcEffectif(nomEx, poidsCorps) + n : n;
+            }
+          }
           ouvrirPave({
             kind: 'reps',
             onValider: (v2) => {
