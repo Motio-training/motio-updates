@@ -817,6 +817,7 @@ export async function vueSeanceEdition(params) {
     const champs = c.querySelector('[data-champs]');
     champs.hidden = true;
     const tabata = ex.mode === 'TABATA';
+    const emom = ex.mode === 'EMOM';
     const minuteur = ex.mode === 'MINUTEUR';
     champs.appendChild(h(`
       <label class="champ champ-mini"><span>Mode</span>
@@ -830,6 +831,12 @@ export async function vueSeanceEdition(params) {
       champs.appendChild(h(`<label class="champ champ-mini"><span>Travail (s)</span><input type="number" min="5" max="300" data-work value="${ex.workSec}"></label>`));
       champs.appendChild(h(`<label class="champ champ-mini"><span>Repos (s)</span><input type="number" min="0" max="300" data-rest value="${ex.restSec}"></label>`));
       champs.appendChild(h(`<label class="champ champ-mini"><span>Blocs</span><input type="number" min="1" max="30" data-blocs value="${ex.tabataSeries}"></label>`));
+    }
+    /* EMOM : un seul réglage propre, l'intervalle. Le nombre de tours, c'est
+       le champ « Séries » ci-dessus — inutile d'en demander un second qui
+       dirait la même chose. */
+    if (emom) {
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Intervalle (s)</span><input type="number" min="5" max="600" step="5" data-work value="${ex.workSec}"></label>`));
     }
 
     c.querySelector('[data-deplier]').onclick = (e) => {
@@ -956,6 +963,7 @@ export async function vueSeanceEdition(params) {
   function labelMode(ex) {
     if (ex.mode === 'MINUTEUR') return 'Minuteur ' + fmtRecup(ex.recupSec);
     if (ex.mode === 'TABATA') return `Tabata ${ex.workSec}/${ex.restSec}×${ex.tabataSeries}`;
+    if (ex.mode === 'EMOM') return `EMOM ${fmtRecup(ex.workSec)} ×${ex.plannedSets}`;
     return 'Chrono';
   }
 
