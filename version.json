@@ -1,6 +1,6 @@
 {
-  "versionCode": 140,
-  "versionName": "2.37",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.37/motio.apk",
-  "notes": "Motio arrive sur les montres Garmin fenix : tes seances au poignet, sans sortir le telephone. Pour appairer, ouvre Motio sur la montre, elle affiche un code a huit chiffres, et recopie-le dans Profil, Compte, Montre Garmin."
+  "versionCode": 141,
+  "versionName": "2.38",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.38/motio.apk",
+  "notes": "Nouveau mode de chronometrage : EMOM. Tu choisis un intervalle (une minute par exemple) et un nombre de tours ; le top sonne a chaque intervalle et le temps qui reste sert de recuperation. Disponible dans l'appli, sur l'espace web et sur la montre Garmin."
 }
