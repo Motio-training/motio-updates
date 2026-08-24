@@ -576,10 +576,13 @@ export async function vueLancerSeance(params) {
    *  suivante démarre réellement, jamais pendant le décompte de récupération. */
   function dessinerSousligne(surLePoint = true) {
     const ex = session.exercises[exIndex];
-    const numSerie = Math.min(ex.sets.length + (surLePoint ? 1 : 0), ex.mode === 'TABATA' ? 1 : ex.plannedSets);
+    /* Un bloc tabata entier ne compte que pour UNE série ; un EMOM, lui,
+       compte ses tours — c'est le « nombre de séries prévu » de l'exercice. */
+    const total = ex.mode === 'TABATA' ? 1 : ex.plannedSets;
+    const numSerie = Math.min(ex.sets.length + (surLePoint ? 1 : 0), total);
     const bits = [
       `Exo ${exIndex + 1}/${session.exercises.length}`,
-      `série ${numSerie || 1}/${ex.mode === 'TABATA' ? 1 : ex.plannedSets}`
+      `série ${numSerie || 1}/${total}`
     ];
     if (ex.targetReps) bits.push(`cible ${ex.targetReps} reps`);
     if (ex.mode === 'MINUTEUR') bits.push(`r ${fmtClock(ex.recupSec)}`);
@@ -667,8 +670,12 @@ export async function vueLancerSeance(params) {
   function dessinerControles() {
     const ex = session.exercises[exIndex];
     const zone = corps.querySelector('[data-controles]');
-    const complet = ex.sets.length >= ex.plannedSets && ex.mode !== 'TABATA';
-    const tabataFait = ex.mode === 'TABATA' && ex.sets.length > 0;
+    /* Tabata et EMOM se déroulent d'un bloc : une fois lancés, le moteur va
+       jusqu'au bout tout seul, et l'exercice est fini dès qu'une série est
+       enregistrée. */
+    const auto = ex.mode === 'TABATA' || ex.mode === 'EMOM';
+    const complet = ex.sets.length >= ex.plannedSets && !auto;
+    const tabataFait = auto && ex.sets.length > 0;
     zone.replaceChildren();
     // Une série en cours de correction garde sa zone de saisie ouverte.
     if (serieEnEdition < 0) afficherSaisie(false);
@@ -678,13 +685,17 @@ export async function vueLancerSeance(params) {
       return;
     }
 
-    if (ex.mode === 'TABATA') {
+    if (auto) {
       zone.appendChild(bouton(ex.sets.length ? 'Relancer' : 'Démarrer', () => {
         beeper.unlock();
         corps.querySelector('[data-derniere]').hidden = true;
         warmup = false;
         engine.mode = 'TABATA';
-        engine.tabataStart(ex.workSec, ex.restSec, ex.tabataSeries);
+        /* L'EMOM EST UN TABATA SANS REPOS : un intervalle répété n fois, rien
+           entre deux. Le moteur tabata le fait déjà, bip de début de tour
+           compris — inutile d'en écrire un second qui dériverait. */
+        if (ex.mode === 'EMOM') engine.tabataStart(ex.workSec, 0, ex.plannedSets);
+        else engine.tabataStart(ex.workSec, ex.restSec, ex.tabataSeries);
         surveillerTabata();
         zone.replaceChildren();
       }, 'btn-lg'));
@@ -730,7 +741,10 @@ export async function vueLancerSeance(params) {
       const snap = engine._snapshot(Date.now());
       if (snap.phase === 'DONE') {
         clearInterval(t);
-        ex.sets.push({ weight: 0, reps: 0, tensionMs: ex.workSec * ex.tabataSeries * 1000, rir: -1 });
+        const tours = ex.mode === 'EMOM' ? ex.plannedSets : ex.tabataSeries;
+        /* Ces deux modes n'ont pas de RIR : la série s'y valide au top du
+           chronomètre, pas quand on décide d'arrêter (rir -1 = non renseigné). */
+        ex.sets.push({ weight: 0, reps: 0, tensionMs: ex.workSec * tours * 1000, rir: -1 });
         redessinerSeries();
         dessinerControles();
       }
