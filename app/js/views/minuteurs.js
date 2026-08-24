@@ -10,14 +10,22 @@ import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
 import { ouvrirPave } from '../numpad.js';
 
-const MODES = [['CHRONO', 'Chrono'], ['MINUTEUR', 'Minuteur'], ['TABATA', 'Tabata']];
+const MODES = [['CHRONO', 'Chrono'], ['MINUTEUR', 'Minuteur'], ['TABATA', 'Tabata'], ['EMOM', 'EMOM']];
 const PRESETS_MINUTEUR_1 = [30, 60, 90, 120];
 const PRESETS_MINUTEUR_2 = [180, 300];
+
+/* L'EMOM EST UN TABATA SANS REPOS : un intervalle répété n fois, rien entre
+   deux. Le moteur tabata le fait déjà, bip de début de tour compris — d'où
+   ce moteur-là pour les deux onglets, et aucun second moteur à maintenir.
+   `mode` est donc l'onglet AFFICHÉ, `engine.mode` celui qui tourne : les deux
+   se séparent ici et nulle part ailleurs. */
+const moteurDe = (m) => (m === 'EMOM' ? 'TABATA' : m);
 
 export function vueMinuteurs() {
   let mode = 'CHRONO';
   let recupSec = 90;
   let workSec = 20, restSec = 10, series = 8;
+  let emomSec = 60, emomTours = 10;
   const engine = new Engine((snap) => majCadran(snap));
 
   /* Disposition reprise de MinuteurScreen (MainActivity.kt) : trois onglets
@@ -59,11 +67,12 @@ export function vueMinuteurs() {
       const b = h(`<button class="min-onglet ${mode === id ? 'on' : ''}" type="button">${label}</button>`);
       b.onclick = () => {
         arreterTout();
-        mode = id; engine.mode = id;
+        mode = id; engine.mode = moteurDe(id);
         dessinerModes(); dessinerReglages();
         cadran.className = 'run-cadran run-neutral';
         cadran.querySelector('[data-label]').textContent = 'Prêt';
-        cadran.querySelector('[data-value]').textContent = mode === 'TABATA' ? '—' : fmtSec(mode === 'MINUTEUR' ? recupSec : 0);
+        const cyclique = mode === 'TABATA' || mode === 'EMOM';
+        cadran.querySelector('[data-value]').textContent = cyclique ? '—' : fmtSec(mode === 'MINUTEUR' ? recupSec : 0);
         dessinerControles();
       };
       zoneModes.appendChild(b);
@@ -142,6 +151,16 @@ export function vueMinuteurs() {
         stepper('Séries', series, (v) => { series = v; }, { pas: 1, min: 1, max: 50, unite: '' })
       );
       zoneReglages.appendChild(col);
+    } else if (mode === 'EMOM') {
+      /* Deux réglages seulement : l'intervalle et le nombre de tours. Le temps
+         qui reste dans l'intervalle sert de récupération, il n'y a donc rien
+         à régler pour elle. */
+      const col = h('<div style="display:flex;flex-direction:column;gap:.5rem"></div>');
+      col.append(
+        stepper('Intervalle', emomSec, (v) => { emomSec = v; }, { pas: 5, min: 10, max: 600, unite: 's' }),
+        stepper('Tours', emomTours, (v) => { emomTours = v; }, { pas: 1, min: 1, max: 60, unite: '' })
+      );
+      zoneReglages.appendChild(col);
     }
   }
 
@@ -169,7 +188,13 @@ export function vueMinuteurs() {
       }
     } else {
       if (!engine.tabRunning) {
-        zoneControles.appendChild(bouton('Démarrer', () => { beeper.unlock(); engine.mode = 'TABATA'; engine.tabataStart(workSec, restSec, series); }, 'btn-lg'));
+        zoneControles.appendChild(bouton('Démarrer', () => {
+          beeper.unlock();
+          engine.mode = 'TABATA';
+          // C'est le repos à zéro qui fait l'EMOM.
+          if (mode === 'EMOM') engine.tabataStart(emomSec, 0, emomTours);
+          else engine.tabataStart(workSec, restSec, series);
+        }, 'btn-lg'));
       } else {
         zoneControles.appendChild(bouton(engine.tabPaused ? 'Reprendre' : 'Pause', () => engine.tabataTogglePause(), 'btn-lg'));
         zoneControles.appendChild(bouton('Arrêter', () => engine.tabataStop(), 'btn-lg btn-ghost'));
