@@ -786,7 +786,9 @@ a.ligne-titre:hover{color:var(--accent)}
   box-shadow:var(--ombre-1);
 }
 .exo-edit-tete{display:flex;align-items:center;gap:.7rem}
-.exo-edit-poignee{color:var(--encre-2);font-size:1.1rem;cursor:pointer;flex:none}
+.exo-edit-poignee{color:var(--encre-2);font-size:1.1rem;cursor:grab;flex:none;touch-action:none;user-select:none}
+.exo-edit.dragging{position:relative;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.35);cursor:grabbing}
+.exo-edit.dragging .exo-edit-poignee{cursor:grabbing}
 .exo-edit-nom{flex:1;font-family:var(--f-display);font-weight:700;font-size:1rem;color:var(--encre)}
 .exo-edit-suppr{color:var(--encre-2);font-size:1.05rem;cursor:pointer;flex:none;padding:.2rem}
 .exo-edit-meta{margin:.3rem 0 0;color:var(--encre-2);font-size:.8rem}

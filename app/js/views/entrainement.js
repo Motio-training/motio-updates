@@ -13,6 +13,8 @@ import { ouvrirBilan } from '../bilan.js';
 import { niveauActuel } from '../reglages.js';
 import { etatBrut as seanceEnCours, effacerEtat as oublierSeanceEnCours } from '../run-state.js';
 import { genererProgrammeIA, genererSeanceIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
+import { muscleLoadOf } from '../muscle-lexicon.js';
+import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -685,6 +687,8 @@ export async function vueSeanceEdition(params) {
         <b data-estim>—</b>
       </div>
 
+      <div data-muscles-zone style="margin-top:1.5rem"></div>
+
       <div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
         <a class="btn btn-ghost" href="#/seances" style="flex:1;text-align:center">Annuler</a>
         <button class="btn btn-ghost" data-enregistrer style="flex:1">Enregistrer</button>
@@ -733,7 +737,7 @@ export async function vueSeanceEdition(params) {
   const zone = el.querySelector('[data-exos]');
   const estim = el.querySelector('[data-estim]');
 
-  function redessiner() {
+  async function redessiner() {
     // « Enchaîner » recrée tout le bloc (zone.replaceChildren()) : le bouton
     // tapé disparaît du DOM et perd le focus, ce qui faisait remonter la
     // page en haut sur certains navigateurs — signalé par Nicolas. On mémorise
@@ -746,6 +750,31 @@ export async function vueSeanceEdition(params) {
     });
     estim.textContent = 'environ ' + fmtEstimate(estimatedSec(seance));
     window.scrollTo(0, y);
+    await dessinerMuscles();
+  }
+
+  /** Zones sollicitées (prévisionnel) — plannedMuscleLoad (TrainingScreens.kt) :
+   *  même silhouette que le bilan de fin de séance, mais construite sur les
+   *  séries PRÉVUES (plannedSets) plutôt que faites, recolorée à chaque
+   *  exercice ajouté, retiré ou modifié — avant même d'avoir démarré la
+   *  séance. Écart assumé face au natif : pas de bulle de nom au toucher, pas
+   *  de zoom plein écran (déjà le cas partout où MuscleMap est utilisé côté
+   *  web, voir muscle-map.js). */
+  async function dessinerMuscles() {
+    const zoneMuscles = el.querySelector('[data-muscles-zone]');
+    const sessionLike = {
+      exercises: seance.exercises.map(ex => ({
+        name: ex.name,
+        sets: Array.from({ length: Math.max(0, ex.plannedSets || 0) }, () => ({ reps: 1 }))
+      }))
+    };
+    const { zones, isEmpty } = await muscleLoadOf(sessionLike);
+    zoneMuscles.replaceChildren();
+    if (isEmpty) return;
+    zoneMuscles.appendChild(h('<p class="champ-label">Zones sollicitées (prévisionnel)</p>'));
+    const canvas = h('<canvas class="bilan-canvas"></canvas>');
+    zoneMuscles.appendChild(canvas);
+    await drawMuscleMap(canvas, zones, MuscleScale.SESSION);
   }
 
   function lienEnchainer(i) {
@@ -820,10 +849,108 @@ export async function vueSeanceEdition(params) {
     lie('[data-work]', 'workSec'); lie('[data-rest]', 'restSec'); lie('[data-blocs]', 'tabataSeries');
 
     c.querySelector('.exo-edit-suppr').onclick = () => { seance.exercises.splice(i, 1); redessiner(); };
-    c.querySelector('.exo-edit-poignee').onclick = () => {
+    const poignee = c.querySelector('.exo-edit-poignee');
+    // Appui bref : monte l'exercice d'un cran (rapide, précis). Appui long
+    // puis glissé : repositionne n'importe où (detectDragGesturesAfterLongPress,
+    // TrainingScreens.kt) — les deux coexistent, l'appui bref reste le clic
+    // natif du navigateur, le glissé s'active seulement après le seuil.
+    poignee.onclick = () => {
       if (i > 0) { [seance.exercises[i - 1], seance.exercises[i]] = [seance.exercises[i], seance.exercises[i - 1]]; redessiner(); }
     };
+    activerGlisser(poignee, c, i);
     return c;
+  }
+
+  /** Glisser-déposer par appui long (TrainingScreens.kt, CreateWorkout) :
+   *  la poignée ⠿ reste cliquable (nudge d'un cran), mais un appui de plus de
+   *  350 ms suivi d'un déplacement du doigt/de la souris entre en mode
+   *  glissé — la carte suit le pointeur (translateY) et échange sa place
+   *  avec sa voisine dès que son centre en dépasse la moitié, comme
+   *  detectDragGesturesAfterLongPress. Les liens « enchaîner » sont retirés
+   *  le temps du geste (ils ne suivent pas le glissé) et reconstruits par
+   *  redessiner() une fois la carte relâchée. */
+  function activerGlisser(poignee, carte, indexDepart) {
+    const SEUIL_APPUI_MS = 350;
+    const SEUIL_ANNULATION_PX = 8;
+    let minuteur = null;
+    let enCours = false;
+    let dragIndex = indexDepart;
+    let dernierY = 0, offsetY = 0, gapPx = 0;
+
+    function surDeplacement(e) {
+      e.preventDefault();
+      const pas = e.clientY - dernierY;
+      dernierY = e.clientY;
+      offsetY += pas;
+      carte.style.transform = `translateY(${offsetY}px)`;
+
+      const cartes = [...zone.querySelectorAll('.exo-edit')];
+      if (dragIndex < cartes.length - 1) {
+        const h = cartes[dragIndex + 1].getBoundingClientRect().height + gapPx;
+        if (offsetY > h / 2) {
+          zone.insertBefore(cartes[dragIndex + 1], carte);
+          [seance.exercises[dragIndex], seance.exercises[dragIndex + 1]] =
+            [seance.exercises[dragIndex + 1], seance.exercises[dragIndex]];
+          dragIndex++;
+          offsetY -= h;
+          carte.style.transform = `translateY(${offsetY}px)`;
+        }
+      }
+      if (dragIndex > 0) {
+        const cartesMaj = [...zone.querySelectorAll('.exo-edit')];
+        const h = cartesMaj[dragIndex - 1].getBoundingClientRect().height + gapPx;
+        if (offsetY < -h / 2) {
+          zone.insertBefore(carte, cartesMaj[dragIndex - 1]);
+          [seance.exercises[dragIndex - 1], seance.exercises[dragIndex]] =
+            [seance.exercises[dragIndex], seance.exercises[dragIndex - 1]];
+          dragIndex--;
+          offsetY += h;
+          carte.style.transform = `translateY(${offsetY}px)`;
+        }
+      }
+    }
+
+    function surRelachement() {
+      window.removeEventListener('pointermove', surDeplacement);
+      window.removeEventListener('pointerup', surRelachement);
+      window.removeEventListener('pointercancel', surRelachement);
+      if (!enCours) return;
+      enCours = false;
+      carte.classList.remove('dragging');
+      carte.style.transform = '';
+      redessiner();
+    }
+
+    poignee.addEventListener('pointerdown', (e) => {
+      if (e.button != null && e.button !== 0) return;
+      const debutX = e.clientX, debutY = e.clientY;
+      dernierY = e.clientY; offsetY = 0; dragIndex = indexDepart;
+
+      const annulerSiBouge = (ev) => {
+        if (Math.abs(ev.clientX - debutX) > SEUIL_ANNULATION_PX || Math.abs(ev.clientY - debutY) > SEUIL_ANNULATION_PX) {
+          clearTimeout(minuteur);
+          window.removeEventListener('pointermove', annulerSiBouge);
+        }
+      };
+      const annulerSiRelache = () => {
+        clearTimeout(minuteur);
+        window.removeEventListener('pointermove', annulerSiBouge);
+      };
+      window.addEventListener('pointermove', annulerSiBouge);
+      window.addEventListener('pointerup', annulerSiRelache, { once: true });
+
+      minuteur = setTimeout(() => {
+        window.removeEventListener('pointermove', annulerSiBouge);
+        window.removeEventListener('pointerup', annulerSiRelache);
+        enCours = true;
+        gapPx = parseFloat(getComputedStyle(zone).rowGap || getComputedStyle(zone).gap || '0') || 0;
+        zone.querySelectorAll('.lien-enchainer').forEach(b => b.remove());
+        carte.classList.add('dragging');
+        window.addEventListener('pointermove', surDeplacement);
+        window.addEventListener('pointerup', surRelachement);
+        window.addEventListener('pointercancel', surRelachement);
+      }, SEUIL_APPUI_MS);
+    });
   }
 
   function labelMode(ex) {
