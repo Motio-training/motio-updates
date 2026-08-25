@@ -204,6 +204,35 @@ p{margin:0 0 1rem}
 }
 .hero-badge:hover{background:rgba(211,164,94,.16);color:var(--text)}
 .hero-badge i{width:6px;height:6px;border-radius:50%;background:var(--accent-2);display:block}
+.hero-badges{display:flex;flex-wrap:wrap;gap:.5rem .6rem;margin:0 0 1.25rem}
+.hero-badges .hero-badge{margin:0}
+/* Variante olive : la nouveauté matérielle (la montre) se distingue du doré,
+   réservé à Moti dans toute la charte. */
+.hero-badge.alt{border-color:var(--line-strong);background:rgba(169,194,94,.09);color:var(--accent)}
+.hero-badge.alt:hover{background:rgba(169,194,94,.17);color:var(--text)}
+.hero-badge.alt i{background:var(--accent)}
+
+/* ---------- héros : les trois portes d'entrée ---------- */
+.plateformes{
+  list-style:none;padding:0;
+  margin:1.75rem 0 0;
+  display:grid;gap:.6rem;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));
+}
+.plateformes a{
+  display:block;height:100%;
+  padding:.85rem 1rem;
+  border:1px solid var(--line);border-radius:var(--r-m);
+  background:var(--panel);
+}
+.plateformes a:hover{border-color:var(--accent);background:var(--ink-2)}
+.plateformes .p-k{
+  display:block;margin-bottom:.2rem;
+  font-family:var(--f-display);font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;font-size:.82rem;color:var(--text);
+}
+.plateformes a:hover .p-k{color:var(--accent)}
+.plateformes .p-v{display:block;font-size:.82rem;line-height:1.45;color:var(--text-dim-2)}
 
 .iphone-nudge{
   display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.5rem;
@@ -480,6 +509,52 @@ table.comparatif td.dim{color:var(--text-faint)}
 .why-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr))}
 .why-grid .k{display:block;font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.05em;font-size:.85rem;color:var(--text);margin-bottom:.2rem}
 .why-grid .v{color:var(--text-dim-2);font-size:.9rem}
+
+/* ---------- montre Garmin ----------
+   Les captures sortent du simulateur Connect IQ sur un fond #0C0C0C opaque :
+   le cadre reprend exactement cette couleur pour que l'image n'ait pas de
+   bord visible sur le fond olive de la page. */
+/* Quatre cadrans côte à côte : sous ~34rem de large, ils deviendraient des
+   timbres-poste. On laisse plutôt la bande défiler horizontalement. */
+.watch-shots{margin:0 0 clamp(1.5rem,3.5vw,2.5rem);overflow-x:auto}
+.watch-shots img{
+  display:block;width:100%;min-width:34rem;
+  background:#0C0C0C;
+  border:1px solid var(--line-strong);border-radius:var(--r-l);
+}
+.watch-shots figcaption{
+  margin:.85rem 0 0;
+  font-family:var(--f-mono);font-size:.68rem;line-height:1.6;letter-spacing:.05em;
+  color:var(--text-dim-4);
+}
+.watch-pair{flex-direction:column;gap:.9rem;flex:0 1 15rem;min-width:min(100%,13rem)}
+.watch-pair img{
+  display:block;width:100%;max-width:15rem;
+  background:#12140F;
+  border:1px solid var(--rule);border-radius:var(--r-m);
+}
+.watch-pair p{text-align:left;line-height:1.7}
+
+.modeles{border-top:1px solid var(--line);margin-top:.5rem}
+.modeles summary{
+  list-style:none;display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:1rem 0;cursor:pointer;
+  font-family:var(--f-display);font-weight:600;font-size:.95rem;color:var(--text);
+}
+.modeles summary::-webkit-details-marker{display:none}
+.modeles summary::marker{content:''}
+.modeles .plus{flex:0 0 auto;color:var(--accent);font-weight:400;font-size:1.3rem;line-height:1;transition:transform .2s ease}
+.modeles[open] .plus{transform:rotate(45deg)}
+.modeles-grid{display:grid;gap:1.25rem;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr))}
+.modeles-grid > div{display:flex;flex-direction:column;gap:.4rem}
+.modeles-k{
+  font-family:var(--f-mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--text-dim-4);margin-bottom:.15rem;
+}
+.modeles-grid a{font-size:.9rem;color:var(--text-dim)}
+.modeles-grid a::before{content:'↓ ';color:var(--accent);font-family:var(--f-mono);font-size:.8rem}
+.modeles-grid a:hover{color:var(--text)}
+@media (prefers-reduced-motion:reduce){.modeles .plus{transition:none}}
 
 /* ---------- FAQ ---------- */
 .faq details{border-top:1px solid var(--line)}

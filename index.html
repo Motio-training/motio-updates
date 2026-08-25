@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Motio — Ton coach personnel, toujours dans ta poche</title>
-<meta name="description" content="Chronomètre, minuteur, Tabata et carnet d'entraînement complet. Programmes personnalisés, coach IA qui connaît tes séances, historique et fil d'amis. Application Android, sans compte, sans publicité.">
+<meta name="description" content="Chrono, minuteur, Tabata et EMOM, carnet d'entraînement complet, coach IA qui lit tes séances. Sur Android, sur iPhone par l'espace web, et au poignet sur montre Garmin fēnix. Sans compte, sans publicité.">
 <meta name="theme-color" content="#171A11">
 <meta property="og:title" content="Motio">
-<meta property="og:description" content="Ton coach personnel, toujours dans ta poche.">
+<meta property="og:description" content="Ton coach personnel, toujours dans ta poche. Android, iPhone et montre Garmin.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,9 +28,10 @@
     <a href="#modes">Chrono</a>
     <a href="#carnet">Carnet</a>
     <a href="#programmes">Programmes</a>
+    <a href="#montre">Montre</a>
+    <a href="#iphone">iPhone</a>
     <a href="#comparatif">Comparatif</a>
     <a href="#faq">FAQ</a>
-    <a href="app/">Espace web</a>
   </nav>
   <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener">Télécharger</a>
 </header>
@@ -49,8 +50,11 @@
     <img class="hero-ghost" src="assets/img/logo_m.png" alt="" aria-hidden="true">
 
     <div class="hero-main">
-      <p class="eyebrow">Application Android · carnet, chronomètre &amp; coach</p>
-      <a class="hero-badge" href="#moti"><i aria-hidden="true"></i>Nouveau · Moti, le coach IA</a>
+      <p class="eyebrow">Android · iPhone · montre Garmin</p>
+      <div class="hero-badges">
+        <a class="hero-badge alt" href="#montre"><i aria-hidden="true"></i>Nouveau · Motio au poignet, sur fēnix</a>
+        <a class="hero-badge" href="#moti"><i aria-hidden="true"></i>Moti, le coach IA</a>
+      </div>
       <h1>Ton coach personnel, <em>toujours dans ta poche.</em></h1>
 
       <div class="dial">
@@ -61,7 +65,7 @@
         <div class="dial-sweep" aria-hidden="true"><i></i></div>
       </div>
 
-      <p class="lede" style="margin-bottom:2rem">Trois modes de chronométrage, un catalogue d'exercices complet, un historique qui garde tout — et <strong style="color:var(--accent-2);font-weight:600">Moti</strong>, un coach qui connaît tes séances, tes charges et tes records, et qui t'écrit la séance du soir ou un programme entier. Sans compte obligatoire, sans publicité.</p>
+      <p class="lede" style="margin-bottom:2rem">Quatre modes de chronométrage, un catalogue d'exercices complet, un historique qui garde tout — et <strong style="color:var(--accent-2);font-weight:600">Moti</strong>, un coach qui connaît tes séances, tes charges et tes records, et qui t'écrit la séance du soir ou un programme entier. Sur Android, sur iPhone et jusque sur la montre. Sans compte obligatoire, sans publicité.</p>
 
       <div class="cta-row">
         <div class="cta-group">
@@ -74,6 +78,15 @@
         </div>
       </div>
       <p class="fineprint hero-fine">Android 8.0 minimum · <span id="verHero">dernière version sur GitHub</span> · hors Play Store</p>
+
+      <!-- Les trois portes d'entrée. Liens vers les sections plutôt que vers la
+           release GitHub : sur iOS, site.js réécrit tout lien "releases/latest"
+           et écraserait le libellé de ces tuiles. -->
+      <ul class="plateformes">
+        <li><a href="#installer"><span class="p-k">Android</span><span class="p-v">L'application complète, en APK direct</span></a></li>
+        <li><a href="#iphone"><span class="p-k">iPhone</span><span class="p-v">L'espace web, à ajouter à l'écran d'accueil</span></a></li>
+        <li><a href="#montre"><span class="p-k">Montre Garmin</span><span class="p-v">Ta séance au poignet, sur fēnix et epix</span></a></li>
+      </ul>
     </div>
 
     <div class="hero-visual">
@@ -147,7 +160,7 @@
   <section class="block" id="modes" data-sect>
     <div class="tc">00:20</div>
     <div class="block-body">
-      <h2>Trois façons de compter</h2>
+      <h2>Quatre façons de compter</h2>
       <p class="lede">Le chronomètre n'est pas un accessoire posé à côté du carnet : c'est par lui qu'on entre dans l'application. Essaie-le, il tourne vraiment.</p>
 
       <div class="demo">
@@ -176,6 +189,7 @@
             <button type="button" class="mode-tab on" data-mode="chrono">Chrono</button>
             <button type="button" class="mode-tab" data-mode="minuteur">Minuteur</button>
             <button type="button" class="mode-tab" data-mode="tabata">Tabata</button>
+            <button type="button" class="mode-tab" data-mode="emom">EMOM</button>
           </div>
 
           <h3 id="demoTitle" style="font-size:1.15rem;letter-spacing:.04em">Chrono</h3>
@@ -191,7 +205,9 @@
             <li><span class="n">01</span><span class="t"><strong>Chrono</strong> — temps qui monte, tours enregistrés au passage.</span></li>
             <li><span class="n">02</span><span class="t"><strong>Minuteur</strong> — temps qui descend, signal audible écran éteint.</span></li>
             <li><span class="n">03</span><span class="t"><strong>Tabata</strong> — effort et récupération en alternance, chaque transition annoncée.</span></li>
+            <li><span class="n">04</span><span class="t"><strong>EMOM</strong> — un top toutes les minutes, ou l'intervalle de ton choix. Le temps qu'il reste sert de récupération.</span></li>
           </ul>
+          <p class="fineprint" style="margin-top:1rem">Les quatre modes existent aussi sur <a href="#iphone">l'espace web</a> et sur <a href="#montre">la montre Garmin</a>.</p>
         </div>
       </div>
     </div>
@@ -240,6 +256,21 @@
         </div>
       </div>
 
+      <div class="grid grid-3" style="margin:0 0 clamp(1.5rem,3.5vw,3rem)">
+        <article class="card">
+          <h3>Entraînement libre</h3>
+          <p>Pas de plan ce soir ? Démarre à vide et ajoute les exercices au fur et à mesure. La séance part dans ton historique sans encombrer ton carnet, et le bilan propose d'en garder un modèle.</p>
+        </article>
+        <article class="card">
+          <h3>Records et 1RM</h3>
+          <p>Analyse et records suit tes maximums estimés exercice par exercice. Tu peux saisir ton vrai 1RM testé : Moti s'en sert ensuite pour les charges qu'il conseille et pour tes programmes.</p>
+        </article>
+        <article class="card">
+          <h3>Tout retrouver</h3>
+          <p>Profil › Entraînements liste toutes tes séances effectuées, de la plus récente à la plus ancienne, chacune supprimable. Tes catégories et ton poids suivent ton compte, pas l'appareil.</p>
+        </article>
+      </div>
+
       <div class="callout">
         <img src="assets/img/preview_carte.png" alt="Carte de partage d'une séance générée par Motio">
         <div class="callout-body">
@@ -248,6 +279,93 @@
           <p>À la fin d'une séance, Motio génère une carte lisible : charge déplacée, durée, temps sous tension, détail par exercice. Prête à envoyer, sans capture d'écran bricolée.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ MONTRE GARMIN ============ -->
+  <section class="block block-alt" id="montre" data-sect>
+    <div class="tc">20:00</div>
+    <div class="block-body">
+      <p class="eyebrow">Nouveau · août 2026</p>
+      <h2>La séance passe <span style="color:var(--accent)">au poignet</span></h2>
+      <p class="lede">Le téléphone reste dans le sac. La fēnix affiche l'exercice, la série, la charge à mettre et le repère de la dernière fois. START valide la série et lance la récupération, la montre vibre quand elle est finie. Ce que tu fais là revient dans ton carnet.</p>
+
+      <figure class="watch-shots">
+        <img src="assets/img/watch-ecrans.png" alt="Quatre écrans de Motio sur une montre Garmin fēnix : accueil, série en cours, saisie du RIR, récupération">
+        <figcaption>Accueil · série en cours avec charge et répétitions · saisie du RIR au pavé numérique · récupération avec l'anneau qui se vide</figcaption>
+      </figure>
+
+      <div class="split" style="align-items:flex-start">
+        <div class="split-content grid grid-2">
+          <article class="card">
+            <h3>Tout au bouton</h3>
+            <p>START valide la série et lance la récup. Haut et bas changent d'exercice, BACK sort du menu. Rien à viser du doigt avec des gants ou les mains moites.</p>
+          </article>
+          <article class="card">
+            <h3>Tes repères sous les yeux</h3>
+            <p>La charge et les répétitions de la dernière fois s'affichent avant la série. Tu peux les corriger sur la montre si tu changes en cours de route.</p>
+          </article>
+          <article class="card">
+            <h3>Chrono et tabata aussi</h3>
+            <p>Temps sous tension pendant l'effort, décompte en tabata et en EMOM, minuteur de récupération réglable. Les mêmes modes que sur le téléphone.</p>
+          </article>
+          <article class="card">
+            <h3 class="gold">La séance redescend</h3>
+            <p>Une fois terminée, elle rejoint ton carnet, tes statistiques et le fil de tes amis. Elle est aussi enregistrée comme activité dans Garmin Connect, série par série.</p>
+          </article>
+        </div>
+        <div class="split-media watch-pair">
+          <img src="assets/img/watch-appairage.png" alt="La montre affiche un code à huit chiffres à recopier dans Motio">
+          <p class="fineprint">L'appairage tient en un code : la montre l'affiche, tu le recopies dans <strong style="color:var(--text-dim)">Profil › Compte › Montre Garmin</strong>. Rien à régler dans Garmin Connect.</p>
+        </div>
+      </div>
+
+      <div class="why-box">
+        <p class="why-tag">Installer sur la montre</p>
+        <p class="lede-sm">Motio n'est pas sur la boutique Connect IQ : le fichier se copie à la main, une fois, par le câble USB. Il te faut Motio <strong style="color:var(--text);font-weight:600">v2.37 ou plus récent</strong> sur le téléphone.</p>
+        <ol class="numbered" style="margin-bottom:1.25rem">
+          <li><span class="n">01</span><span class="t">Télécharge le fichier <strong>.prg</strong> de ton modèle ci-dessous.</span></li>
+          <li><span class="n">02</span><span class="t">Branche la montre en USB : elle apparaît comme un disque. Copie le fichier dans <strong>GARMIN/APPS/</strong>, puis débranche.</span></li>
+          <li><span class="n">03</span><span class="t">Sur la montre : <strong>START › Applications › Motio</strong>. Elle affiche un code à huit chiffres.</span></li>
+          <li><span class="n">04</span><span class="t">Dans Motio sur le téléphone : <strong>Profil › Compte › Montre Garmin</strong>, recopie le code, appuie sur Appairer. La montre se connecte dans les secondes qui suivent.</span></li>
+        </ol>
+
+        <details class="modeles">
+          <summary>Choisir le fichier de ma montre<span class="plus" aria-hidden="true">+</span></summary>
+          <div class="modeles-grid">
+            <div>
+              <span class="modeles-k">fēnix 7</span>
+              <a href="montre/motio-fenix7.prg" download>fēnix 7</a>
+              <a href="montre/motio-fenix7s.prg" download>fēnix 7S</a>
+              <a href="montre/motio-fenix7x.prg" download>fēnix 7X</a>
+              <a href="montre/motio-fenix7pro.prg" download>fēnix 7 Pro</a>
+              <a href="montre/motio-fenix7spro.prg" download>fēnix 7S Pro</a>
+              <a href="montre/motio-fenix7xpro.prg" download>fēnix 7X Pro</a>
+              <a href="montre/motio-fenix7pronowifi.prg" download>fēnix 7 Pro (sans wifi)</a>
+              <a href="montre/motio-fenix7xpronowifi.prg" download>fēnix 7X Pro (sans wifi)</a>
+            </div>
+            <div>
+              <span class="modeles-k">fēnix 8 et E</span>
+              <a href="montre/motio-fenix843mm.prg" download>fēnix 8 · 43 mm</a>
+              <a href="montre/motio-fenix847mm.prg" download>fēnix 8 · 47 mm</a>
+              <a href="montre/motio-fenix8pro47mm.prg" download>fēnix 8 Pro · 47 mm</a>
+              <a href="montre/motio-fenix8solar47mm.prg" download>fēnix 8 Solar · 47 mm</a>
+              <a href="montre/motio-fenix8solar51mm.prg" download>fēnix 8 Solar · 51 mm</a>
+              <a href="montre/motio-fenixe.prg" download>fēnix E</a>
+            </div>
+            <div>
+              <span class="modeles-k">epix 2</span>
+              <a href="montre/motio-epix2.prg" download>epix 2</a>
+              <a href="montre/motio-epix2pro42mm.prg" download>epix 2 Pro · 42 mm</a>
+              <a href="montre/motio-epix2pro47mm.prg" download>epix 2 Pro · 47 mm</a>
+              <a href="montre/motio-epix2pro51mm.prg" download>epix 2 Pro · 51 mm</a>
+            </div>
+          </div>
+          <p class="fineprint" style="margin-top:1.25rem">La tactix 7 prend le fichier de la fēnix 7X, la quatix 7 celui de la fēnix 7. Si tu ne trouves pas ta montre dans la liste, c'est qu'elle n'est pas encore prise en charge.</p>
+        </details>
+      </div>
+
+      <p class="fineprint">Compagnon Connect IQ en test · le carnet est gardé en mémoire sur la montre et la séance terminée part en file d'attente : une salle en sous-sol ne fait rien perdre.</p>
     </div>
   </section>
 
@@ -308,7 +426,7 @@
     <div class="tc">36:00</div>
     <div class="block-body">
       <h2>Et les copains</h2>
-      <p class="lede">Un fil minuscule, volontairement : les gens que tu suis, leurs séances, rien d'autre.</p>
+      <p class="lede">Un fil volontairement petit : les gens que tu suis, leurs séances, et de quoi s'y mettre à plusieurs. Pas d'algorithme, pas de découverte forcée, pas d'inconnus qui débarquent.</p>
 
       <div class="split" style="align-items:flex-start">
         <div class="split-content grid grid-3">
@@ -318,16 +436,28 @@
           </article>
           <article class="card">
             <h3>Abonnements</h3>
-            <p>Tu choisis qui tu suis. Pas d'algorithme, pas de suggestions, pas d'inconnus.</p>
+            <p>Tu choisis qui tu suis. Un filtre Amis ou Tous te laisse voir le cercle proche ou tout le monde, et ton profil ne devient public que si tu le décides.</p>
+          </article>
+          <article class="card">
+            <h3>Groupes</h3>
+            <p>Crée un groupe avec son nom, sa description et sa bannière, invite par lien ou QR code. Chaque groupe a son fil, son classement et son canal de discussion.</p>
+          </article>
+          <article class="card">
+            <h3>Messages</h3>
+            <p>Une discussion avec chaque personne que tu suis. Un message qui arrive pendant l'entraînement se signale par une rafale de bips, difficile à rater en pleine série.</p>
           </article>
           <article class="card">
             <h3 class="gold">Trophées</h3>
             <p>Six familles, trois paliers chacune. Régularité, volume, ancienneté : ce qui se mérite sur la durée.</p>
           </article>
           <article class="card">
-            <h3>Depuis l'ordinateur</h3>
-            <p>L'espace web donne accès au même historique et au même fil, sur grand écran.</p>
-            <a class="go" href="app/">Ouvrir l'espace web →</a>
+            <h3>Notifications, à ta main</h3>
+            <p>Un mot sur une séance, un like, un message : chaque type de notification s'active ou se coupe séparément dans le menu Notifications.</p>
+          </article>
+          <article class="card">
+            <h3>Sur grand écran</h3>
+            <p>L'espace web donne le même historique, le même fil et les mêmes discussions, depuis l'ordinateur ou l'iPhone.</p>
+            <a class="go" href="#iphone">Voir l'espace web →</a>
           </article>
         </div>
         <div class="split-media">
@@ -335,6 +465,50 @@
             <img src="assets/img/screen-social.svg" alt="Fil social dans Motio : séances des amis suivis">
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ IPHONE ============ -->
+  <section class="block" id="iphone" data-sect>
+    <div class="tc">40:00</div>
+    <div class="block-body">
+      <p class="eyebrow">iPhone et iPad</p>
+      <h2>Pas d'App Store, <span style="color:var(--accent)">et pourtant tout est là</span></h2>
+      <p class="lede">Motio n'a pas d'application iOS. À la place, l'espace web reprend l'application écran par écran : mêmes minuteurs, mêmes séances, même coach, mêmes discussions. Ajouté à l'écran d'accueil, il a son icône et s'ouvre en plein écran, sans barre de navigateur. Ton compte est le même des deux côtés : ce que tu fais sur iPhone arrive dans l'appli de tes amis Android, et l'inverse.</p>
+
+      <div class="install-grid">
+        <ol class="numbered install-steps" style="list-style:none">
+          <li><span class="n">01</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ouvre l'espace web dans Safari</strong>Depuis le bouton ci-dessous, ou en scannant le QR code avec l'appareil photo.</span></li>
+          <li><span class="n">02</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ajoute-le à l'écran d'accueil</strong>Icône Partager en bas de l'écran, puis « Sur l'écran d'accueil ». Safari propose l'icône Motio, tu confirmes.</span></li>
+          <li><span class="n">03</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Crée ton compte, une fois</strong>Contrairement à l'application Android, le compte est nécessaire ici : c'est lui qui porte ton carnet, tes catégories et ton historique.</span></li>
+          <li><span class="n">04</span><span class="t"><strong style="display:block;margin-bottom:.25rem">C'est fini</strong>Les mises à jour arrivent toutes seules au lancement suivant, sans rien à réinstaller.</span></li>
+        </ol>
+
+        <div class="qr-box">
+          <div id="qrWeb" class="qr" data-qr="app/"></div>
+          <p>Scanne depuis ton iPhone<br><span>ouvre l'espace web</span></p>
+        </div>
+      </div>
+
+      <div class="grid grid-3" style="margin:0 0 clamp(1.5rem,3.5vw,3rem)">
+        <article class="card">
+          <h3>Ce que tu retrouves</h3>
+          <p>Chrono, minuteur, Tabata et EMOM, l'écran de séance en direct avec les charges de la dernière fois, le carnet complet, les programmes, Moti, le fil, les messages et les groupes.</p>
+        </article>
+        <article class="card">
+          <h3>Écran par écran</h3>
+          <p>Ce n'est pas une version allégée : chaque écran a été repris sur le code de l'application Android, jusqu'aux couleurs de catégorie et au tutoriel de première ouverture.</p>
+        </article>
+        <article class="card">
+          <h3>La seule vraie différence</h3>
+          <p>Les bips ne sonnent pas de façon fiable quand Safari passe en arrière-plan : c'est une limite d'iOS, pas un oubli. Écran allumé, tout fonctionne. C'est ce qui justifie encore l'application Android.</p>
+        </article>
+      </div>
+
+      <div class="cta-group">
+        <a class="btn btn-lg" href="app/">Ouvrir l'espace web →</a>
+        <a class="btn btn-lg btn-ghost" href="#comparatif">Comparer avec l'appli</a>
       </div>
     </div>
   </section>
@@ -358,10 +532,10 @@
           </thead>
           <tbody>
             <tr>
-              <th scope="row">Chrono, minuteur et Tabata intégrés</th>
-              <td class="us">Les trois</td>
+              <th scope="row">Chrono, minuteur, Tabata et EMOM intégrés</th>
+              <td class="us">Les quatre</td>
               <td class="dim">Minuteur de repos</td>
-              <td class="dim">Les trois</td>
+              <td class="dim">Souvent les quatre</td>
             </tr>
             <tr>
               <th scope="row">Carnet complet et historique</th>
@@ -380,6 +554,18 @@
               <td style="color:var(--accent-2)">En une phrase</td>
               <td class="dim">Modèles à choisir</td>
               <td class="dim">Non</td>
+            </tr>
+            <tr>
+              <th scope="row">Séance pilotée à la montre</th>
+              <td style="color:var(--accent-2)">fēnix et epix, incluse</td>
+              <td class="dim">Selon l'app, souvent payante</td>
+              <td class="dim">Non</td>
+            </tr>
+            <tr>
+              <th scope="row">Sur iPhone</th>
+              <td class="dim">Espace web à installer, pas d'app native</td>
+              <td class="dim">Application App Store</td>
+              <td class="dim">Application App Store</td>
             </tr>
             <tr>
               <th scope="row">Progression automatique des charges</th>
@@ -428,8 +614,8 @@
   <section class="block block-alt" id="installer" data-sect>
     <div class="tc">48:00</div>
     <div class="block-body">
-      <h2>Installer Motio</h2>
-      <p class="lede">Deux minutes, une autorisation à donner une seule fois. Ensuite l'application se met à jour toute seule.</p>
+      <h2>Installer Motio sur Android</h2>
+      <p class="lede">Deux minutes, une autorisation à donner une seule fois. Ensuite l'application se met à jour toute seule. Sur iPhone, c'est <a href="#iphone">l'espace web</a> ; sur montre Garmin, c'est <a href="#montre">le fichier de ton modèle</a>.</p>
 
       <div class="install-grid">
         <ol class="numbered install-steps" style="list-style:none;counter-reset:s">
@@ -495,7 +681,15 @@
         </details>
         <details>
           <summary>Y a-t-il une version iPhone ?<span class="plus" aria-hidden="true">+</span></summary>
-          <p>Pas d'application native, mais l'<a href="app/">espace web</a> offre la même expérience depuis Safari : chrono en direct avec bips, coach IA, séances, messages, groupes. Ouvre-le puis ajoute-le à ton écran d'accueil (icône Partager → « Sur l'écran d'accueil ») pour une icône et un lancement plein écran, comme une vraie application.</p>
+          <p>Pas d'application native, mais l'<a href="#iphone">espace web</a> reprend l'application écran par écran depuis Safari : minuteurs, séance en direct, coach IA, carnet, messages, groupes. Ajouté à l'écran d'accueil, il a son icône et s'ouvre en plein écran. Seule limite connue : les bips ne sonnent pas de façon fiable quand Safari passe en arrière-plan.</p>
+        </details>
+        <details>
+          <summary>Motio marche-t-il sur ma montre Garmin ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Sur les fēnix 7, fēnix 8, fēnix E et epix 2, oui : <a href="#montre">le fichier de ton modèle</a> se copie sur la montre par le câble USB. La montre affiche ensuite ta séance, valide les séries au bouton START et vibre en fin de récupération. Ce n'est pas encore sur la boutique Connect IQ, donc l'installation reste manuelle.</p>
+        </details>
+        <details>
+          <summary>Faut-il garder le téléphone sur soi pendant une séance à la montre ?<span class="plus" aria-hidden="true">+</span></summary>
+          <p>Non. Le carnet est gardé en mémoire sur la montre et la séance terminée attend en file d'attente : elle remonte dans ton carnet, tes statistiques et Garmin Connect dès que le téléphone est à portée. Une salle en sous-sol ne fait rien perdre.</p>
         </details>
         <details>
           <summary>Le minuteur fonctionne-t-il écran éteint ?<span class="plus" aria-hidden="true">+</span></summary>
@@ -534,7 +728,7 @@
   <div class="foot-top">
     <div class="foot-brand">
       <img src="assets/img/logo_motio.png" alt="Motio">
-      <p>Ton coach personnel, toujours dans ta poche. Application Android, distribuée en direct.</p>
+      <p>Ton coach personnel, toujours dans ta poche. Android, iPhone et montre Garmin, distribué en direct.</p>
     </div>
     <nav class="foot-col">
       <span class="foot-col-title">Le produit</span>
@@ -545,8 +739,14 @@
       <a href="#comparatif">Comparatif</a>
     </nav>
     <nav class="foot-col">
-      <span class="foot-col-title">Les outils</span>
+      <span class="foot-col-title">Les appareils</span>
+      <a href="#installer">Android</a>
+      <a href="#iphone">iPhone</a>
+      <a href="#montre">Montre Garmin</a>
       <a href="app/">Espace web</a>
+    </nav>
+    <nav class="foot-col">
+      <span class="foot-col-title">Les outils</span>
       <a href="partage/">Import de séance</a>
       <a href="https://github.com/Motio-training/motio-updates/releases" rel="noopener">Versions</a>
       <a href="confidentialite/">Confidentialité</a>

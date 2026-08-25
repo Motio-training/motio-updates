@@ -292,15 +292,19 @@
     }
   }
 
-  /* ---------- 5. QR codes vers la dernière release ---------- */
+  /* ---------- 5. QR codes ----------
+     Par défaut vers la dernière release ; un data-qr sur le conteneur pointe
+     ailleurs (l'espace web, pour la section iPhone). Résolu en absolu, sinon
+     le QR contiendrait un chemin relatif inutilisable hors du site. */
   (function makeQR() {
     function draw() {
       if (typeof window.qrcode !== 'function') return false;
-      ['qrHero', 'qrBig'].forEach(function (id) {
+      ['qrHero', 'qrBig', 'qrWeb'].forEach(function (id) {
         var host = document.getElementById(id);
         if (!host) return;
+        var cible = host.getAttribute('data-qr');
         var qr = window.qrcode(0, 'M');
-        qr.addData(REL_URL);
+        qr.addData(cible ? new URL(cible, location.href).href : REL_URL);
         qr.make();
         host.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
         var svg = host.querySelector('svg');
@@ -314,11 +318,12 @@
     }
   })();
 
-  /* ---------- 6. démo des trois modes de chronométrage ---------- */
+  /* ---------- 6. démo des quatre modes de chronométrage ---------- */
   var MODES = {
     chrono: { titre: 'Chrono', desc: "Temps qui monte, tours enregistrés au passage. Pour les tests, les circuits libres et tout ce qui se mesure à la fin.", meta: 'temps qui monte' },
     minuteur: { titre: 'Minuteur', desc: "Temps qui descend, avec relance. Signal sonore audible écran éteint : le téléphone peut rester dans la poche.", meta: 'décompte 60 s' },
-    tabata: { titre: 'Tabata', desc: "Effort et récupération en alternance, nombre de tours et de blocs réglables. Chaque transition est annoncée à la voix.", meta: 'effort 20 s · récup 10 s' }
+    tabata: { titre: 'Tabata', desc: "Effort et récupération en alternance, nombre de tours et de blocs réglables. Chaque transition est annoncée à la voix.", meta: 'effort 20 s · récup 10 s' },
+    emom: { titre: 'EMOM', desc: "Un top toutes les minutes, ou l'intervalle que tu choisis. Tu fais tes répétitions, le temps qu'il reste sert de récupération, et le top suivant relance le tour.", meta: 'tour 1 / 10 · intervalle 60 s' }
   };
 
   var demo = {
@@ -355,6 +360,20 @@
       phase = rest === 0 ? 'terminé' : (demoState.running ? 'décompte' : 'prêt');
       if (rest === 0 && demoState.running) { demoState.acc = 60000; demoState.running = false; }
       if (rest === 0) color = '#D3A45E';
+    } else if (demoState.mode === 'emom') {
+      // Un intervalle fixe qui se répète : le décompte affiché est le temps
+      // avant le top suivant, doré sur les dix dernières secondes pour qu'on
+      // voie le tour arriver sans regarder les chiffres.
+      var I = 60000, TOURS = 10, fin = I * TOURS;
+      var e = Math.min(ms, fin - 1);
+      var tour = Math.floor(e / I) + 1;
+      var avant = I - (e % I);
+      txt = pad(Math.floor(avant / 60000), 1) + ':' + pad(Math.floor(avant / 1000) % 60, 2) + '.' + pad(Math.floor(avant / 10) % 100, 2);
+      frac = avant / I;
+      phase = ms >= fin ? 'terminé' : (demoState.running ? 'tour ' + tour : 'prêt');
+      color = avant <= 10000 ? '#D3A45E' : '#A9C25E';
+      meta = ms >= fin ? '10 tours bouclés' : 'tour ' + tour + ' / ' + TOURS + ' · intervalle 60 s';
+      if (ms >= fin && demoState.running) { demoState.acc = fin; demoState.running = false; }
     } else {
       var W = 20000, R = 10000, N = 8, cycle = W + R, total = cycle * N;
       var c = Math.min(ms, total - 1);
@@ -371,7 +390,7 @@
     }
 
     demo.digits.textContent = txt;
-    demo.digits.style.color = demoState.mode === 'tabata' ? color : '#F4F3EE';
+    demo.digits.style.color = (demoState.mode === 'tabata' || demoState.mode === 'emom') ? color : '#F4F3EE';
     if (demo.phase) demo.phase.textContent = phase;
     if (demo.meta) demo.meta.textContent = meta;
     if (demo.dial) demo.dial.style.background = 'conic-gradient(' + color + ' ' + frac.toFixed(4) + 'turn, #2B3422 0turn)';
