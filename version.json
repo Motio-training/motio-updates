@@ -1,6 +1,6 @@
 {
-  "versionCode": 148,
-  "versionName": "2.45",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.45/motio.apk",
-  "notes": "Moti et la generation de programme deviennent des fonctionnalites de l'abonnement Motio. Ton acces est conserve, sans limite de duree."
+  "versionCode": 149,
+  "versionName": "2.46",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.46/motio.apk",
+  "notes": "Conditions d'utilisation et mentions legales, accessibles depuis Profil puis Confidentialite. L'envoi d'image de groupe fonctionne de nouveau."
 }

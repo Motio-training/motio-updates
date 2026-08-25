@@ -161,6 +161,14 @@ export async function vueProfil(params) {
               <span class="corps"><b>Confidentialité</b></span>
               <span class="chevron">›</span>
             </a>
+            <a class="menu-ligne" href="../conditions/index.html" target="_blank" rel="noopener">
+              <span class="corps"><b>Conditions d'utilisation</b></span>
+              <span class="chevron">›</span>
+            </a>
+            <a class="menu-ligne" href="../mentions-legales/index.html" target="_blank" rel="noopener">
+              <span class="corps"><b>Mentions légales</b></span>
+              <span class="chevron">›</span>
+            </a>
           </div>
         </div>` : `
         <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>
