@@ -33,7 +33,7 @@
     <a href="#comparatif">Comparatif</a>
     <a href="#faq">FAQ</a>
   </nav>
-  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener">Télécharger</a>
+  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener">Télécharger</a>
 </header>
 
 <main id="top">
@@ -69,21 +69,21 @@
 
       <div class="cta-row">
         <div class="cta-group">
-          <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
+          <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
           <a class="btn btn-lg btn-ghost" href="#installer">Comment installer</a>
         </div>
         <div class="hero-qr">
           <div id="qrHero" class="qr-mini"></div>
-          <span class="qr-mini-label">Scanne pour installer</span>
+          <span class="qr-mini-label">Scanne pour télécharger</span>
         </div>
       </div>
       <p class="fineprint hero-fine">Android 8.0 minimum · <span id="verHero">dernière version sur GitHub</span> · hors Play Store</p>
 
-      <!-- Les trois portes d'entrée. Liens vers les sections plutôt que vers la
-           release GitHub : sur iOS, site.js réécrit tout lien "releases/latest"
+      <!-- Les trois portes d'entrée. Liens vers les sections plutôt que vers le
+           fichier : sur iOS, site.js réécrit tout lien de téléchargement APK
            et écraserait le libellé de ces tuiles. -->
       <ul class="plateformes">
-        <li><a href="#installer"><span class="p-k">Android</span><span class="p-v">L'application complète, en APK direct</span></a></li>
+        <li><a href="#installer" data-os="android"><span class="p-k">Android</span><span class="p-v">L'application complète, en APK direct</span></a></li>
         <li><a href="#iphone"><span class="p-k">iPhone</span><span class="p-v">L'espace web, à ajouter à l'écran d'accueil</span></a></li>
         <li><a href="#montre"><span class="p-k">Montre Garmin</span><span class="p-v">Ta séance au poignet, sur fēnix et epix</span></a></li>
       </ul>
@@ -477,20 +477,8 @@
       <h2>Pas d'App Store, <span style="color:var(--accent)">et pourtant tout est là</span></h2>
       <p class="lede">Motio n'a pas d'application iOS. À la place, l'espace web reprend l'application écran par écran : mêmes minuteurs, mêmes séances, même coach, mêmes discussions. Ajouté à l'écran d'accueil, il a son icône et s'ouvre en plein écran, sans barre de navigateur. Ton compte est le même des deux côtés : ce que tu fais sur iPhone arrive dans l'appli de tes amis Android, et l'inverse.</p>
 
-      <div class="install-grid">
-        <ol class="numbered install-steps" style="list-style:none">
-          <li><span class="n">01</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ouvre l'espace web dans Safari</strong>Depuis le bouton ci-dessous, ou en scannant le QR code avec l'appareil photo.</span></li>
-          <li><span class="n">02</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ajoute-le à l'écran d'accueil</strong>Icône Partager en bas de l'écran, puis « Sur l'écran d'accueil ». Safari propose l'icône Motio, tu confirmes.</span></li>
-          <li><span class="n">03</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Crée ton compte, une fois</strong>Contrairement à l'application Android, le compte est nécessaire ici : c'est lui qui porte ton carnet, tes catégories et ton historique.</span></li>
-          <li><span class="n">04</span><span class="t"><strong style="display:block;margin-bottom:.25rem">C'est fini</strong>Les mises à jour arrivent toutes seules au lancement suivant, sans rien à réinstaller.</span></li>
-        </ol>
-
-        <div class="qr-box">
-          <div id="qrWeb" class="qr" data-qr="app/"></div>
-          <p>Scanne depuis ton iPhone<br><span>ouvre l'espace web</span></p>
-        </div>
-      </div>
-
+      <!-- La marche à suivre vit dans « Comment installer » (#installer, onglet
+           iPhone) : un seul endroit à tenir à jour, pour les deux systèmes. -->
       <div class="grid grid-3" style="margin:0 0 clamp(1.5rem,3.5vw,3rem)">
         <article class="card">
           <h3>Ce que tu retrouves</h3>
@@ -508,6 +496,7 @@
 
       <div class="cta-group">
         <a class="btn btn-lg" href="app/">Ouvrir l'espace web →</a>
+        <a class="btn btn-lg btn-ghost" href="#installer" data-os="ios">Le poser sur l'écran d'accueil</a>
         <a class="btn btn-lg btn-ghost" href="#comparatif">Comparer avec l'appli</a>
       </div>
     </div>
@@ -614,37 +603,106 @@
   <section class="block block-alt" id="installer" data-sect>
     <div class="tc">48:00</div>
     <div class="block-body">
-      <h2>Installer Motio sur Android</h2>
-      <p class="lede">Deux minutes, une autorisation à donner une seule fois. Ensuite l'application se met à jour toute seule. Sur iPhone, c'est <a href="#iphone">l'espace web</a> ; sur montre Garmin, c'est <a href="#montre">le fichier de ton modèle</a>.</p>
+      <h2>Comment installer Motio</h2>
+      <p class="lede">Choisis ton téléphone. Sur Android, c'est un fichier à installer une fois ; sur iPhone, c'est l'espace web à poser sur l'écran d'accueil. Sur montre Garmin, c'est <a href="#montre">le fichier de ton modèle</a>.</p>
 
-      <div class="install-grid">
-        <ol class="numbered install-steps" style="list-style:none;counter-reset:s">
-          <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">01</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Télécharge le fichier</strong>Depuis les releases GitHub, ou en scannant le QR code avec ton téléphone.</span></li>
-          <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">02</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Autorise l'installation</strong>Android demande une autorisation « source inconnue » pour l'application depuis laquelle tu ouvres le fichier. Tu l'accordes une fois.</span></li>
-          <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">03</span><span class="t"><strong style="display:block;margin-bottom:.25rem">C'est fini</strong>Les versions suivantes sont détectées et proposées directement dans l'application.</span></li>
-        </ol>
+      <!-- Deux portes, une seule ouverte à la fois (site.js). Le choix est
+           pré-positionné sur iPhone quand la visite vient d'un iPhone ou d'un
+           iPad : c'est la seule voie qui marche là-bas. -->
+      <div class="os-switch" role="tablist" aria-label="Choisir son système">
+        <button class="os-btn on" type="button" role="tab" id="osTabAndroid" data-os="android"
+                aria-selected="true" aria-controls="installAndroid">
+          <span class="os-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path fill-rule="evenodd" d="M4.5 16.5a7.5 7.5 0 0 1 15 0zM8.4 13a1 1 0 1 0 2 0 1 1 0 1 0-2 0zM13.6 13a1 1 0 1 0 2 0 1 1 0 1 0-2 0z"/>
+              <path d="M6.7 11.2 5.1 8.1M17.3 11.2 18.9 8.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="os-txt"><strong>Android</strong><span>Télécharger et installer l'APK</span></span>
+        </button>
+        <button class="os-btn" type="button" role="tab" id="osTabIos" data-os="ios"
+                aria-selected="false" aria-controls="installIos">
+          <span class="os-logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <mask id="motioAppleBite" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+                <rect width="24" height="24" fill="#fff"/>
+                <circle cx="19.2" cy="10.8" r="2.8" fill="#000"/>
+              </mask>
+              <path mask="url(#motioAppleBite)" d="M12 8.4c-1.3-1.1-3.3-1.4-4.9-.5-2.4 1.3-3 4.9-1.6 8 .9 2 2.4 3.9 4 3.8 1-.1 1.4-.7 2.5-.7s1.5.6 2.5.7c1.6.1 3.1-1.8 4-3.8 1.4-3.1.8-6.7-1.6-8-1.6-.9-3.6-.6-4.9.5z"/>
+              <path d="M13 7.4c.1-1.5 1.3-2.7 2.8-2.9.1 1.5-1.2 2.8-2.8 2.9z"/>
+            </svg>
+          </span>
+          <span class="os-txt"><strong>iPhone</strong><span>Ouvrir et poser l'espace web</span></span>
+        </button>
+      </div>
 
-        <div class="qr-box">
-          <div id="qrBig" class="qr"></div>
-          <p>Scanne depuis ton téléphone<br><span>dernière release GitHub</span></p>
+      <!-- ---- Android ---- -->
+      <div class="os-panel" id="installAndroid" role="tabpanel" aria-labelledby="osTabAndroid">
+        <div class="cta-group" style="margin-bottom:2rem">
+          <a class="btn btn-lg" data-apk href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
+          <a class="btn btn-lg btn-ghost" href="confidentialite/">Politique de confidentialité</a>
         </div>
-      </div>
 
-      <div class="why-box">
-        <p class="why-tag">Pourquoi hors Play Store</p>
-        <p class="lede-sm">Publier sur le Play Store impose une identité de développeur affichée, des frais, et un cadre qui pousse à la publicité et au suivi d'usage. Motio est distribué en direct pour éviter tout ça : <strong style="color:var(--text);font-weight:600">aucune régie publicitaire, aucun traceur, aucun compte imposé</strong>.</p>
-        <div class="why-grid">
-          <div><span class="k">Source vérifiable</span><span class="v">Chaque version est publiée publiquement sur GitHub, avec ses notes.</span></div>
-          <div><span class="k">Mise à jour intégrée</span><span class="v">L'application lit le même fichier de version que ce site. Une seule source de vérité.</span></div>
-          <div><span class="k">Désinstallation nette</span><span class="v">Tes données restent sur ton téléphone et partent avec l'application.</span></div>
+        <div class="install-grid">
+          <ol class="numbered install-steps" style="list-style:none;counter-reset:s">
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">01</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Télécharge le fichier</strong>Le bouton ci-dessus lance directement le téléchargement de <code>motio.apk</code>, sans passer par une page intermédiaire. Depuis un ordinateur, scanne plutôt le QR code avec ton téléphone.</span></li>
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">02</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ouvre le fichier téléchargé</strong>Dans la notification de téléchargement, ou dans l'application Fichiers, dossier « Téléchargements ».</span></li>
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">03</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Autorise l'installation</strong>Android demande une autorisation « source inconnue » pour l'application depuis laquelle tu ouvres le fichier. Tu l'accordes une fois.</span></li>
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">04</span><span class="t"><strong style="display:block;margin-bottom:.25rem">C'est fini</strong>Les versions suivantes sont détectées et proposées directement dans l'application.</span></li>
+          </ol>
+
+          <div class="qr-box">
+            <div id="qrBig" class="qr"></div>
+            <p>Scanne depuis ton téléphone<br><span>télécharge motio.apk</span></p>
+          </div>
         </div>
+
+        <div class="why-box">
+          <p class="why-tag">Pourquoi hors Play Store</p>
+          <p class="lede-sm">Publier sur le Play Store impose une identité de développeur affichée, des frais, et un cadre qui pousse à la publicité et au suivi d'usage. Motio est distribué en direct pour éviter tout ça : <strong style="color:var(--text);font-weight:600">aucune régie publicitaire, aucun traceur, aucun compte imposé</strong>.</p>
+          <div class="why-grid">
+            <div><span class="k">Source vérifiable</span><span class="v">Chaque version est publiée publiquement sur GitHub, avec ses notes.</span></div>
+            <div><span class="k">Mise à jour intégrée</span><span class="v">L'application lit le même fichier de version que ce site. Une seule source de vérité.</span></div>
+            <div><span class="k">Désinstallation nette</span><span class="v">Tes données restent sur ton téléphone et partent avec l'application.</span></div>
+          </div>
+        </div>
+
+        <p class="fineprint">Android 8.0 minimum (API 26) · <span id="verInstall">dernière version sur GitHub</span></p>
       </div>
 
-      <div class="cta-group" style="margin-bottom:1rem">
-        <a class="btn btn-lg" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> Télécharger la dernière version</a>
-        <a class="btn btn-lg btn-ghost" href="confidentialite/">Politique de confidentialité</a>
+      <!-- ---- iPhone ---- -->
+      <div class="os-panel" id="installIos" role="tabpanel" aria-labelledby="osTabIos" hidden>
+        <div class="cta-group" style="margin-bottom:2rem">
+          <a class="btn btn-lg" href="app/">Ouvrir l'espace web →</a>
+          <a class="btn btn-lg btn-ghost" href="#iphone">Ce que ça vaut face à l'appli</a>
+        </div>
+
+        <div class="install-grid">
+          <ol class="numbered install-steps" style="list-style:none;counter-reset:s">
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">01</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ouvre l'espace web dans Safari</strong>Le bouton ci-dessus, ou le QR code scanné avec l'appareil photo. Safari est nécessaire : les autres navigateurs iOS ne savent pas poser une application sur l'écran d'accueil.</span></li>
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">02</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Ajoute-le à l'écran d'accueil</strong>Icône Partager en bas de l'écran, puis « Sur l'écran d'accueil ». Safari propose l'icône Motio, tu confirmes.</span></li>
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">03</span><span class="t"><strong style="display:block;margin-bottom:.25rem">Crée ton compte, une fois</strong>Contrairement à l'application Android, le compte est nécessaire ici : c'est lui qui porte ton carnet, tes catégories et ton historique.</span></li>
+            <li style="counter-increment:s;position:relative;padding-left:3rem;border-top:0"><span class="n" style="position:absolute;left:0;top:.85rem;font-size:.8rem">04</span><span class="t"><strong style="display:block;margin-bottom:.25rem">C'est fini</strong>Motio s'ouvre en plein écran depuis son icône, sans barre de navigateur, et les mises à jour arrivent toutes seules au lancement suivant.</span></li>
+          </ol>
+
+          <div class="qr-box">
+            <div id="qrWeb" class="qr" data-qr="app/"></div>
+            <p>Scanne depuis ton iPhone<br><span>ouvre l'espace web</span></p>
+          </div>
+        </div>
+
+        <div class="why-box">
+          <p class="why-tag">Ce qu'il faut savoir</p>
+          <p class="lede-sm">L'espace web reprend l'application écran par écran : mêmes minuteurs, mêmes séances, même coach, mêmes discussions, et le même compte que tes amis sur Android. <strong style="color:var(--text);font-weight:600">La seule vraie différence : les bips ne sonnent pas de façon fiable quand Safari passe en arrière-plan</strong>, une limite d'iOS. Écran allumé, tout fonctionne.</p>
+          <div class="why-grid">
+            <div><span class="k">Rien à installer</span><span class="v">Pas d'App Store, pas de fichier : une icône posée sur l'écran d'accueil.</span></div>
+            <div><span class="k">Mises à jour invisibles</span><span class="v">La nouvelle version se charge au lancement suivant, sans rien réinstaller.</span></div>
+            <div><span class="k">Aussi sur ordinateur</span><span class="v">La même adresse donne le même carnet depuis un navigateur de bureau.</span></div>
+          </div>
+        </div>
+
+        <p class="fineprint">iOS 16.4 minimum conseillé · fonctionne aussi sur iPad et sur ordinateur</p>
       </div>
-      <p class="fineprint">Android 8.0 minimum (API 26) · <span id="verInstall">dernière version sur GitHub</span></p>
     </div>
   </section>
 
@@ -753,7 +811,7 @@
     </nav>
     <div class="foot-install">
       <span class="foot-col-title">Installer</span>
-      <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> APK</a>
+      <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener"><span aria-hidden="true">↓</span> APK</a>
     </div>
   </div>
   <p class="foot-bottom">Motio · <span id="verFoot">dernière version sur GitHub</span> · Android 8.0 minimum · aucun traceur sur ce site</p>
@@ -764,7 +822,7 @@
     <img src="assets/img/logo_m.png" alt="">
     <span id="floatbarVersion">Motio · Android 8.0+</span>
   </div>
-  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
+  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener"><span aria-hidden="true">↓</span> Télécharger l'APK</a>
 </div>
 
 <script src="assets/js/vendor/qrcode.js"></script>

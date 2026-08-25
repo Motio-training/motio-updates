@@ -4,7 +4,12 @@
   'use strict';
 
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var REL_URL = 'https://github.com/Motio-training/motio-updates/releases/latest';
+  /* Téléchargement DIRECT : GitHub sert à cette adresse l'asset de la dernière
+     release en « attachment », donc le clic (ou le QR code scanné) lance le
+     téléchargement de motio.apk au lieu d'ouvrir une page de release. Le nom du
+     fichier ne change jamais d'une version à l'autre, cette adresse n'a donc
+     rien à suivre. */
+  var REL_URL = 'https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk';
   var VERSION_URL = 'https://raw.githubusercontent.com/Motio-training/motio-updates/refs/heads/main/version.json';
   var RELEASES_API = 'https://api.github.com/repos/Motio-training/motio-updates/releases?per_page=3';
 
@@ -631,12 +636,53 @@
     var nudge = document.getElementById('iphoneNudge');
     if (nudge) nudge.hidden = false;
     // Les boutons "Télécharger l'APK" ne mènent nulle part sur iOS : on les
-    // reoriente vers l'espace web plutôt que de laisser un lien mort.
+    // reoriente vers l'espace web plutôt que de laisser un lien mort. Le
+    // bouton de l'onglet Android d'« Installer », lui, est épargné : on y
+    // arrive par un choix explicite, et la marche à suivre affichée autour
+    // ne parle que d'Android — le réécrire là rendrait le panneau incohérent.
     document.querySelectorAll('a[href*="releases/latest"]').forEach(function (a) {
+      if (a.closest('#installAndroid')) return;
       a.href = 'app/';
       a.textContent = "Ouvrir l'espace web →";
     });
   }
+
+  /* ---------- 10. « Comment installer » : Android ou iPhone ----------
+     Une seule section pour les deux systèmes, deux panneaux dont un seul est
+     visible. On y arrive aussi depuis ailleurs dans la page : tout lien
+     portant data-os ouvre le bon panneau avant que le navigateur ne fasse
+     défiler jusqu'à la section. */
+  (function osChooser() {
+    var boutons = document.querySelectorAll('.os-btn');
+    if (!boutons.length) return;
+    var panneaux = {
+      android: document.getElementById('installAndroid'),
+      ios: document.getElementById('installIos')
+    };
+
+    function choisir(os) {
+      if (!panneaux[os]) return;
+      boutons.forEach(function (b) {
+        var on = b.getAttribute('data-os') === os;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      Object.keys(panneaux).forEach(function (k) {
+        if (panneaux[k]) panneaux[k].hidden = k !== os;
+      });
+    }
+
+    boutons.forEach(function (b) {
+      b.addEventListener('click', function () { choisir(b.getAttribute('data-os')); });
+    });
+
+    document.querySelectorAll('a[data-os]').forEach(function (a) {
+      a.addEventListener('click', function () { choisir(a.getAttribute('data-os')); });
+    });
+
+    // Sur iPhone et iPad, l'APK ne sert à rien : on ouvre d'emblée le bon volet.
+    if (estIOS) choisir('ios');
+  })();
 
   /* ---------- boucle d'animation : chrono du héros + démo ---------- */
   function tick(now) {
