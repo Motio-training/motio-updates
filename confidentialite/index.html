@@ -23,120 +23,196 @@
   th { color:var(--txt); font-weight:600; }
   a { color:var(--acc); }
   code { background:#2a2f22; padding:1px 5px; border-radius:4px; font-size:.88rem; }
+  .tableau-defilant { overflow-x:auto; }
 </style>
 </head>
 <body>
 <main>
 
 <h1>Politique de confidentialité — Motio</h1>
-<p class="date">Dernière mise à jour : 4 août 2026</p>
+<p class="date">Dernière mise à jour : 25 août 2026</p>
 
 <div class="card">
-  <p><strong>En deux phrases.</strong> Sans compte, Motio ne transmet rien : tout
-  reste dans la mémoire privée de votre téléphone. Avec un compte, seuls votre
-  adresse e-mail, votre pseudo, le résumé de vos séances et — si vous le laissez
-  activé — le détail de vos séries sont envoyés sur un serveur, visibles
-  uniquement des personnes qui vous suivent.</p>
+  <p><strong>En deux phrases.</strong> Sans compte, Motio ne transmet rien : tout reste
+  dans la mémoire privée de votre téléphone. Avec un compte, ce qui part sur le serveur
+  est décrit ci-dessous ligne par ligne, et le tableau du paragraphe 4 dit exactement qui
+  peut voir quoi.</p>
 </div>
 
 <h2>1. Qui est responsable</h2>
 <p>Motio est une application développée et éditée à titre personnel par
 <strong>BOURSIER Nicolas</strong>, domicilié en France.</p>
 <p>Contact pour toute question ou demande relative à vos données :
-<strong>admin.motio@gmail.com</strong>.</p>
+<a href="mailto:admin.motio@gmail.com">admin.motio@gmail.com</a>.</p>
 
 <h2>2. Ce qui reste sur votre téléphone</h2>
-<p>Utilisée sans compte, l'application ne réalise aucun envoi de données
-personnelles. Sont enregistrés localement, dans l'espace privé de l'application :</p>
+<p>Utilisée sans compte, l'application ne réalise aucun envoi de données personnelles.
+Sont enregistrés localement, dans l'espace privé de l'application :</p>
 <ul>
   <li>vos entraînements, séances réalisées, séries, charges et répétitions ;</li>
   <li>votre catalogue d'exercices et vos programmes ;</li>
-  <li>votre poids, votre taille et vos réglages (thème, sons).</li>
+  <li>votre taille et vos réglages (thème, sons, unités).</li>
 </ul>
-<p>Ces données sont effacées avec l'application lors de sa désinstallation.
-Aucune publicité, aucun traceur, aucune mesure d'audience n'est présent.</p>
+<p>Ces données sont effacées avec l'application lors de sa désinstallation. Aucune
+publicité, aucun traceur, aucune mesure d'audience n'est présent, ni dans l'application,
+ni sur l'espace web, ni sur ce site.</p>
 
 <h2>3. Ce qui est traité si vous créez un compte</h2>
+<div class="tableau-defilant">
 <table>
   <tr><th>Donnée</th><th>Pourquoi</th><th>Base légale</th></tr>
+
   <tr><td>Adresse e-mail, mot de passe (stocké haché)</td>
       <td>Créer et sécuriser le compte</td><td>Exécution du service</td></tr>
-  <tr><td>Pseudo</td><td>Vous identifier auprès de vos abonnés</td>
-      <td>Exécution du service</td></tr>
+
+  <tr><td>Pseudo, nom affiché, photo de profil</td>
+      <td>Vous identifier auprès des autres utilisateurs</td><td>Exécution du service</td></tr>
+
   <tr><td>Résumé des séances (nom, date, durée, tonnage, nombre de séries)</td>
-      <td>Alimenter le fil d'actualité et les classements</td>
-      <td>Exécution du service</td></tr>
+      <td>Alimenter le fil d'actualité et les classements</td><td>Exécution du service</td></tr>
+
   <tr><td>Détail des séries (charges, répétitions, réserve)</td>
       <td>Permettre à vos abonnés d'ouvrir une séance</td>
       <td>Consentement — interrupteur désactivable à tout moment</td></tr>
-  <tr><td>Sauvegarde du carnet (compressée)</td>
-      <td>Retrouver vos données sur un autre téléphone</td>
-      <td>Exécution du service</td></tr>
-  <tr><td>Abonnements, kudos, commentaires</td>
-      <td>Fonctionnement de la partie sociale</td>
-      <td>Exécution du service</td></tr>
-</table>
 
-<p>Si vous vous connectez avec Google, Google nous transmet votre adresse e-mail
-et un identifiant de compte. Aucune autre donnée de votre compte Google n'est
-demandée.</p>
+  <tr><td>Séance en cours (nom, exercice, séries) pendant que vous vous entraînez</td>
+      <td>Afficher votre séance en direct à vos abonnés</td><td>Exécution du service</td></tr>
+
+  <tr><td><strong>Votre poids</strong></td>
+      <td>Calculer la charge des exercices au poids du corps, et la retrouver sur vos
+          autres appareils</td>
+      <td>Exécution du service</td></tr>
+
+  <tr><td><strong>Messages privés et messages de groupe, et leur contenu</strong></td>
+      <td>Faire fonctionner la messagerie</td><td>Exécution du service</td></tr>
+
+  <tr><td><strong>Appartenance à vos groupes</strong></td>
+      <td>Faire fonctionner les groupes d'entraînement</td><td>Exécution du service</td></tr>
+
+  <tr><td><strong>Vos conversations avec Moti, le coach IA</strong></td>
+      <td>Garder le fil de la discussion d'un appareil à l'autre</td>
+      <td>Exécution du service — effaçable par « Recommencer »</td></tr>
+
+  <tr><td><strong>Identifiant de notification de votre appareil</strong></td>
+      <td>Vous envoyer les notifications que vous avez activées</td>
+      <td>Consentement — réglable par type dans l'application</td></tr>
+
+  <tr><td><strong>Montre Garmin, si vous en appairez une</strong> : un jeton d'appairage
+      conservé haché, et les séances enregistrées depuis la montre</td>
+      <td>Faire communiquer la montre et le compte</td><td>Exécution du service</td></tr>
+
+  <tr><td>Sauvegarde du carnet (compressée)</td>
+      <td>Retrouver vos données sur un autre téléphone</td><td>Exécution du service</td></tr>
+
+  <tr><td>Abonnements, kudos, commentaires</td>
+      <td>Fonctionnement de la partie sociale</td><td>Exécution du service</td></tr>
+</table>
+</div>
+<p>Si vous vous connectez avec Google, Google nous transmet votre adresse e-mail et un
+identifiant de compte. Aucune autre donnée de votre compte Google n'est demandée.</p>
 
 <h2>4. Qui peut voir quoi</h2>
-<ul>
-  <li><strong>Vos séances partagées</strong> sont visibles des personnes qui
-  vous suivent, et d'elles seules.</li>
-  <li><strong>Le détail de vos séries</strong> n'est visible que si l'option
-  « Partager le détail de mes séances » est activée. En la désactivant, le
-  détail déjà envoyé est effacé du serveur à la synchronisation suivante.</li>
-  <li><strong>Votre sauvegarde de carnet</strong> n'est accessible à personne
-  d'autre que vous.</li>
-  <li><strong>Votre pseudo</strong> est visible de tout titulaire d'un compte,
-  puisqu'il sert à vous retrouver. Votre adresse e-mail ne l'est jamais.</li>
-</ul>
-<p>Ces règles sont appliquées par le serveur au moyen de politiques d'accès par
-ligne (<code>Row Level Security</code>), et non par l'application. Elles
-demeurent donc valables même si quelqu'un utilisait une version modifiée de
-l'application.</p>
+<div class="tableau-defilant">
+<table>
+  <tr><th>Donnée</th><th>Visible par</th></tr>
+
+  <tr><td>Votre pseudo, votre nom affiché</td>
+      <td>Tout titulaire d'un compte — c'est ce qui permet de vous retrouver</td></tr>
+
+  <tr><td>Votre photo de profil</td>
+      <td>Elle est stockée à une adresse publique : toute personne qui connaît cette
+          adresse peut l'ouvrir, même sans compte</td></tr>
+
+  <tr><td>Votre adresse e-mail</td><td>Personne d'autre que vous</td></tr>
+
+  <tr><td><strong>Votre poids</strong></td><td>Personne d'autre que vous</td></tr>
+
+  <tr><td>Vos séances partagées</td>
+      <td>Les personnes qui vous suivent <strong>et les membres de vos groupes</strong>.
+          Si vous activez « profil public » dans les réglages, elles deviennent visibles
+          de tout le monde, y compris de personnes sans compte</td></tr>
+
+  <tr><td>Le détail de vos séries</td>
+      <td>Les mêmes personnes, et seulement si l'option « Partager le détail de mes
+          séances » est activée. En la désactivant, le détail déjà envoyé est effacé du
+          serveur à la synchronisation suivante</td></tr>
+
+  <tr><td>Vos messages privés</td><td>Vous et votre destinataire</td></tr>
+
+  <tr><td>Vos messages de groupe</td>
+      <td>Les membres du groupe. Un groupe est privé : on n'y entre que par lien, QR code
+          ou code d'invitation</td></tr>
+
+  <tr><td>Vos conversations avec le coach IA</td><td>Personne d'autre que vous</td></tr>
+
+  <tr><td>Votre sauvegarde de carnet</td><td>Personne d'autre que vous</td></tr>
+</table>
+</div>
+<p>Ces règles sont appliquées par le serveur au moyen de politiques d'accès par ligne
+(<em>Row Level Security</em>), et non par l'application. Elles demeurent donc valables
+même si quelqu'un utilisait une version modifiée de l'application.</p>
 
 <h2>5. Hébergement et sous-traitants</h2>
-<p>Les données en ligne sont hébergées par <strong>Supabase</strong>, dans la
-région <strong>eu-west-3</strong>. Supabase agit en qualité de sous-traitant.</p>
-<p>Les fichiers de mise à jour de l'application sont distribués par GitHub, qui
-n'a accès à aucune donnée de compte.</p>
+<ul>
+  <li><strong>Supabase</strong> — héberge la base de données et les fichiers, dans la
+      région <code>eu-north-1</code> (Stockholm, Union européenne).</li>
+
+  <li><strong>Anthropic</strong> — fait fonctionner Moti, le coach IA, ainsi que le
+      générateur de programme. Lorsque vous écrivez à Moti, sont transmis : vos messages,
+      votre prénom ou pseudo, vos séances récentes, vos records saisis et votre programme
+      en cours. <strong>Ni votre adresse e-mail ni votre identifiant de compte ne sont
+      transmis.</strong> Ce traitement a lieu aux États-Unis. Si vous ne souhaitez pas que
+      ces données quittent l'Union européenne, n'utilisez pas le coach : le reste de
+      l'application fonctionne sans lui.</li>
+
+  <li><strong>Google (Firebase Cloud Messaging)</strong> — achemine les notifications vers
+      votre téléphone, et reçoit pour cela l'identifiant de votre appareil ainsi que le
+      texte de la notification. Désactiver les notifications dans l'application arrête ces
+      envois.</li>
+
+  <li><strong>GitHub</strong> — distribue les mises à jour de l'application et héberge ce
+      site ainsi que l'espace web. N'a accès à aucune donnée de compte.</li>
+</ul>
 <p>Aucune donnée n'est vendue, louée ni transmise à des fins publicitaires.</p>
 
 <h2>6. Durée de conservation</h2>
-<p>Vos données en ligne sont conservées tant que votre compte existe. Leur
-suppression entraîne l'effacement immédiat et définitif du profil, des
-abonnements, des séances partagées, des kudos, des commentaires et de la
-sauvegarde. Votre carnet local, lui, demeure sur votre téléphone.</p>
+<p>Vos données en ligne sont conservées tant que votre compte existe. Sa suppression
+efface immédiatement et définitivement : le profil et la photo de profil, les abonnements,
+les séances partagées, les kudos, les commentaires, les messages privés et de groupe que
+vous avez envoyés, les conversations avec le coach, le poids, les appairages de montre et
+la sauvegarde du carnet.</p>
+<p>Les messages que vous avez envoyés disparaissent également des conversations de leurs
+destinataires. Votre carnet local, lui, demeure sur votre téléphone.</p>
 
 <h2>7. Vos droits</h2>
 <ul>
-  <li><strong>Accès et portabilité</strong> — Profil › Exporter produit un
-  fichier lisible contenant l'intégralité de vos données.</li>
-  <li><strong>Rectification</strong> — le pseudo se modifie depuis le Profil.</li>
+  <li><strong>Accès et portabilité</strong> — Profil › Exporter produit un fichier lisible
+      contenant l'intégralité de vos données.</li>
+  <li><strong>Rectification</strong> — le pseudo, le nom affiché, la photo et le poids se
+      modifient depuis le Profil.</li>
   <li><strong>Effacement</strong> — Profil › Compte › Supprimer.</li>
-  <li><strong>Opposition et retrait du consentement</strong> — l'interrupteur de
-  partage du détail se désactive à tout moment.</li>
+  <li><strong>Opposition et retrait du consentement</strong> — l'interrupteur de partage du
+      détail et les réglages de notification se désactivent à tout moment.</li>
 </ul>
-<p>Vous pouvez également introduire une réclamation auprès de la CNIL
+<p>Pour toute demande, écrivez à
+<a href="mailto:admin.motio@gmail.com">admin.motio@gmail.com</a>. Vous pouvez également
+introduire une réclamation auprès de la CNIL
 (<a href="https://www.cnil.fr">cnil.fr</a>).</p>
 
 <h2>8. Sécurité</h2>
-<p>Les échanges avec le serveur sont chiffrés (HTTPS). Les mots de passe ne sont
-jamais stockés en clair. Les jetons de connexion sont conservés dans l'espace
-privé de l'application et exclus des sauvegardes automatiques d'Android.</p>
+<p>Les échanges avec le serveur sont chiffrés (HTTPS). Les mots de passe ne sont jamais
+stockés en clair. Les jetons de connexion sont conservés dans l'espace privé de
+l'application et exclus des sauvegardes automatiques d'Android. Le jeton d'appairage d'une
+montre n'est conservé que sous forme hachée.</p>
 
 <h2>9. Âge minimum</h2>
-<p>L'application n'est pas destinée aux personnes de moins de 15 ans. Aucun
-compte ne doit être créé en deçà de cet âge sans l'accord du titulaire de
-l'autorité parentale.</p>
+<p>L'application n'est pas destinée aux personnes de moins de 15 ans. Aucun compte ne doit
+être créé en deçà de cet âge sans l'accord du titulaire de l'autorité parentale.</p>
 
 <h2>10. Modifications</h2>
-<p>Cette politique peut évoluer avec l'application. La date de dernière mise à
-jour figure en haut de page ; les changements substantiels seront signalés dans
-les nouveautés de l'application.</p>
+<p>Cette politique peut évoluer avec l'application. La date de dernière mise à jour figure
+en haut de page ; les changements substantiels sont signalés dans les nouveautés de
+l'application.</p>
 
 </main>
 </body>

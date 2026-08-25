@@ -38,7 +38,7 @@
 
 import { h, render, loading, empty, failure, esc, toast } from '../ui.js';
 import { getWorkout, saveWorkout, finishSession, sessionsOf, conteneurLibre,
-         demarrerDirect, battementDirect, arreterDirect, getProfile } from '../api.js';
+         demarrerDirect, battementDirect, arreterDirect, getMyWeight } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { libelleRir, kg, dureeSeance, estime1RM, nouvelExercice,
          estPoidsDuCorps, pdcEffectif, fmtCharge } from '../model.js';
@@ -89,12 +89,12 @@ export async function vueLancerSeance(params) {
   render(loading('Préparation de la séance'));
   const moi = await currentUser();
 
-  /* Poids du corps (profiles.weight_kg) : sert de charge par défaut sur les
+  /* Poids du corps (private_metrics.weight_kg) : sert de charge par défaut sur les
      exercices « PDC » (tractions, dips, pompes…) — voir model.js. Best-effort :
      une panne réseau ici n'empêche pas de s'entraîner, ces exercices se
      saisissent juste comme des poids normaux pour cette séance. */
   let poidsCorps = 0;
-  try { poidsCorps = (await getProfile(moi.id))?.weight_kg || 0; } catch { /* pas grave */ }
+  try { poidsCorps = await getMyWeight(moi.id); } catch { /* pas grave */ }
 
   /* Entraînement libre (id réservé « libre ») : on part sans modèle et sans
      aucun exercice, on arrive directement sur l'écran d'échauffement et on

@@ -1,6 +1,6 @@
 {
-  "versionCode": 146,
-  "versionName": "2.43",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.43/motio.apk",
-  "notes": "Les groupes deviennent reellement prives : on y entre par lien, QR code ou code d'invitation. La recherche de groupe par nom disparait."
+  "versionCode": 147,
+  "versionName": "2.44",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.44/motio.apk",
+  "notes": "Ton poids quitte la fiche de profil pour un espace que toi seul peux lire. Ecran Confidentialite repris de fond en comble : coach IA, notifications, messages et groupes y figurent enfin."
 }

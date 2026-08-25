@@ -2,7 +2,7 @@ import { h, render, loading, empty, failure, esc, toast, dateCourte, dateBreve, 
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
          listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
-         kudosFor, commentCounts, setNotifPref, setWeight } from '../api.js';
+         kudosFor, commentCounts, setNotifPref, setWeight, getMyWeight } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -729,7 +729,8 @@ export async function vueProfilCompte() {
   const moi = await currentUser();
 
   let profil;
-  try { profil = await getProfile(moi.id); }
+  let poidsActuel = 0;
+  try { profil = await getProfile(moi.id); poidsActuel = await getMyWeight(moi.id); }
   catch (e) { return render(failure(e, "Le compte n'a pas pu être chargé")); }
 
   const el = h(`
@@ -753,7 +754,7 @@ export async function vueProfilCompte() {
 
         <label class="champ" style="margin-top:1rem"><span>Poids (kg)</span>
           <input type="number" inputmode="decimal" step="0.5" min="0" data-poids
-                 value="${profil.weight_kg ? esc(String(profil.weight_kg)) : ''}"></label>
+                 value="${poidsActuel ? esc(String(poidsActuel)) : ''}"></label>
         <p class="etat-mono">Sert de charge par défaut sur les exercices au poids du corps :
           tractions, dips, pompes. Pendant la séance la case affiche « PDC », et si tu te
           lestes tu ne saisis que le supplément. Sur les pompes, seuls 70 % de ce poids
@@ -808,7 +809,7 @@ export async function vueProfilCompte() {
   dessinerChips(el.querySelector('[data-niveaux]'), NIVEAUX, niveauActuel(), definirNiveau);
   dessinerChips(el.querySelector('[data-objectifs]'), OBJECTIFS, objectifActuel(), definirObjectif);
 
-  /* Poids (Profile.weightKg côté natif, désormais profiles.weight_kg) : un
+  /* Poids (Profile.weightKg côté natif, désormais private_metrics.weight_kg) : un
      seul compte, donc une seule valeur des deux côtés — la modifier ici vaut
      pour l'application. Enregistré à la perte de focus plutôt qu'à chaque
      frappe (évite une écriture par chiffre tapé). */

@@ -37,17 +37,29 @@ function unwrap({ data, error }) {
 
 export async function getProfile(userId) {
   return unwrap(await sb.from(T.profiles)
-    .select('id,username,display_name,avatar_url,is_public,weight_kg,' +
+    .select('id,username,display_name,avatar_url,is_public,' +
             'notify_friend_sessions,notify_kudos,notify_comments,notify_messages')
     .eq('id', userId).maybeSingle());
 }
 
-/** Poids du corps (profiles.weight_kg) : sert de charge par défaut sur les
- *  exercices « PDC » (Profile.weightKg côté natif, désormais synchronisé sur
- *  le compte — voir model.js: estPoidsDuCorps/pdcEffectif/fmtCharge). */
+/* Poids du corps : il vit dans `private_metrics` et non dans `profiles`, parce
+   que la politique de lecture des profils ouvre toutes les colonnes à tous les
+   comptes connectés (nécessaire au social) et que la RLS travaille à la ligne,
+   pas à la colonne — le poids y était donc lisible par n'importe qui. La seule
+   politique de private_metrics est « moi ».
+   Sert de charge par défaut sur les exercices « PDC » (voir model.js :
+   estPoidsDuCorps/pdcEffectif/fmtCharge). */
+export async function getMyWeight(userId) {
+  const row = unwrap(await sb.from('private_metrics')
+    .select('weight_kg').eq('user_id', userId).maybeSingle());
+  return row?.weight_kg || 0;
+}
+
 export async function setWeight(userId, kg) {
-  return unwrap(await sb.from(T.profiles)
-    .update({ weight_kg: kg }).eq('id', userId).select().single());
+  return unwrap(await sb.from('private_metrics')
+    .upsert({ user_id: userId, weight_kg: kg, updated_at: new Date().toISOString() },
+            { onConflict: 'user_id' })
+    .select().single());
 }
 
 /** Réglages de notification, un par type d'événement — mêmes colonnes que

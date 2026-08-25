@@ -22,7 +22,7 @@
    par le cache.
    ========================================================================== */
 
-const CACHE = 'motio-app-v48';
+const CACHE = 'motio-app-v49';
 
 const COQUILLE = [
   './',
