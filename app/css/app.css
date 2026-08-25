@@ -121,11 +121,17 @@
 
 *,*::before,*::after{box-sizing:border-box}
 
-html{overflow-x:hidden}
+/* overscroll-behavior + tap-highlight : sans ça, tirer vers le bas en haut
+   d'un écran déclenche le pull-to-refresh du navigateur (spinner, rechar-
+   gement) et chaque appui flashe en gris — deux réflexes de navigateur que
+   l'application n'a pas (Compose gère ses propres ripples). Les :active déjà
+   en place (.btn, .run-cellule, .pave-touche…) restent le retour au toucher. */
+html{overflow-x:hidden;overscroll-behavior-y:none}
 
 body{
   margin:0;
   overflow-x:hidden;
+  overscroll-behavior-y:none;
   background:var(--creme);
   color:var(--encre);
   font-family:var(--f-body);
@@ -133,6 +139,7 @@ body{
   line-height:1.62;
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
+  -webkit-tap-highlight-color:transparent;
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
 

@@ -7,10 +7,9 @@ export function vueConnexion() {
 
   const el = h(`
     <section class="page page-etroite">
-      <p class="eyebrow">Espace web</p>
       <h1 data-titre>Se connecter</h1>
-      <p class="lede">Le même compte que dans l'application. Le fil, les
-         abonnements et l'historique suivent.</p>
+      <p class="lede">Ton compte Motio. Le fil, les abonnements et
+         l'historique suivent.</p>
 
       <button class="btn btn-lg" data-google>Continuer avec Google</button>
 

@@ -146,7 +146,7 @@ export async function vueProfil(params) {
           <p class="bloc-titre">Application</p>
           <div class="menu-groupe">
             <a class="menu-ligne" href="#/profil/maj">
-              <span class="corps"><b>Mise à jour</b><span>Espace web — toujours à jour</span></span>
+              <span class="corps"><b>Mise à jour</b><span>À jour</span></span>
               <span class="chevron">›</span>
             </a>
             <a class="menu-ligne" href="#/profil/nouveautes">
@@ -961,23 +961,24 @@ export async function vueProfilCompte() {
   render(el);
 }
 
-/** Mise à jour (UpdatePage, TrainingScreens.kt) : le natif vérifie un
- *  version.json et propose d'installer un APK — sans objet ici, une PWA se
- *  met à jour toute seule (service worker, réseau d'abord). Le bouton force
- *  quand même une vérification, pour la même idée de contrôle immédiat. */
+/** Mise à jour (UpdatePage, TrainingScreens.kt) : la mise à jour se fait
+ *  toute seule ici (service worker, réseau d'abord), mais l'écran ne le dit
+ *  pas explicitement — le mécanisme diffère du natif (qui installe un APK),
+ *  l'expliquer révélerait quelle version tourne. Le bouton force quand même
+ *  une vérification, pour la même idée de contrôle immédiat. */
 export async function vueProfilMaj() {
+  let version = '';
+  try { version = (await fetch(`./version.txt?_=${Date.now()}`, { cache: 'no-store' }).then(r => r.text())).trim(); }
+  catch { /* pas grave, la carte affiche juste « À jour » sans numéro */ }
+
   const el = h(`
     <section class="page page-etroite">
       ${enTete('Mise à jour')}
 
       <div class="tonnage-carte" style="margin-top:1.5rem">
-        <span>Espace web</span>
-        <b style="color:var(--accent)">Toujours à jour</b>
+        <span>${version ? `Version ${esc(version)}` : 'Motio'}</span>
+        <b style="color:var(--accent)">À jour</b>
       </div>
-      <p class="etat-mono" style="margin-top:.8rem">
-        Contrairement à l'application Android, cet espace web n'a pas de version à installer :
-        chaque page rechargée avec une connexion récupère automatiquement la dernière mise à jour.
-      </p>
 
       <button class="btn" data-verifier type="button" style="width:100%;margin-top:1rem">Vérifier maintenant</button>
       <p class="etat-mono" data-msg style="margin-top:.6rem"></p>

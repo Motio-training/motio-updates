@@ -1,7 +1,7 @@
 {
-  "name": "Motio — Espace web",
+  "name": "Motio",
   "short_name": "Motio",
-  "description": "Chrono, séances et coach IA, dans le navigateur.",
+  "description": "Chrono, séances et coach IA.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
