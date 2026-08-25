@@ -868,7 +868,7 @@ a.ligne-titre:hover{color:var(--accent)}
   background:none;border:none;cursor:pointer;color:var(--encre-2);
   font-family:var(--f-body);font-size:.72rem;padding:.2rem;
 }
-.menu-action-icone span:first-child{font-size:1.3rem;line-height:1}
+.menu-action-icone svg{width:24px;height:24px;fill:currentColor}
 .menu-action-icone:hover{color:var(--encre)}
 .menu-action-icone.on{color:var(--dore)}
 .menu-action-demarrer{width:100%;margin-top:.15rem}

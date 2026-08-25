@@ -69,6 +69,9 @@ const ICONE_HALTERE = '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>';
 /** Punaise d'épinglage — même tracé que ic_pin.xml (drawable natif). */
 const ICONE_PIN = '<svg class="pin" viewBox="0 0 24 24" aria-hidden="true">' +
   '<path d="M16,3L16,5L15,5L15,10.5L17.5,13L17.5,15L12.9,15L12.9,21L11.1,21L11.1,15L6.5,15L6.5,13L9,10.5L9,5L8,5L8,3z"/></svg>';
+/** Trois points reliés — même tracé que ic_share.xml (drawable natif). */
+const ICONE_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8C19.66,8 21,6.66 21,5C21,3.34 19.66,2 18,2C16.34,2 15,3.34 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9C4.34,9 3,10.34 3,12C3,13.66 4.34,15 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.35C15.11,18.56 15.08,18.78 15.08,19C15.08,20.61 16.39,21.92 18,21.92C19.61,21.92 20.92,20.61 20.92,19C20.92,17.39 19.61,16.08 18,16.08z"/></svg>';
 
 /** Liste des séances. `toutes` = écran secondaire « Toutes mes séances » ;
  *  l'écran principal, lui, ne montre que les séances épinglées et celles qui
@@ -314,10 +317,10 @@ export async function vueSeances(_params, toutes = false) {
 
           <div class="menu-action-icones">
             <button class="menu-action-icone ${w.pinned ? 'on' : ''}" data-pin type="button">
-              <span>📌</span><span>${w.pinned ? 'Détacher' : 'Épingler'}</span>
+              ${ICONE_PIN}<span>${w.pinned ? 'Détacher' : 'Épingler'}</span>
             </button>
             <button class="menu-action-icone" data-partager type="button">
-              <span>📤</span><span>Partager</span>
+              ${ICONE_SHARE}<span>Partager</span>
             </button>
           </div>
 
