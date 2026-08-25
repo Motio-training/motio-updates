@@ -29,7 +29,7 @@ export function nouvelExercice(nom = '') {
     mode: 'MINUTEUR',
     plannedSets: 4,
     targetReps: 0,
-    recupSec: 90,
+    recupSec: 60,        // 1:00 par défaut (Exercise, WorkoutModel.kt)
     workSec: 20,
     restSec: 10,
     tabataSeries: 8,
@@ -186,13 +186,13 @@ function trimNum(v) {
   return String(r);
 }
 
-/** fmtCharge (TrainingScreens.kt) : « PDC », « PDC +10 », ou le poids brut
- *  quand l'exercice n'est pas au poids du corps (ou qu'on s'est allégé). */
+/** fmtCharge (TrainingScreens.kt) : « PDC », « PDC +10 », « PDC −10 » quand on
+ *  s'est délesté, ou le poids brut hors mouvement au poids du corps. */
 export function fmtCharge(nomExercice, poidsCorpsKg, w) {
   if (!estPoidsDuCorps(nomExercice, poidsCorpsKg)) return w === 0 || w == null ? '—' : `${trimNum(w)} kg`;
   const pdc = pdcEffectif(nomExercice, poidsCorpsKg);
   const sup = w - pdc;
   if (sup > 0.05) return `PDC +${trimNum(sup)}`;
-  if (sup < -0.05) return `${trimNum(w)} kg`;
+  if (sup < -0.05) return `PDC −${trimNum(-sup)}`;
   return 'PDC';
 }

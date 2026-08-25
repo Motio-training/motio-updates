@@ -531,6 +531,9 @@ export async function vueLancerSeance(params) {
     corps.querySelector('[data-poids]').onclick = () => {
       ouvrirPave({
         kind: 'poids',
+        // Au poids du corps, ce supplément peut aussi être NÉGATIF : élastique,
+        // poulie d'assistance, pieds posés. D'où la touche « ± » du pavé.
+        negatif: estPoidsDuCorps(ex.name, poidsCorps),
         onValider: (v) => {
           if (!v) return;
           const n = parseFloat(v.replace(',', '.'));
@@ -680,6 +683,7 @@ export async function vueLancerSeance(params) {
       ouvert = false; poser(0);
       ouvrirPave({
         kind: 'poids',
+        negatif: estPoidsDuCorps(nomEx, poidsCorps),
         onValider: (v) => {
           if (v) {
             const n = parseFloat(v.replace(',', '.'));

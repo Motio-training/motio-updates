@@ -13,6 +13,7 @@ import { ouvrirBilan } from '../bilan.js';
 import { niveauActuel } from '../reglages.js';
 import { etatBrut as seanceEnCours, effacerEtat as oublierSeanceEnCours } from '../run-state.js';
 import { genererProgrammeIA, genererSeanceIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
+import { ouvrirPaveDuree } from '../numpad.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
 
@@ -98,9 +99,12 @@ export async function vueSeances(_params, toutes = false) {
 
   const el = h(`
     <section class="page">
+      <!-- Plus de bouton « Catégories » ici : depuis la disparition des
+           onglets de catégorie sur cet écran il ne servait plus à rien. Il vit
+           maintenant là où l'on choisit une catégorie, dans l'écran de
+           création/édition de séance (vueSeanceEdition). -->
       <div class="rangee-titre" style="margin-bottom:1rem">
         <h1 style="margin:0">${toutes ? 'TOUTES MES SÉANCES' : 'ENTRAÎNEMENT'}</h1>
-        ${toutes ? '' : '<button class="lien-inline" data-categories type="button">✎ Catégories</button>'}
       </div>
 
       ${toutes ? '<a class="lien-inline" href="#/seances" style="display:inline-block;margin-bottom:1rem">‹ Retour à Entraînement</a>' : `
@@ -155,8 +159,6 @@ export async function vueSeances(_params, toutes = false) {
      a ce bouton juste à côté de « Programme », signalé par Nicolas. */
   /* Le bouton « Générer une séance » vit maintenant dans le pied de liste,
      reconstruit à chaque dessin : son écouteur est branché là-bas. */
-
-  el.querySelector('[data-categories]')?.addEventListener('click', () => ouvrirCategories(moi, () => vueSeances()));
 
   function ouvrirGenerationSeanceIA() {
     let goalText = '', niveau = niveauActuel(), gears = [];
@@ -661,7 +663,7 @@ export async function vueSeanceEdition(params) {
   /* Les catégories du compte, plus celles déjà portées par des séances
      existantes (une séance importée peut en avoir une qui n'est pas déclarée —
      on ne la fait pas disparaître du sélecteur). */
-  const cats = [...new Set([...catsCompte, ...autres.map(w => w.category).filter(Boolean)])];
+  let cats = [...new Set([...catsCompte, ...autres.map(w => w.category).filter(Boolean)])];
   const sections = [...new Set(autres.map(w => (w.data || {}).section).filter(Boolean))];
 
   const el = h(`
@@ -671,7 +673,10 @@ export async function vueSeanceEdition(params) {
       <label class="champ"><span>Nom</span>
         <input type="text" data-nom maxlength="60" placeholder="Push A" value="${esc(seance.name || '')}"></label>
 
-      <p class="champ-label">Catégorie</p>
+      <div class="rangee-titre" style="margin-bottom:.3rem">
+        <p class="champ-label" style="margin:0">Catégorie</p>
+        <button class="lien-inline" data-categories type="button">✎ Catégories</button>
+      </div>
       <div class="rangee rangee-serree" data-cats style="margin-bottom:1rem"></div>
 
       <p class="champ-label">Bloc d'entraînement</p>
@@ -700,6 +705,7 @@ export async function vueSeanceEdition(params) {
     </section>`);
 
   let newSection = false;
+  let deplie = -1;                 // index de l'exercice dont les réglages sont ouverts
   const zoneCats = el.querySelector('[data-cats]');
   const zoneSections = el.querySelector('[data-sections]');
   const champSection = el.querySelector('[data-champ-section]');
@@ -734,6 +740,21 @@ export async function vueSeanceEdition(params) {
     if (newSection) inputSection.value = seance.section;
   }
   inputSection.addEventListener('input', () => { seance.section = inputSection.value; });
+
+  /* Gestion des catégories : elle a migré de l'accueil vers ici, à côté des
+     puces — c'est le seul endroit où l'on en choisit une. À la fermeture on
+     relit la liste du compte, et si la catégorie retenue vient d'être
+     supprimée ou renommée on retombe sur la première. */
+  el.querySelector('[data-categories]').addEventListener('click', () => {
+    ouvrirCategories(moi, async () => {
+      let fraiches = [];
+      try { fraiches = await getCategories(moi.id); } catch { return; }
+      cats = [...new Set([...fraiches, ...autres.map(w => w.category).filter(Boolean)])];
+      if (cats.length && !cats.includes(seance.category)) seance.category = cats[0];
+      dessinerCats();
+    });
+  });
+
   dessinerCats();
   dessinerSections();
 
@@ -799,6 +820,21 @@ export async function vueSeanceEdition(params) {
     return b;
   }
 
+  /** Champ de durée : affiche « 1:30 » et ouvre le pavé minutes/secondes.
+   *  Remplace les <input type="number"> en secondes brutes — on ne saisit
+   *  plus « 90 » pour une minute et demie. */
+  function champDuree(label, valeurSec, min, max, onChange) {
+    const champ = h(`
+      <div class="champ champ-mini">
+        <span>${esc(label)}</span>
+        <button type="button" class="champ-duree" data-duree>${fmtRecup(valeurSec)}</button>
+      </div>`);
+    champ.querySelector('[data-duree]').onclick = () => ouvrirPaveDuree({
+      titre: label.toUpperCase(), valeurSec, min, max, onValider: onChange
+    });
+    return champ;
+  }
+
   function carteExercice(ex, i) {
     const [a, b] = etendueBloc(seance.exercises, i);
     const etiquette = libelleBloc(b - a + 1);
@@ -818,7 +854,9 @@ export async function vueSeanceEdition(params) {
       </div>`);
 
     const champs = c.querySelector('[data-champs]');
-    champs.hidden = true;
+    // Le panneau replié se rouvrait à chaque redessin, donc à chaque réglage
+    // touché : on garde en mémoire l'exercice déplié.
+    champs.hidden = deplie !== i;
     const tabata = ex.mode === 'TABATA';
     const emom = ex.mode === 'EMOM';
     const minuteur = ex.mode === 'MINUTEUR';
@@ -829,21 +867,26 @@ export async function vueSeanceEdition(params) {
       champs.appendChild(h(`<label class="champ champ-mini"><span>Séries</span><input type="number" min="1" max="20" data-series value="${ex.plannedSets}"></label>`));
       champs.appendChild(h(`<label class="champ champ-mini"><span>Répétitions</span><input type="number" min="0" max="100" data-reps value="${ex.targetReps}"></label>`));
     }
-    if (minuteur) champs.appendChild(h(`<label class="champ champ-mini"><span>Récup (s)</span><input type="number" min="0" max="600" step="15" data-recup value="${ex.recupSec}"></label>`));
+    /* Les DURÉES ne se tapent plus au clavier système en secondes brutes :
+       elles s'affichent en min:sec et s'ouvrent au pavé minutes/secondes,
+       comme dans l'application (TimeField, TimePad.kt). */
+    if (minuteur) champs.appendChild(champDuree('Récupération', ex.recupSec, 5, 600, (v) => { ex.recupSec = v; redessiner(); }));
     if (tabata) {
-      champs.appendChild(h(`<label class="champ champ-mini"><span>Travail (s)</span><input type="number" min="5" max="300" data-work value="${ex.workSec}"></label>`));
-      champs.appendChild(h(`<label class="champ champ-mini"><span>Repos (s)</span><input type="number" min="0" max="300" data-rest value="${ex.restSec}"></label>`));
+      champs.appendChild(champDuree('Travail', ex.workSec, 5, 600, (v) => { ex.workSec = v; redessiner(); }));
+      champs.appendChild(champDuree('Repos', ex.restSec, 0, 600, (v) => { ex.restSec = v; redessiner(); }));
       champs.appendChild(h(`<label class="champ champ-mini"><span>Blocs</span><input type="number" min="1" max="30" data-blocs value="${ex.tabataSeries}"></label>`));
     }
     /* EMOM : un seul réglage propre, l'intervalle. Le nombre de tours, c'est
        le champ « Séries » ci-dessus — inutile d'en demander un second qui
        dirait la même chose. */
     if (emom) {
-      champs.appendChild(h(`<label class="champ champ-mini"><span>Intervalle (s)</span><input type="number" min="5" max="600" step="5" data-work value="${ex.workSec}"></label>`));
+      champs.appendChild(champDuree('Intervalle', ex.workSec, 5, 600, (v) => { ex.workSec = v; redessiner(); }));
     }
 
+    c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
     c.querySelector('[data-deplier]').onclick = (e) => {
       champs.hidden = !champs.hidden;
+      deplie = champs.hidden ? -1 : i;
       e.target.textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
     };
 
@@ -855,8 +898,8 @@ export async function vueSeanceEdition(params) {
       });
     };
     c.querySelector('[data-mode]').addEventListener('change', (e) => { ex.mode = e.target.value; redessiner(); });
-    lie('[data-series]', 'plannedSets'); lie('[data-reps]', 'targetReps'); lie('[data-recup]', 'recupSec');
-    lie('[data-work]', 'workSec'); lie('[data-rest]', 'restSec'); lie('[data-blocs]', 'tabataSeries');
+    lie('[data-series]', 'plannedSets'); lie('[data-reps]', 'targetReps');
+    lie('[data-blocs]', 'tabataSeries');
 
     c.querySelector('.exo-edit-suppr').onclick = () => { seance.exercises.splice(i, 1); redessiner(); };
     const poignee = c.querySelector('.exo-edit-poignee');

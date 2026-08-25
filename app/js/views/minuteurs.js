@@ -8,7 +8,7 @@
 import { h, render } from '../ui.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
-import { ouvrirPave } from '../numpad.js';
+import { ouvrirPaveDuree } from '../numpad.js';
 
 const MODES = [['CHRONO', 'Chrono'], ['MINUTEUR', 'Minuteur'], ['TABATA', 'Tabata'], ['EMOM', 'EMOM']];
 const PRESETS_MINUTEUR_1 = [30, 60, 90, 120];
@@ -82,22 +82,33 @@ export function vueMinuteurs() {
   /** NumberRow (MainActivity.kt) : label + − + valeur + + — même stepper pour
    *  les trois champs de Tabata, portage exact (pas de « Blocs » : « Séries »
    *  comme le natif, pas 5, mais 1). */
-  function stepper(label, valeur, onChange, { pas = 5, min = 0, max = 999, unite = '' } = {}) {
+  /* `duree` : la valeur s'affiche en min:sec et se TOUCHE pour ouvrir le pavé
+     minutes/secondes (numpad.js), comme partout ailleurs dans l'application.
+     Les boutons − / + restent là pour les retouches de 5 s. */
+  function stepper(label, valeur, onChange, { pas = 5, min = 0, max = 999, unite = '', duree = false } = {}) {
+    const texte = (v) => (duree ? fmtSec(v) : `${v}${unite}`);
     const rangee = h(`
       <div class="minuteur-stepper">
         <span class="minuteur-stepper-label">${label}</span>
         <button type="button" class="minuteur-stepper-bouton" data-moins aria-label="Diminuer">−</button>
-        <span class="minuteur-stepper-valeur" data-valeur>${valeur}${unite}</span>
+        <span class="minuteur-stepper-valeur" data-valeur>${texte(valeur)}</span>
         <button type="button" class="minuteur-stepper-bouton" data-plus aria-label="Augmenter">+</button>
       </div>`);
     const affiche = rangee.querySelector('[data-valeur]');
     function appliquer(v) {
       valeur = Math.min(max, Math.max(min, v));
-      affiche.textContent = `${valeur}${unite}`;
+      affiche.textContent = texte(valeur);
       onChange(valeur);
     }
     rangee.querySelector('[data-moins]').onclick = () => appliquer(valeur - pas);
     rangee.querySelector('[data-plus]').onclick = () => appliquer(valeur + pas);
+    if (duree) {
+      affiche.classList.add('minuteur-stepper-valeur-clic');
+      affiche.onclick = () => ouvrirPaveDuree({
+        titre: label.toUpperCase(), valeurSec: valeur, min, max,
+        onValider: (sec) => appliquer(sec)
+      });
+    }
     return rangee;
   }
 
@@ -127,12 +138,9 @@ export function vueMinuteurs() {
           chips2.appendChild(b);
         });
         const autre = h(`<button class="chip-cat ${[...PRESETS_MINUTEUR_1, ...PRESETS_MINUTEUR_2].includes(recupSec) ? '' : 'on'}" type="button">Autre…</button>`);
-        autre.onclick = () => ouvrirPave({
-          kind: 'secondes',
-          onValider: (v) => {
-            const n = parseInt(v, 10);
-            if (Number.isInteger(n) && n >= 5) { recupSec = Math.min(3600, n); dessinerChips(); }
-          }
+        autre.onclick = () => ouvrirPaveDuree({
+          titre: 'DURÉE DU MINUTEUR', valeurSec: recupSec, min: 5, max: 3600,
+          onValider: (sec) => { recupSec = sec; dessinerChips(); }
         });
         chips2.appendChild(autre);
       }
@@ -146,8 +154,8 @@ export function vueMinuteurs() {
     } else if (mode === 'TABATA') {
       const col = h('<div style="display:flex;flex-direction:column;gap:.5rem"></div>');
       col.append(
-        stepper('Travail', workSec, (v) => { workSec = v; }, { pas: 5, min: 5, max: 600, unite: 's' }),
-        stepper('Repos', restSec, (v) => { restSec = v; }, { pas: 5, min: 0, max: 600, unite: 's' }),
+        stepper('Travail', workSec, (v) => { workSec = v; }, { pas: 5, min: 5, max: 600, duree: true }),
+        stepper('Repos', restSec, (v) => { restSec = v; }, { pas: 5, min: 0, max: 600, duree: true }),
         stepper('Séries', series, (v) => { series = v; }, { pas: 1, min: 1, max: 50, unite: '' })
       );
       zoneReglages.appendChild(col);
@@ -157,7 +165,7 @@ export function vueMinuteurs() {
          à régler pour elle. */
       const col = h('<div style="display:flex;flex-direction:column;gap:.5rem"></div>');
       col.append(
-        stepper('Intervalle', emomSec, (v) => { emomSec = v; }, { pas: 5, min: 10, max: 600, unite: 's' }),
+        stepper('Intervalle', emomSec, (v) => { emomSec = v; }, { pas: 5, min: 10, max: 600, duree: true }),
         stepper('Tours', emomTours, (v) => { emomTours = v; }, { pas: 1, min: 1, max: 60, unite: '' })
       );
       zoneReglages.appendChild(col);
