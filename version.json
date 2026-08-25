@@ -1,6 +1,6 @@
 {
-  "versionCode": 147,
-  "versionName": "2.44",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.44/motio.apk",
-  "notes": "Ton poids quitte la fiche de profil pour un espace que toi seul peux lire. Ecran Confidentialite repris de fond en comble : coach IA, notifications, messages et groupes y figurent enfin."
+  "versionCode": 148,
+  "versionName": "2.45",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.45/motio.apk",
+  "notes": "Moti et la generation de programme deviennent des fonctionnalites de l'abonnement Motio. Ton acces est conserve, sans limite de duree."
 }

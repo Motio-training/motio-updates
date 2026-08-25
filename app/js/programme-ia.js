@@ -165,7 +165,7 @@ export async function genererProgrammeIA({ goalText, level, daysPerWeek, weeks, 
       gears, catalog
     }
   });
-  if (error) throw error;
+  if (error) throw await motifLisible(error);
   if (!data) throw new Error('Réponse vide du générateur.');
 
   let draft;
@@ -198,4 +198,18 @@ export async function genererSeanceIA({ goalText, level, gears }) {
   const workout = draft.workouts[0];
   if (!workout) throw new Error('Aucune séance reçue.');
   return { workout, notes };
+}
+
+/**
+ * supabase-js masque le corps des réponses non-2xx d'une fonction Edge : sans
+ * cela l'utilisateur lit « Edge Function returned a non-2xx status code » au
+ * lieu du motif réel — « réservé aux abonnés », par exemple. On rouvre la
+ * réponse pour en extraire le message.
+ */
+export async function motifLisible(error) {
+  try {
+    const corps = await error?.context?.json?.();
+    if (corps?.error) return new Error(corps.error);
+  } catch { /* corps illisible : on garde le message d'origine */ }
+  return error instanceof Error ? error : new Error(String(error));
 }

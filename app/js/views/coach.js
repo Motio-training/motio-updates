@@ -17,8 +17,9 @@
 
 import { h, render, esc, toast } from '../ui.js';
 import { sb, currentUser } from '../supabase.js';
-import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread } from '../api.js';
+import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
 import { nouvelleSeance, MODE_LABELS } from '../model.js';
+import { motifLisible } from '../programme-ia.js';
 import { saveWorkout } from '../api.js';
 import { tousOneRmManuels } from '../reglages.js';
 
@@ -82,6 +83,12 @@ export async function vueCoach() {
   catch (err) { toast(err.message || "L'historique n'a pas pu être chargé."); }
   let envoi = false;
 
+  /* Abonnement : le coach fait partie des fonctionnalites payantes. Le refus
+     reel vient de la fonction Edge (403 abonnement_requis) ; ici on remplace
+     simplement la zone de saisie par l'explication, pour ne pas laisser
+     ecrire un message qui repartirait en erreur. */
+  const abonne = await aAccesIA(moi.id);
+
   /* CoachScreen.kt ~112-129 : flèche retour, avatar Moti, « MOTI »/« Ton
      coach IA », et « Recommencer » à droite (seulement s'il y a des
      messages) — tout sur une seule ligne, pas le triptyque eyebrow/h1/lede
@@ -100,10 +107,19 @@ export async function vueCoach() {
 
       <ul class="coach-fil" data-fil></ul>
 
+      ${abonne ? `
       <form class="coach-saisie" data-form>
         <input type="text" data-texte placeholder="Écris à ton coach…" autocomplete="off" maxlength="1000">
         <button class="btn" type="submit">↑</button>
-      </form>
+      </form>` : `
+      <div class="coach-abonnement">
+        <b>Moti est réservé aux abonnés</b>
+        <p>Ton coach personnel répond à partir de tes vraies séances, de tes records
+        et de ton programme. Il fait partie de l'abonnement Motio, avec la génération
+        de programme.</p>
+        <p class="etat-mono">L'abonnement arrive bientôt. En attendant, écris à
+        admin.motio@gmail.com si tu veux y accéder.</p>
+      </div>`}
     </section>`);
 
   const fil = el.querySelector('[data-fil]');
@@ -208,7 +224,8 @@ export async function vueCoach() {
     document.body.appendChild(modale);
   };
 
-  form.onsubmit = async (e) => {
+  /* Sans abonnement, le formulaire n'est pas rendu : rien a brancher. */
+  if (form) form.onsubmit = async (e) => {
     e.preventDefault();
     const texte = champ.value.trim();
     if (!texte || envoi) return;
@@ -242,7 +259,7 @@ export async function vueCoach() {
       const { data, error } = await sb.functions.invoke('coach-chat', {
         body: { messages: history, context: contexte }
       });
-      if (error) throw error;
+      if (error) throw await motifLisible(error);
       if (!data?.reply) throw new Error('Réponse vide du coach.');
 
       const messageCoach = {

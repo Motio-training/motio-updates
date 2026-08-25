@@ -776,3 +776,29 @@ export async function coachSendMessage(moiId, { id, role, body, workoutData = nu
 export async function coachClearThread(moiId) {
   return unwrap(await sb.from(T.coachMessages).delete().eq('user_id', moiId).select());
 }
+
+/* ------------------------------------------------- abonnement (coach IA) */
+
+/**
+ * Droit d'accès aux fonctionnalités IA (coach Moti, génération de programme).
+ *
+ * La décision appartient au SERVEUR : les fonctions Edge `coach-chat` et
+ * `generate-program` lisent `ai_access` avant d'appeler le modèle et
+ * répondent 403 `abonnement_requis` si le droit manque. Cette lecture ne sert
+ * qu'à l'interface — proposer l'abonnement plutôt que de laisser l'utilisateur
+ * écrire un message pour se prendre une erreur. La contourner ne débloque rien.
+ *
+ * Pas de ligne = pas d'accès : c'est le cas d'un compte créé après le passage
+ * à l'abonnement et qui n'a pas encore souscrit.
+ */
+export async function aAccesIA(userId) {
+  const ACTIFS = ['offert', 'essai', 'actif'];
+  try {
+    const row = unwrap(await sb.from('ai_access')
+      .select('status,expires_at').eq('user_id', userId).maybeSingle());
+    if (!row || !ACTIFS.includes(row.status)) return false;
+    return !row.expires_at || new Date(row.expires_at).getTime() > Date.now();
+  } catch {
+    return false;
+  }
+}
