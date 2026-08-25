@@ -1379,7 +1379,23 @@ body:not(.connecte) #vue:has(.onb){
 }
 .coach-ligne.mine .coach-bulle{background:var(--accent);border-color:var(--accent);color:var(--accent-sur)}
 .coach-bulle p{margin:0;font-size:.94rem;line-height:1.5}
-.coach-attente{font-family:var(--f-mono);color:var(--encre-2);padding:.6rem 1rem}
+/* « Moti est en train d'écrire » : trois points qui rebondissent, à la place
+   de la roue/des points statiques d'avant (CoachTypingBubble, CoachScreen.kt).
+   L'état de base des points est l'état plein, pour qu'ils restent lisibles
+   quand prefers-reduced-motion coupe l'animation. */
+.coach-attente{display:flex;align-items:center;gap:.45rem;padding:.6rem 1rem}
+.coach-attente>span:first-child{font-family:var(--f-mono);color:var(--encre-2);font-size:.82rem}
+.coach-points{display:inline-flex;align-items:center;gap:.22rem}
+.coach-points i{
+  width:5px;height:5px;border-radius:50%;background:var(--encre-2);
+  animation:coach-point 1.05s ease-in-out infinite;
+}
+.coach-points i:nth-child(2){animation-delay:.35s}
+.coach-points i:nth-child(3){animation-delay:.7s}
+@keyframes coach-point{
+  0%,55%,100%{transform:translateY(0);opacity:.35}
+  27%{transform:translateY(-3px);opacity:1}
+}
 
 /* Réactions emoji (Social.kt::REACTION_EMOJIS, appui long sur la bulle). */
 .reac-rangee{display:flex;gap:.3rem;margin:.3rem 0 0;flex-wrap:wrap}

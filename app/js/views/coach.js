@@ -218,7 +218,16 @@ export async function vueCoach() {
     messages = [...messages, messageUtilisateur];
     redessiner();
 
-    const attente = h(`<li class="coach-ligne"><div class="coach-bulle coach-attente">…</div></li>`);
+    /* Attente de la réponse : « Moti est en train d'écrire » + trois points
+       animés, plutôt qu'un simple « … » (CoachTypingBubble, CoachScreen.kt). */
+    const attente = h(`
+      <li class="coach-ligne">
+        <img class="coach-bulle-avatar" src="../assets/img/moti_avatar.jpg" alt="">
+        <div class="coach-bulle coach-attente" aria-live="polite">
+          <span>Moti est en train d'écrire</span>
+          <span class="coach-points" aria-hidden="true"><i></i><i></i><i></i></span>
+        </div>
+      </li>`);
     fil.appendChild(attente); fil.scrollTop = fil.scrollHeight;
 
     try {

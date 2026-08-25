@@ -1,6 +1,6 @@
 {
-  "versionCode": 144,
-  "versionName": "2.41",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.41/motio.apk",
-  "notes": "Nouveau pave de duree : les minutes et les secondes se reglent separement, tu touches le 1 ou le 00 puis tu tapes. Recuperation par defaut ramenee a 1:00. La recherche d'exercice ignore les accents (deve sort Developpe couche). Au poids du corps, la charge peut desormais etre negative pour noter un delestage."
+  "versionCode": 145,
+  "versionName": "2.42",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.42/motio.apk",
+  "notes": "Coach IA : plus de roue de chargement pendant qu'il reflechit. Moti est en train d'ecrire s'affiche avec trois points animes."
 }
