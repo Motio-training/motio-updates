@@ -535,15 +535,6 @@ export async function groupsMine(moiId) {
   return groupes.map(g => ({ ...g, memberCount: counts[g.id] || 0, mine: g.owner_id === moiId }));
 }
 
-export async function groupsSearch(nom) {
-  const q = nom.trim();
-  if (q.length < 2) return [];
-  const rows = unwrap(await sb.from(T.groups)
-    .select('id,name,description,banner_url,invite_code')
-    .ilike('name', `%${q}%`).limit(20));
-  const counts = await memberCounts(rows.map(r => r.id));
-  return rows.map(r => ({ ...r, memberCount: counts[r.id] || 0 }));
-}
 
 export async function groupCreate(name, description) {
   return unwrap(await sb.rpc('create_group', { p_name: name.trim(), p_description: description.trim() }));

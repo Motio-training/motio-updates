@@ -12,7 +12,7 @@
 import { h, render, loading, empty, failure, esc, toast, socialHeader } from '../ui.js';
 import { currentUser } from '../supabase.js';
 import {
-  groupsMine, groupsSearch, groupCreate, groupJoin, groupLeave, groupDelete,
+  groupsMine, groupCreate, groupJoin, groupLeave, groupDelete,
   groupPreviewByCode, groupMembersList, groupRemoveMember, groupUpdateInfo, groupRegenerateCode,
   groupFeed, groupStandings, groupMessageThread, groupSendText, groupSendWorkout,
   listWorkouts, unreadMessagesCount, kudosFor, commentCounts, following
@@ -57,10 +57,6 @@ export async function vueGroupes() {
         <button class="btn btn-ghost" data-rejoindre type="button">OK</button>
         <button class="btn btn-ghost" data-scanner type="button" hidden>📷 Scanner un QR code</button>
       </div>
-
-      <label class="champ"><span>Ou rechercher un groupe par nom</span>
-        <input type="search" data-q placeholder="deux lettres minimum"></label>
-      <ul class="liste" data-resultats></ul>
 
       <div class="bloc" data-liste-groupes></div>
     </section>`);
@@ -132,45 +128,6 @@ export async function vueGroupes() {
     btnScanner.hidden = false;
     btnScanner.onclick = () => ouvrirScanQR(rejoindreParCode);
   }
-
-  const res = el.querySelector('[data-resultats]');
-  let t;
-  el.querySelector('[data-q]').addEventListener('input', (e) => {
-    clearTimeout(t);
-    const terme = e.target.value;
-    t = setTimeout(async () => {
-      res.replaceChildren();
-      if (terme.trim().length < 2) return;
-      try {
-        const trouves = await groupsSearch(terme);
-        if (!trouves.length) {
-          res.appendChild(h('<li class="ligne"><p class="etat-mono">Aucun résultat.</p></li>'));
-          return;
-        }
-        for (const g of trouves) {
-          const avatar = g.banner_url
-            ? `<img class="groupe-carte-avatar groupe-carte-avatar-sm" src="${esc(g.banner_url)}" alt="">`
-            : `<span class="groupe-carte-avatar groupe-carte-avatar-sm">${esc((g.name.trim()[0] || '•').toUpperCase())}</span>`;
-          const li = h(`<li class="ligne ligne-action" style="display:flex;align-items:center;gap:.6rem">
-            ${avatar}
-            <span style="flex:1;min-width:0">
-              <span class="ligne-titre" style="display:block">${esc(g.name)}</span>
-              <span class="ligne-meta">${g.memberCount} membre${g.memberCount > 1 ? 's' : ''}</span>
-            </span>
-            <button class="btn btn-sm" type="button">Rejoindre</button></li>`);
-          li.querySelector('button').onclick = async (ev) => {
-            ev.target.disabled = true;
-            try {
-              const joined = await groupJoin(g.invite_code);
-              toast(`Tu as rejoint ${joined.name}.`);
-              location.hash = `#/groupes/${joined.id}`;
-            } catch (err) { toast(err.message); ev.target.disabled = false; }
-          };
-          res.appendChild(li);
-        }
-      } catch (err) { toast(err.message); }
-    }, 300);
-  });
 
   render(el);
 }

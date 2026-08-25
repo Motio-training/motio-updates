@@ -1,6 +1,6 @@
 {
-  "versionCode": 145,
-  "versionName": "2.42",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.42/motio.apk",
-  "notes": "Coach IA : plus de roue de chargement pendant qu'il reflechit. Moti est en train d'ecrire s'affiche avec trois points animes."
+  "versionCode": 146,
+  "versionName": "2.43",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.43/motio.apk",
+  "notes": "Les groupes deviennent reellement prives : on y entre par lien, QR code ou code d'invitation. La recherche de groupe par nom disparait."
 }
