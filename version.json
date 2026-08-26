@@ -1,6 +1,6 @@
 {
-  "versionCode": 149,
-  "versionName": "2.46",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.46/motio.apk",
-  "notes": "Conditions d'utilisation et mentions legales, accessibles depuis Profil puis Confidentialite. L'envoi d'image de groupe fonctionne de nouveau."
+  "versionCode": 150,
+  "versionName": "2.47",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.47/motio.apk",
+  "notes": "Connexion Google renforcee : le lien de retour ne transporte plus tes jetons, mais un code qui ne vaut rien sans un secret reste sur ton telephone."
 }
