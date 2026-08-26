@@ -1,7 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
 import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
          listPrograms, saveProgram, sessionsOf, deleteSharedSession,
-         getCategories, saveCategories } from '../api.js';
+         getCategories, saveCategories, aAccesIA } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
@@ -10,9 +10,10 @@ import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '
 import { ouvrirPartage } from '../partage.js';
 import { encode as encoderSeance } from '../workout-share.js';
 import { ouvrirBilan } from '../bilan.js';
-import { niveauActuel } from '../reglages.js';
+import { niveauActuel, objectifActuel, definirNiveau, definirObjectif } from '../reglages.js';
 import { etatBrut as seanceEnCours, effacerEtat as oublierSeanceEnCours } from '../run-state.js';
 import { genererProgrammeIA, genererSeanceIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS } from '../programme-ia.js';
+import { genererSeanceLocale } from '../generateur-local.js';
 import { ouvrirPaveDuree } from '../numpad.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
@@ -24,6 +25,13 @@ import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
    plus simples ici (pas de dialogue dédié) — le reste est fidèle. */
 
 const WARMUP_SEC = 600;
+
+/* Séance tout juste générée par l'IA, en attente d'être reprise par l'éditeur
+   (#/seances/nouvelle). Elle vit en mémoire, jamais sur le serveur : si
+   l'utilisateur quitte l'écran sans enregistrer, elle disparaît — même
+   comportement que le natif, qui passe l'objet Workout directement à
+   CreateWorkout sans l'écrire dans le carnet. */
+let brouillonIA = null;
 
 /** estimateSec (TrainingScreens.kt) : le modèle brut est systématiquement
  *  trop généreux, le facteur 0,9 rapproche l'estimation du terrain. */
@@ -90,6 +98,15 @@ export async function vueSeances(_params, toutes = false) {
   }
   catch (e) { return render(failure(e, "Les séances n'ont pas pu être chargées")); }
 
+  /* Droit d'accès à l'IA : ne sert QU'À L'INTERFACE (pastille dorée ou grise,
+     champ de description actif ou non). Le refus réel vient de la fonction
+     Edge generate-program, qui lit ai_access avant d'appeler le modèle — le
+     contourner ici ne débloque rien. Hors ligne ou en cas d'erreur, on
+     retombe sur « pas d'abonnement » : mieux vaut une génération locale qui
+     aboutit qu'un champ actif qui se prendra un 403. */
+  let accesIA = false;
+  try { accesIA = await aAccesIA(moi.id); } catch { /* déjà géré : false */ }
+
   /* Une séance « issue d'un programme » est une séance dont l'id figure dans
      les workoutIds d'un programme (ProgramModel.kt / programme-ia.js). */
   const idsProgramme = new Set();
@@ -154,24 +171,56 @@ export async function vueSeances(_params, toutes = false) {
     el.querySelector('[data-reprise]').appendChild(bandeau);
   }
 
-  /* Génération d'UNE séance par IA (genererSeanceIA, programme-ia.js) —
-     manquait sur l'écran principal côté web alors que TrainingList (natif)
-     a ce bouton juste à côté de « Programme », signalé par Nicolas. */
-  /* Le bouton « Générer une séance » vit maintenant dans le pied de liste,
-     reconstruit à chaque dessin : son écouteur est branché là-bas. */
+  /* ================================================== Générer une séance
 
-  function ouvrirGenerationSeanceIA() {
+     UN SEUL BOUTON, DEUX MOTEURS — exactement comme le natif depuis la v2.49
+     (AutoSessionDialog, ProgramScreens.kt) :
+       · avec l'abonnement, la description libre est active et c'est le coach
+         qui écrit la séance (genererSeanceIA, programme-ia.js) ;
+       · sans lui, le champ reste affiché mais inerte — on voit ce qu'on gagne
+         à s'abonner — et la séance sort du générateur local à règles fixes
+         (genererSeanceLocale, generateur-local.js), qui marche hors ligne et
+         sans coût.
+     La pastille « IA » du bouton et du titre dit lequel des deux répondra :
+     dorée = le coach, grise = le générateur local.
+
+     Le bouton lui-même vit dans le pied de liste, reconstruit à chaque
+     dessin : son écouteur est branché là-bas. */
+
+  function ouvrirGenerationSeance() {
     let goalText = '', niveau = niveauActuel(), gears = [];
+    let objectif = objectifActuel();
+    const typesSeance = CATEGORIES_CATALOGUE.map(c => c.nom);
+    let type = typesSeance.find(t => t.toLowerCase() === 'full body') || typesSeance[0];
+
     const modale = h(`
       <div class="modale" role="dialog" aria-label="Générer une séance">
         <div class="modale-boite">
-          <div class="modale-tete"><h2>Générer une séance</h2></div>
-          <label class="champ"><span>Quel type de séance ?</span>
-            <textarea data-objectif rows="3" maxlength="300" placeholder="Ex. : pecs et triceps, 45 minutes, matériel limité."></textarea></label>
-          <p class="champ-label" style="margin-top:.8rem">Niveau</p>
-          <div class="rangee rangee-serree" data-niveau style="margin-bottom:.6rem"></div>
-          <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
-          <div class="rangee rangee-serree" data-materiel></div>
+          <div class="modale-tete">
+            <h2>Générer une séance <span class="badge-ia ${accesIA ? 'on' : ''}">✦ IA</span></h2>
+          </div>
+          <!-- Le corps défile : la fenêtre est plus haute qu'un petit écran
+               ne peut afficher, et sans `.modale-corps` le bouton Générer
+               finissait hors champ, exactement comme l'ancien aperçu de
+               séance. -->
+          <div class="modale-corps">
+            <label class="champ"><span>Décris la séance que tu veux</span>
+              <textarea data-objectif rows="3" maxlength="300" ${accesIA ? '' : 'disabled'}
+                placeholder="${accesIA ? 'Ex. : pecs et triceps, 45 minutes, matériel limité.'
+                                       : "Décris ta séance et le coach l'écrit — avec l'abonnement."}"></textarea></label>
+            <p class="etat-mono" style="margin-top:.4rem">${accesIA
+              ? 'Laisse ce champ vide pour une séance construite par l’algorithme de Motio, sans IA.'
+              : 'Sans abonnement, la séance est construite par l’algorithme de Motio à partir des réglages ci-dessous. Avec, tu la décris avec tes mots et le coach l’écrit.'}</p>
+
+            <p class="champ-label" style="margin-top:.8rem">Objectif</p>
+            <div class="rangee rangee-serree" data-objectif-chips style="margin-bottom:.6rem"></div>
+            <p class="champ-label">Niveau</p>
+            <div class="rangee rangee-serree" data-niveau style="margin-bottom:.6rem"></div>
+            <p class="champ-label">Type de séance</p>
+            <div class="rangee rangee-serree" data-type style="margin-bottom:.6rem"></div>
+            <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
+            <div class="rangee rangee-serree" data-materiel></div>
+          </div>
           <div class="modale-pied">
             <button class="lien-inline" data-annuler type="button">Annuler</button>
             <button class="btn" data-generer type="button">Générer</button>
@@ -181,16 +230,27 @@ export async function vueSeances(_params, toutes = false) {
 
     modale.querySelector('[data-objectif]').addEventListener('input', (e) => { goalText = e.target.value; });
 
-    const zoneNiveau = modale.querySelector('[data-niveau]');
-    LEVELS.forEach(l => {
-      const b = h(`<button class="chip-cat ${l.id === niveau ? 'on' : ''}" type="button">${esc(l.label)}</button>`);
-      b.onclick = () => {
-        niveau = l.id;
-        zoneNiveau.querySelectorAll('.chip-cat').forEach(x => x.classList.remove('on'));
-        b.classList.add('on');
-      };
-      zoneNiveau.appendChild(b);
-    });
+    /* Une rangée de puces à choix unique : les trois listes ci-dessous ne
+       diffèrent que par leurs valeurs et par ce qu'elles retiennent. */
+    function rangeeUnique(selecteur, valeurs, courant, choisir) {
+      const zone = modale.querySelector(selecteur);
+      valeurs.forEach(v => {
+        const b = h(`<button class="chip-cat ${v.id === courant ? 'on' : ''}" type="button">${esc(v.label)}</button>`);
+        b.onclick = () => {
+          choisir(v.id);
+          zone.querySelectorAll('.chip-cat').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+        };
+        zone.appendChild(b);
+      });
+    }
+
+    rangeeUnique('[data-objectif-chips]', GOALS.map(g => ({ id: g.id, label: g.label })),
+      objectif, (v) => { objectif = v; });
+    rangeeUnique('[data-niveau]', LEVELS.map(l => ({ id: l.id, label: l.label })),
+      niveau, (v) => { niveau = v; });
+    rangeeUnique('[data-type]', typesSeance.map(t => ({ id: t, label: t })),
+      type, (v) => { type = v; });
 
     const zoneMateriel = modale.querySelector('[data-materiel]');
     Object.entries(GEARS).forEach(([id, g]) => {
@@ -204,57 +264,48 @@ export async function vueSeances(_params, toutes = false) {
 
     modale.querySelector('[data-annuler]').onclick = () => modale.remove();
     modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+
+    /* La séance générée s'ouvre dans l'ÉDITEUR, comme côté natif
+       (TrainingList : `onGenerate = { w -> onEdit(w) }`). L'aperçu en fenêtre
+       qui existait ici ne laissait rien faire d'autre que renommer, et
+       surtout, quand les notes du coach étaient longues, la liste des
+       exercices et le bouton d'enregistrement débordaient d'une fenêtre qui ne
+       défilait pas : la séance devenait impossible à enregistrer (signalé par
+       Nicolas). Dans l'éditeur, tout est modifiable et rien n'est écrit tant
+       qu'« Enregistrer » n'a pas été touché. */
+    function versEditeur(workout, notes) {
+      brouillonIA = { workout, notes: notes || '' };
+      location.hash = '#/seances/nouvelle';
+    }
+
     modale.querySelector('[data-generer]').onclick = async (e) => {
-      const objectif = goalText.trim();
-      if (!objectif) return toast('Décris le type de séance voulu.');
+      const texte = goalText.trim();
+      /* Objectif et niveau retenus pour la prochaine fois, comme le natif
+         (Profile.setTrainingGoal/setTrainingLevel dans AutoSessionDialog). */
+      definirObjectif(objectif); definirNiveau(niveau);
+
+      // Générateur local : instantané, hors ligne, sans compte. C'est aussi
+      // le repli d'un abonné qui laisse la description vide.
+      if (!accesIA || !texte) {
+        try {
+          const workout = genererSeanceLocale({ goal: objectif, level: niveau, category: type, gears });
+          modale.remove();
+          versEditeur(workout, '');
+        } catch (err) { toast(err.message || 'La génération a échoué.'); }
+        return;
+      }
+
       e.target.disabled = true; e.target.textContent = 'Génération… (20-30 s)';
       try {
-        const { workout, notes } = await genererSeanceIA({ goalText: objectif, level: niveau, gears });
+        const { workout, notes } = await genererSeanceIA({
+          goalText: texte, level: niveau, gears, category: type
+        });
         modale.remove();
-        ouvrirApercuSeanceIA(workout, notes);
+        versEditeur(workout, notes);
       } catch (err) {
         toast(err.message || 'La génération a échoué.');
         e.target.disabled = false; e.target.textContent = 'Générer';
       }
-    };
-    document.body.appendChild(modale);
-  }
-
-  /** Aperçu avant enregistrement — rien n'est écrit tant que « Ajouter à mes
-   *  séances » n'a pas été pressé, même principe que l'aperçu de programme. */
-  function ouvrirApercuSeanceIA(workout, notes) {
-    const modale = h(`
-      <div class="modale" role="dialog" aria-label="Séance proposée">
-        <div class="modale-boite">
-          <div class="modale-tete"><h2>Séance proposée</h2></div>
-          <label class="champ"><span>Nom</span>
-            <input type="text" data-nom value="${esc(workout.name)}" maxlength="60"></label>
-          ${notes ? `<p class="etat-mono" style="margin-top:.4rem">${esc(notes)}</p>` : ''}
-          <ul class="liste" style="margin-top:.8rem">
-            ${workout.exercises.map(ex => `
-              <li class="ligne">
-                <span class="ligne-titre">${esc(ex.name)}</span>
-                <span class="ligne-meta">${ex.plannedSets} × ${ex.targetReps}</span>
-              </li>`).join('')}
-          </ul>
-          <div class="modale-pied">
-            <button class="lien-inline" data-annuler type="button">Annuler</button>
-            <button class="btn" data-ajouter type="button">Ajouter à mes séances</button>
-          </div>
-        </div>
-      </div>`);
-    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
-    modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
-    modale.querySelector('[data-ajouter]').onclick = async (e) => {
-      const nom = modale.querySelector('[data-nom]').value.trim();
-      if (nom) workout.name = nom;
-      e.target.disabled = true;
-      try {
-        await saveWorkout(moi.id, workout);
-        modale.remove();
-        toast('Séance ajoutée ✓');
-        vueSeances();
-      } catch (err) { toast(err.message); e.target.disabled = false; }
     };
     document.body.appendChild(modale);
   }
@@ -471,7 +522,7 @@ export async function vueSeances(_params, toutes = false) {
       <div style="margin-top:1.5rem">
         ${toutes ? '' : `<div class="rangee rangee-serree" style="margin-bottom:.8rem">
           <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
-          <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance</button>
+          <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance <span class="badge-ia ${accesIA ? 'on' : ''}">✦ IA</span></button>
         </div>`}
         <a class="btn btn-lg" href="#/seances/nouvelle" style="display:block;text-align:center">＋ Nouvel entraînement</a>
         ${toutes ? '' : `<a class="menu-ligne" href="#/seances/toutes" style="margin-top:.8rem">
@@ -479,7 +530,7 @@ export async function vueSeances(_params, toutes = false) {
           <span class="chevron">›</span>
         </a>`}
       </div>`);
-    pied.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeanceIA());
+    pied.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeance());
     zoneListe.appendChild(pied);
   }
 
@@ -645,8 +696,20 @@ export async function vueSeanceEdition(params) {
   catch { catsCompte = [...CATEGORIES_DEFAUT]; }
 
   let seance, autres = [];
+  /* Séance générée par l'IA : elle arrive ici toute faite, on la reprend telle
+     quelle (et on vide le brouillon pour qu'un simple retour sur cet écran ne
+     la ressorte pas une deuxième fois). Les notes du coach s'affichent en tête
+     de l'éditeur : c'est le raisonnement derrière la séance, il disparaîtrait
+     sinon avec la fenêtre de génération. */
+  let notesIA = '';
   if (neuve) {
-    seance = nouvelleSeance('', catsCompte[0] || CATEGORIES_DEFAUT[0]);
+    if (brouillonIA) {
+      seance = brouillonIA.workout;
+      notesIA = brouillonIA.notes || '';
+      brouillonIA = null;
+    } else {
+      seance = nouvelleSeance('', catsCompte[0] || CATEGORIES_DEFAUT[0]);
+    }
     try { autres = await listWorkouts(moi.id); } catch { /* pas bloquant */ }
   } else {
     render(loading('Chargement de la séance'));
@@ -663,12 +726,18 @@ export async function vueSeanceEdition(params) {
   /* Les catégories du compte, plus celles déjà portées par des séances
      existantes (une séance importée peut en avoir une qui n'est pas déclarée —
      on ne la fait pas disparaître du sélecteur). */
-  let cats = [...new Set([...catsCompte, ...autres.map(w => w.category).filter(Boolean)])];
+  let cats = [...new Set([...catsCompte, ...autres.map(w => w.category).filter(Boolean),
+    seance.category].filter(Boolean))];
   const sections = [...new Set(autres.map(w => (w.data || {}).section).filter(Boolean))];
 
   const el = h(`
     <section class="page">
       <h1 style="text-transform:uppercase">${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
+
+      ${notesIA ? `<div class="notes-ia">
+        <p class="notes-ia-tag">Ce que Moti a construit</p>
+        <p>${esc(notesIA)}</p>
+      </div>` : ''}
 
       <label class="champ"><span>Nom</span>
         <input type="text" data-nom maxlength="60" placeholder="Push A" value="${esc(seance.name || '')}"></label>

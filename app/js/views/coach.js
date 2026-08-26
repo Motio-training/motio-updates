@@ -189,6 +189,14 @@ export async function vueCoach() {
     }
   }
 
+  /** Fil calé sur le dernier message. Une deuxième passe à la frame suivante :
+   *  les avatars de Moti se chargent après le premier calcul et rallongent le
+   *  fil, ce qui laissait la dernière réponse à moitié sous le bord. */
+  function filEnBas() {
+    fil.scrollTop = fil.scrollHeight;
+    requestAnimationFrame(() => { fil.scrollTop = fil.scrollHeight; });
+  }
+
   function redessiner() {
     fil.replaceChildren();
     if (!messages.length) {
@@ -197,7 +205,7 @@ export async function vueCoach() {
       messages.forEach(bulle);
     }
     btnRecommencer.hidden = !messages.length;
-    fil.scrollTop = fil.scrollHeight;
+    filEnBas();
   }
 
   /** Confirmation avant d'effacer (CoachScreen.kt ~174-187) : le bouton dit
@@ -245,7 +253,7 @@ export async function vueCoach() {
           <span class="coach-points" aria-hidden="true"><i></i><i></i><i></i></span>
         </div>
       </li>`);
-    fil.appendChild(attente); fil.scrollTop = fil.scrollHeight;
+    fil.appendChild(attente); filEnBas();
 
     try {
       await coachSendMessage(moi.id, {

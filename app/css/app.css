@@ -362,6 +362,43 @@ h2{
 }
 .champ input::placeholder{color:var(--encre-2);opacity:.7}
 
+/* Le champ multiligne n'avait aucune règle à lui : il tombait sur le rendu
+   par défaut du navigateur (police système, coins carrés, bordure grise) au
+   milieu de champs dessinés. Mêmes règles que `.champ input`, plus le
+   redimensionnement vertical seul. */
+.champ textarea{
+  width:100%;padding:.7rem .85rem;
+  font-family:var(--f-body);font-size:.98rem;line-height:1.5;color:var(--encre);
+  background:var(--carte);
+  border:1px solid var(--trait);border-radius:var(--r-s);
+  resize:vertical;
+  transition:border-color .18s ease,box-shadow .18s ease;
+}
+.champ textarea:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-halo);
+}
+.champ textarea::placeholder{color:var(--encre-2);opacity:.7}
+/* Champ réservé à l'abonnement : visible et lisible, mais inerte — il montre
+   ce que l'abonnement débloque au lieu de disparaître. */
+.champ textarea:disabled{
+  background:var(--creme-2);color:var(--encre-2);
+  border-style:dashed;cursor:not-allowed;
+}
+
+/* Pastille « IA » du bouton et de la fenêtre « Générer une séance » (BadgeIA,
+   Subscription.kt côté natif) : dorée quand l'abonnement est actif — c'est le
+   coach qui écrit la séance ; grise sinon — c'est le générateur local, à
+   règles fixes. Le bouton, lui, est le même dans les deux cas. */
+.badge-ia{
+  display:inline-flex;align-items:center;
+  padding:.1rem .45rem;margin-left:.4rem;
+  border-radius:var(--r-pill);
+  font-family:var(--f-display);font-size:.66rem;font-weight:700;letter-spacing:.06em;
+  background:var(--creme-2);color:var(--encre-2);border:1px solid var(--trait);
+  vertical-align:middle;
+}
+.badge-ia.on{background:var(--dore);color:var(--accent-sur);border-color:var(--dore)}
+
 .btn{
   display:inline-flex;align-items:center;justify-content:center;
   cursor:pointer;
@@ -832,6 +869,20 @@ a.ligne-titre:hover{color:var(--accent)}
 }
 .estim-panel span{color:var(--encre-2);font-size:.82rem}
 .estim-panel b{color:var(--dore);font-family:var(--f-display);font-weight:700;font-size:1.6rem}
+
+/* Raisonnement du coach au-dessus d'une séance qu'il vient de générer : c'est
+   du texte à lire une fois, pas un réglage — d'où le ton discret. */
+.notes-ia{
+  margin:0 0 1.25rem;padding:.9rem 1rem;
+  background:var(--creme-2);border-radius:var(--r-m);border-left:3px solid var(--dore);
+}
+.notes-ia p{margin:0;color:var(--encre-2);font-size:.88rem;line-height:1.55}
+/* Sélecteur aussi précis que celui du dessus, sinon la règle générique
+   `.notes-ia p` l'emporte sur la taille et la couleur du libellé. */
+.notes-ia p.notes-ia-tag{
+  margin:0 0 .35rem;font-family:var(--f-mono);font-size:.66rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--dore);
+}
 
 /* ==========================================================================
    Modale du catalogue
@@ -1482,8 +1533,17 @@ body:not(.connecte) #vue:has(.onb){
      padding de #vue sous la page pour que le champ touche la barre.
      (position:fixed serait plus direct, mais l'animation d'entrée de #vue>*
      pose un transform qui en fait le référentiel des éléments fixes.) */
+  /* HAUTEUR FIXE, PAS UN MINIMUM — c'est toute la différence. Avec un
+     `min-height`, une discussion longue faisait grandir la page au-delà de
+     l'écran : le fil ne défilait plus par lui-même (son overflow ne servait
+     à rien puisqu'il n'était jamais à l'étroit), c'était la PAGE qui
+     défilait, et le champ collant se posait alors PAR-DESSUS la fin du fil.
+     À l'ouverture, la dernière réponse de Moti se retrouvait cachée derrière
+     la zone de saisie — signalé par Nicolas. Une hauteur ferme redonne au fil
+     son rôle de zone défilante : le champ reste dessous, jamais devant, et
+     `fil.scrollTop = fil.scrollHeight` retombe bien sur le dernier message. */
   .page.msg-thread,.page.coach{
-    min-height:calc(100dvh - var(--barre-bas) - var(--haut-appbar) - var(--pad-vue));
+    height:calc(100dvh - var(--barre-bas) - var(--haut-appbar) - var(--pad-vue));
     margin-bottom:calc(-1 * var(--pad-vue));
     display:flex;flex-direction:column;
   }

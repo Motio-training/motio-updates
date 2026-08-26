@@ -179,19 +179,23 @@ export async function genererProgrammeIA({ goalText, level, daysPerWeek, weeks, 
 
 /**
  * Génération d'UNE séance isolée par IA — pas de programme ni de
- * planification, juste un modèle prêt à enregistrer (équivalent du bouton
- * « Générer une séance » de TrainingList côté natif, qui appelle lui
- * l'algorithme maison ProgramGenerator.generateSingle() sans IA ; ici on
- * réutilise plutôt l'infrastructure IA déjà branchée — c'est ce que Nicolas
- * a explicitement demandé : « génération de séance individuelle par IA »).
+ * planification, juste un modèle prêt à être relu et modifié. C'est ce que
+ * déclenche le bouton « Générer une séance », côté natif comme ici, quand
+ * l'abonnement est actif et la description remplie ; sinon le même bouton
+ * retombe sur le générateur local à règles fixes (generateur-local.js) —
+ * voir `ouvrirGenerationSeance` (entrainement.js).
  * Sous le capot : la même fonction Edge `generate-program`, appelée avec
  * weeks=1/daysPerWeek=1 ; on ne garde que le premier workout du résultat et
  * on jette tout ce qui est planification (program/sessions datées).
  */
-export async function genererSeanceIA({ goalText, level, gears }) {
+export async function genererSeanceIA({ goalText, level, gears, category = '' }) {
   const now = new Date();
+  /* Le type de séance choisi dans la fenêtre (Full body, Push…) n'a pas de
+     champ à lui dans le contrat de la fonction Edge : il part dans la demande,
+     à l'identique du natif (AiProgramGenerator.generateOne). */
+  const demande = category ? `${goalText}\n(Une seule séance, de type « ${category} ».)` : goalText;
   const { draft, notes } = await genererProgrammeIA({
-    goalText, level, daysPerWeek: 1, weeks: 1, gears,
+    goalText: demande, level, daysPerWeek: 1, weeks: 1, gears,
     weekdays: [now.getDay()], minuteOfDay: now.getHours() * 60 + now.getMinutes(),
     startMs: now.getTime()
   });
