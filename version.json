@@ -1,6 +1,6 @@
 {
-  "versionCode": 150,
-  "versionName": "2.47",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.47/motio.apk",
-  "notes": "Connexion Google renforcee : le lien de retour ne transporte plus tes jetons, mais un code qui ne vaut rien sans un secret reste sur ton telephone."
+  "versionCode": 151,
+  "versionName": "2.48",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.48/motio.apk",
+  "notes": "L'ecran de recadrage de photo n'est plus accessible aux autres applications du telephone."
 }
