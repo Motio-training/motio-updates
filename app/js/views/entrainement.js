@@ -312,15 +312,6 @@ export async function vueSeances(_params, toutes = false) {
 
   const corps = el.querySelector('[data-corps]');
 
-  if (!rows.length) {
-    corps.appendChild(empty(
-      'Aucune séance',
-      'Une séance est un modèle : des exercices, des séries et des temps de repos, à relancer autant de fois que tu veux. Sinon, lance un entraînement libre et construis-la en t’entraînant.',
-      { href: '#/seances/nouvelle', label: 'Créer une séance' }
-    ));
-    return render(el);
-  }
-
   const zoneListe = h('<div></div>');
   corps.appendChild(zoneListe);
 
@@ -494,9 +485,21 @@ export async function vueSeances(_params, toutes = false) {
        menu d'action la fait entrer ou sortir de l'écran principal aussitôt. */
     const liste = toutes ? rows : rows.filter(s => (s.data || {}).pinned || idsProgramme.has(String((s.data || {}).id)));
     if (!liste.length) {
-      zoneListe.appendChild(h(`<p class="etat-mono">${toutes
-        ? "Aucun entraînement pour l'instant."
-        : "Rien d'épinglé pour l'instant. Épingle une séance depuis « Toutes mes séances » pour la garder ici, ou lance un entraînement libre."}</p>`));
+      /* Compte tout neuf (aucune séance du tout) : c'est le cas qui compte le
+         plus, celui des amis iPhone qui viennent de s'inscrire. Il montrait
+         un cul-de-sac — l'écran sortait ici en `return` avant le pied de
+         liste, donc ni « Générer un programme », ni « Générer une séance »,
+         ni « Nouvel entraînement » (signalé par Nicolas sur le compte d'un
+         ami créé la veille). Le natif fait l'inverse : quand la liste est
+         vide, les actions REMONTENT, ce sont les seules choses à faire. On
+         explique donc ce qu'est une séance, et le pied de liste s'affiche
+         dans tous les cas. */
+      zoneListe.appendChild(h(`<p class="etat-mono">${
+        toutes
+          ? "Aucun entraînement pour l'instant."
+          : !rows.length
+            ? 'Une séance est un modèle : des exercices, des séries et des temps de repos, à relancer autant de fois que tu veux. Sinon, lance un entraînement libre et construis-la en t’entraînant.'
+            : "Rien d'épinglé pour l'instant. Épingle une séance depuis « Toutes mes séances » pour la garder ici, ou lance un entraînement libre."}</p>`));
     } else {
       const blocs = new Map();
       const isolees = [];
@@ -525,7 +528,7 @@ export async function vueSeances(_params, toutes = false) {
           <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance <span class="badge-ia ${accesIA ? 'on' : ''}">✦ IA</span></button>
         </div>`}
         <a class="btn btn-lg" href="#/seances/nouvelle" style="display:block;text-align:center">＋ Nouvel entraînement</a>
-        ${toutes ? '' : `<a class="menu-ligne" href="#/seances/toutes" style="margin-top:.8rem">
+        ${toutes || !rows.length ? '' : `<a class="menu-ligne" href="#/seances/toutes" style="margin-top:.8rem">
           <span class="corps"><b>Toutes mes séances</b><span>${rows.length} au total — celles qui ne sont ni épinglées ni dans un programme</span></span>
           <span class="chevron">›</span>
         </a>`}
