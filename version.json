@@ -1,6 +1,6 @@
 {
-  "versionCode": 151,
-  "versionName": "2.48",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.48/motio.apk",
-  "notes": "L'ecran de recadrage de photo n'est plus accessible aux autres applications du telephone."
+  "versionCode": 152,
+  "versionName": "2.49",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.49/motio.apk",
+  "notes": "Un seul bouton Generer une seance, avec une pastille IA : doree, c'est le coach qui ecrit la seance a partir de ta description ; grise, c'est le generateur local de Motio. Meme bouton et memes regles dans l'espace web. La seance generee s'ouvre directement dans l'ecran de modification."
 }
