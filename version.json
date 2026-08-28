@@ -1,6 +1,6 @@
 {
-  "versionCode": 153,
-  "versionName": "2.50",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.50/motio.apk",
+  "versionCode": 154,
+  "versionName": "2.51",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.51/motio.apk",
   "notes": "Poids conseille coherent avec l'objectif du jour : il passe par ton 1RM estime et redescend vers la charge correspondant au nombre de repetitions vise. RIR reconduit de la serie precedente quand tu n'y touches pas. Sur la montre, le pave RIR se retire au bout de dix secondes. Espace web : l'ecran Entrainement reprend la disposition de l'appli."
 }
