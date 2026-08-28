@@ -328,6 +328,8 @@ export async function vueLancerSeance(params) {
     s.weight = poidsVal || 0;
     if (repsVal) s.reps = repsVal;
     s.rir = rirChoisi;
+    // Corrigé à la main : ce n'est plus une reconduction.
+    s.rirAuto = false;
     redessinerSeries();
     sauver();
   }
@@ -340,6 +342,26 @@ export async function vueLancerSeance(params) {
       if (ex) return ex.sets;
     }
     return null;
+  }
+
+  /**
+   * RECONDUCTION DU RIR — ecrireSeries (TrainingScreens.kt).
+   *
+   * Si les puces n'ont pas été touchées pour cette série, on ne laisse pas le
+   * RIR vide : on reprend celui de la série PRÉCÉDENTE d'aujourd'hui (le
+   * jugement le plus frais — une série qui suit une série à RIR 1 n'est
+   * jamais soudain facile), sinon celui de la série de même rang de la
+   * dernière séance. C'est une hypothèse et non une mesure, d'où `rirAuto`,
+   * que l'application affiche en grisé.
+   */
+  function rirPourNouvelleSerie(ex) {
+    if (rirChoisi >= 0) return { rir: rirChoisi, rirAuto: false };
+    const duJour = ex.sets.length ? (ex.sets[ex.sets.length - 1].rir ?? -1) : -1;
+    if (duJour >= 0) return { rir: duJour, rirAuto: true };
+    const avant = dernieresSeries(ex.name);
+    const memeRang = avant ? avant[ex.sets.length] : null;
+    const rirAvant = memeRang ? (memeRang.rir ?? -1) : -1;
+    return { rir: rirAvant, rirAuto: rirAvant >= 0 };
   }
 
   /** Reflète poidsVal/repsVal dans les cellules — pas d'<input>, la valeur
@@ -362,7 +384,10 @@ export async function vueLancerSeance(params) {
   function prepareSaisie(ex) {
     const sets = dernieresSeries(ex.name);
     const dernier = sets ? sets[sets.length - 1] : null;
-    const suggestion = dernier ? suggestionCharge(ex.name, dernier) : null;
+    /* L'OBJECTIF DU JOUR pilote la charge conseillée : ex.targetReps, pas
+       les répétitions de la dernière fois. */
+    const cibleDuJour = ex.targetReps > 0 ? ex.targetReps : (dernier?.reps || 8);
+    const suggestion = dernier ? suggestionCharge(ex.name, dernier, cibleDuJour) : null;
     const poidsRef = corps.querySelector('[data-poids-ref]');
     const repsRef = corps.querySelector('[data-reps-ref]');
 
@@ -379,7 +404,11 @@ export async function vueLancerSeance(params) {
     }
 
     if (dernier) {
-      if (!repsVal) repsVal = dernier.reps || ex.targetReps || 0;
+      /* Avant la première série du jour, la case affiche l'OBJECTIF — la
+         charge conseillée est calculée pour lui, afficher les répétitions de
+         la dernière fois à côté n'aurait pas de sens. Ensuite, ce qu'on
+         vient de faire prime. */
+      if (!repsVal) repsVal = (ex.sets.length === 0 ? (ex.targetReps || dernier.reps) : dernier.reps) || 0;
       poidsRef.textContent = fmtCharge(ex.name, poidsCorps, dernier.weight);
       repsRef.textContent = `${dernier.reps} reps`;
     } else {
@@ -403,11 +432,13 @@ export async function vueLancerSeance(params) {
       `<li>${i + 1}. ${esc(fmtCharge(ex.name, poidsCorps, s.weight))} × ${s.reps}${s.rir >= 0 ? ' · RIR ' + s.rir : ''}</li>`)));
     const dernier = sets[sets.length - 1];
     const pdc = estPoidsDuCorps(ex.name, poidsCorps);
-    const suggestion = pdc ? null : suggestionCharge(ex.name, dernier);
-    /* N'affiche la ligne conseillée que si elle dit plus qu'une évidence —
-       même seuil que LastTimeRecap (TrainingScreens.kt). Sur un exercice PDC,
-       la charge EST déjà la suggestion (pdcEffectif) : rien à ajouter. */
-    zone.querySelector('[data-conseil]').textContent = suggestion && suggestion.raison !== 'comme la dernière fois'
+    const cible = ex.targetReps > 0 ? ex.targetReps : (dernier?.reps || 8);
+    const suggestion = pdc ? null : suggestionCharge(ex.name, dernier, cible);
+    /* La raison dit toujours d'où vient le chiffre (dernière série, RIR, et
+       la conversion vers l'objectif du jour quand il diffère). Sur un
+       exercice au poids du corps, la charge EST déjà la suggestion
+       (pdcEffectif) : rien à ajouter. */
+    zone.querySelector('[data-conseil]').textContent = suggestion
       ? `→ ${esc(kg(suggestion.poids))} conseillés : ${suggestion.raison}`
       : `→ ${esc(fmtCharge(ex.name, poidsCorps, dernier.weight))} conseillés · comme la dernière fois`;
   }
@@ -575,7 +606,8 @@ export async function vueLancerSeance(params) {
       if (engine.mode === 'MINUTEUR') { tensionMs = engine.endTension(); engine.minuteurStop(); }
       else { tensionMs = engine.chronoStart ? Date.now() - engine.chronoStart : 0; engine.chronoStop(); }
 
-      ex.sets.push({ weight: poids, reps, tensionMs, rir: rirChoisi });
+      const marge = rirPourNouvelleSerie(ex);
+      ex.sets.push({ weight: poids, reps, tensionMs, rir: marge.rir, rirAuto: marge.rirAuto });
       redessinerSeries();
       dessinerSousligne(false);
       /* La zone de saisie ne se referme plus : elle bascule sur la série tout
@@ -1029,20 +1061,45 @@ function messageRecord(nom, poids, reps, meilleursAvant) {
   if (Math.abs(poids - avant.poids) < 0.001 && reps > avant.repsAuPoidsMax) return `Record : ${reps} répétitions à ${trimNum(poids)} kg.`;
   return '';
 }
-
-/** suggestionCharge (LoadCoach.suggestedWeight, Coaching.kt) : autorégulation
- *  par RIR à partir de la dernière fois — pas d'estimation de départ sans
- *  historique (StrengthDefaults dépend de réglages locaux natifs absents du
- *  web : poids de corps, niveau). */
-function suggestionCharge(nomExercice, dernier) {
-  if (!dernier) return null;
+/**
+ * suggestionCharge (LoadCoach.suggestedWeight, Coaching.kt).
+ *
+ * TOUT PASSE PAR LE 1RM : une charge n'a de sens que rapportée à un nombre de
+ * répétitions. On estime un 1RM à partir de la dernière série (RIR compris,
+ * c'est là que vit l'autorégulation), puis on redescend vers la charge de
+ * travail correspondant au nombre de répétitions VISÉ ce jour-là. Sans ce
+ * détour, 140 kg × 3 étaient reproposés tels quels pour un objectif à 12
+ * répétitions (signalé par Nicolas). La hausse est bornée à +10 % d'une
+ * séance à l'autre.
+ *
+ * Pas d'estimation de départ sans historique : StrengthDefaults dépend de
+ * réglages locaux natifs absents du web (poids de corps, niveau).
+ */
+export function suggestionCharge(nomExercice, dernier, cibleReps) {
+  if (!dernier || !(dernier.weight > 0) || !(dernier.reps > 0)) return null;
   const step = devineMateriel(nomExercice) === 'BARRE' ? 2.5 : 1.0;
   const round = v => Math.round(v / step) * step;
-  const rir = dernier.rir ?? -1;
-  if (rir < 0) return { poids: dernier.weight, raison: 'comme la dernière fois' };
-  if (rir >= 4) return { poids: round(dernier.weight * 1.075), raison: `RIR ${rir} la dernière fois : encore facile, charge relevée` };
-  if (rir >= 2) return { poids: round(dernier.weight * 1.02), raison: `RIR ${rir} la dernière fois : léger cran si possible` };
-  return { poids: dernier.weight, raison: `RIR ${rir} la dernière fois : proche de l'échec, même charge` };
+  const cible = Math.min(30, Math.max(1, cibleReps || dernier.reps || 8));
+
+  /* Epley SANS le plafond de 12 répétitions d'estime1RM (model.js). Ce
+     plafond a sa raison d'être pour afficher un record — au-delà de 12 la
+     formule surestime — mais ici il cassait deux choses : une série de 15
+     donnait un 1RM de 0 (donc 0 kg conseillé), et un RIR annoncé sur une
+     série déjà longue ne comptait pas du tout, puisque reps + RIR retombait
+     sur le même plafond. La hausse restant bornée à +10 %, l'imprécision de
+     la formule au-delà de 12 n'a pas d'effet visible. */
+  const epley = (poids, reps) => poids * (1 + Math.min(30, Math.max(1, reps)) / 30);
+
+  const marge = Math.min(5, Math.max(0, dernier.rir ?? 0));
+  const brut = epley(dernier.weight, dernier.reps);
+  const avecMarge = epley(dernier.weight, dernier.reps + marge);
+  const e1rm = Math.min(Math.max(brut, avecMarge), brut * 1.10);
+
+  let raison = `d'après ta dernière série (${kg(dernier.weight)} × ${dernier.reps}`;
+  raison += (dernier.rir ?? -1) >= 0 ? `, RIR ${dernier.rir})` : ')';
+  if (dernier.reps !== cible) raison += `, ramenée à ${cible} répétitions`;
+
+  return { poids: round(e1rm / (1 + cible / 30)), raison };
 }
 
 function fmtClock(totalSec) {

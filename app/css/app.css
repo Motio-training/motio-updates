@@ -394,6 +394,9 @@ h2{
    règles fixes. Le bouton, lui, est le même dans les deux cas. */
 .badge-ia{
   display:inline-flex;align-items:center;
+  /* Pastille, pas médaillon : sans `nowrap`, « ✦ IA » revenait à la ligne
+     dans un bouton étroit et la pilule devenait un rond. */
+  white-space:nowrap;
   padding:.1rem .45rem;margin-left:.4rem;
   border-radius:var(--r-pill);
   font-family:var(--f-display);font-size:.66rem;font-weight:700;letter-spacing:.06em;
@@ -1364,6 +1367,30 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
   text-transform:uppercase;margin:1.1rem 0 .4rem;
 }
 .wcard-sec a{color:var(--dore);text-decoration:none;font-size:.72rem}
+
+/* Pied de l'écran Entraînement — même disposition que le bloc « actions » de
+   TrainingList (TrainingScreens.kt) : lien doré vers le carnet complet, deux
+   boutons contour pleine largeur, puis créer + importer côte à côte. */
+.pied-liste{margin-top:1.5rem;display:flex;flex-direction:column;gap:.6rem}
+.pied-tout{
+  background:none;border:0;padding:.35rem 0;cursor:pointer;
+  font-family:var(--f-display);font-weight:700;font-size:.88rem;
+  color:var(--dore);text-align:center;
+}
+/* Les deux boutons du pied portent le texte d'accent, comme les
+   OutlinedButton du natif — le gris du .btn-ghost ordinaire les rendait
+   nettement plus ternes que dans l'application. */
+.pied-liste .btn-ghost{width:100%;color:var(--accent)}
+.pied-creer{display:flex;gap:.6rem;align-items:stretch}
+.pied-creer .btn{flex:1;text-align:center}
+.pied-import{
+  flex:0 0 3.1rem;
+  background:none;color:var(--encre-2);
+  font-size:1.15rem;font-weight:700;line-height:1;
+  border:1px dashed var(--encre-2);border-radius:var(--r-m);
+  cursor:pointer;
+}
+.pied-import:hover{color:var(--accent);border-color:var(--accent)}
 
 /* ==========================================================================
    Tutoriel de première ouverture — portage d'OnboardingScreen (Onboarding.kt)

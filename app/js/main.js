@@ -190,7 +190,7 @@ start();
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '54';
+const VERSION = '55';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

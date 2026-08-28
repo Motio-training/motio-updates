@@ -59,6 +59,17 @@ function fmtEstimate(sec) {
   return hh > 0 ? `${hh} h ${String(mm).padStart(2, '0')}` : `${mm} min`;
 }
 function minuit(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+/** extractCode (WorkoutShare, Sharing.kt) : accepte le lien complet reçu par
+ *  message autant que le code seul, et ignore tout ce qui traîne autour. */
+function extraireCodeSeance(texte) {
+  const t = (texte || '').trim();
+  if (!t) return null;
+  const m = t.match(/seances\/importer\/([A-Za-z0-9_~.-]+)/);
+  if (m) return m[1];
+  // Code collé seul : pas d'espace, pas de barre oblique.
+  return /^[A-Za-z0-9_~.-]{8,}$/.test(t) ? t : null;
+}
 /** fmtDerniereFois (TrainingScreens.kt). */
 function fmtDerniereFois(lastMs) {
   if (!lastMs) return 'jamais faite';
@@ -113,6 +124,24 @@ export async function vueSeances(_params, toutes = false) {
   programmes.forEach(p => (p.data?.workoutIds || []).forEach(id => idsProgramme.add(String(id))));
   const misesEnAvant = rows.filter(s => (s.data || {}).pinned || idsProgramme.has(String((s.data || {}).id)));
   const affichees = toutes ? rows : misesEnAvant;
+
+  /* Programme actif et sa prochaine séance datée — Program.next()
+     (ProgramModel.kt) : la première séance ni faite ni sautée, la plus proche
+     dans le temps. Sert au libellé du bouton du pied de liste, qui annonce
+     « Programme · S1 — Push, 02 sept. » exactement comme l'application. */
+  const progActif = programmes[0]?.data || null;
+  const prochaine = (progActif?.sessions || [])
+    .filter(s => !(s.doneAt > 0) && !s.skipped)
+    .sort((a, b) => (a.dateMs || 0) - (b.dateMs || 0))[0] || null;
+
+  /** Libellé du bouton, dans les trois états du natif. */
+  function libelleProgramme() {
+    if (!progActif) return "Créer un programme d'entraînement";
+    if (!prochaine) return 'Programme terminé — en créer un nouveau';
+    const d = new Date(prochaine.dateMs || Date.now());
+    const quand = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    return `Programme · S${prochaine.week} — ${prochaine.title}, ${quand}`;
+  }
 
   const el = h(`
     <section class="page">
@@ -308,6 +337,44 @@ export async function vueSeances(_params, toutes = false) {
       }
     };
     document.body.appendChild(modale);
+  }
+
+  /* IMPORT D'UNE SÉANCE PARTAGÉE — la case en pointillés du pied de liste,
+     reprise d'ImportBox (TrainingScreens.kt). Différence assumée : le natif
+     lit le presse-papier en silence, ce qu'aucun navigateur ne garantit
+     (Safari iOS le refuse hors geste explicite, Firefox pas du tout). On
+     ouvre donc un champ où coller le lien ou le code, et on tente quand même
+     de le pré-remplir depuis le presse-papier quand le navigateur l'autorise. */
+  function ouvrirImport() {
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Importer une séance">
+        <div class="modale-boite modale-boite-etroite">
+          <div class="modale-tete"><h2>Importer une séance</h2></div>
+          <label class="champ"><span>Lien ou code reçu</span>
+            <input type="text" data-code placeholder="https://…/#/seances/importer/…"></label>
+          <p class="etat-mono">Colle ici le lien qu'on t'a envoyé. Le QR code fonctionne aussi, en l'ouvrant directement.</p>
+          <div class="modale-pied">
+            <button class="lien-inline" data-annuler type="button">Annuler</button>
+            <button class="btn" data-ouvrir type="button">Importer</button>
+          </div>
+        </div>
+      </div>`);
+    const champ = modale.querySelector('[data-code]');
+    modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
+    modale.querySelector('[data-ouvrir]').onclick = () => {
+      const code = extraireCodeSeance(champ.value);
+      if (!code) return toast('Lien ou code non reconnu.');
+      modale.remove();
+      location.hash = `#/seances/importer/${code}`;
+    };
+    document.body.appendChild(modale);
+    champ.focus();
+    /* Pré-remplissage silencieux, jamais bloquant : un refus de permission ou
+       un navigateur sans API laisse simplement le champ vide. */
+    navigator.clipboard?.readText?.()
+      .then(t => { if (!champ.value && extraireCodeSeance(t)) champ.value = t.trim(); })
+      .catch(() => { /* presse-papier indisponible : saisie à la main */ });
   }
 
   const corps = el.querySelector('[data-corps]');
@@ -518,22 +585,33 @@ export async function vueSeances(_params, toutes = false) {
         isolees.forEach(s => zoneListe.appendChild(carteSeance(s, false, false)));
       }
     }
-    /* Générer un programme / une séance vivent en PIED de liste, comme dans
-       l'application : ce sont des gestes occasionnels, ils passent après les
-       séances qu'on vient lancer. Ils occupaient le haut de l'écran côté web. */
+    /* PIED DE LISTE — repris tel quel de TrainingScreens.kt (le bloc
+       `item(key = "actions")`), dans le même ordre et avec les mêmes
+       libellés : le lien doré vers le carnet complet, le bouton du programme
+       qui annonce la prochaine séance datée, la génération de séance avec sa
+       pastille, puis la création et l'import côte à côte. La disposition web
+       en différait (deux boutons de génération côte à côte, carnet complet
+       renvoyé en bas dans une ligne de menu) — demande de Nicolas d'aligner
+       l'écran sur l'application. */
     const pied = h(`
-      <div style="margin-top:1.5rem">
-        ${toutes ? '' : `<div class="rangee rangee-serree" style="margin-bottom:.8rem">
-          <a class="btn btn-ghost" href="#/programmes/nouveau" style="flex:1">Générer un programme</a>
-          <button class="btn btn-ghost" data-generer-seance type="button" style="flex:1">Générer une séance <span class="badge-ia ${accesIA ? 'on' : ''}">✦ IA</span></button>
-        </div>`}
-        <a class="btn btn-lg" href="#/seances/nouvelle" style="display:block;text-align:center">＋ Nouvel entraînement</a>
-        ${toutes || !rows.length ? '' : `<a class="menu-ligne" href="#/seances/toutes" style="margin-top:.8rem">
-          <span class="corps"><b>Toutes mes séances</b><span>${rows.length} au total — celles qui ne sont ni épinglées ni dans un programme</span></span>
-          <span class="chevron">›</span>
-        </a>`}
+      <div class="pied-liste">
+        ${toutes || !rows.length ? '' : `
+        <button class="pied-tout" data-tout type="button">Toutes mes séances (${rows.length})</button>`}
+        ${toutes ? '' : `
+        <button class="btn btn-ghost" data-programme type="button">${esc(libelleProgramme())}</button>
+        <button class="btn btn-ghost" data-generer-seance type="button">Générer une séance <span class="badge-ia ${accesIA ? 'on' : ''}">✦ IA</span></button>`}
+        <div class="pied-creer">
+          <a class="btn btn-lg" href="#/seances/nouvelle">＋ Nouvel entraînement</a>
+          <button class="pied-import" data-importer type="button"
+                  aria-label="Importer une séance partagée" title="Importer une séance partagée">⇩</button>
+        </div>
       </div>`);
+    pied.querySelector('[data-tout]')?.addEventListener('click', () => { location.hash = '#/seances/toutes'; });
+    pied.querySelector('[data-programme]')?.addEventListener('click', () => {
+      location.hash = progActif ? '#/programmes' : '#/programmes/nouveau';
+    });
     pied.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeance());
+    pied.querySelector('[data-importer]')?.addEventListener('click', () => ouvrirImport());
     zoneListe.appendChild(pied);
   }
 
