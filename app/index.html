@@ -2,7 +2,16 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- interactive-widget=resizes-content : sans lui, le clavier virtuel ne
+     rétrécit QUE le viewport visuel sur Android, pas le viewport de mise en
+     page. Le `100dvh` de l'écran de discussion gardait donc la hauteur d'un
+     écran SANS clavier : le navigateur faisait défiler pour montrer le champ
+     de saisie, et tout le bas de la page restait posé derrière le clavier —
+     d'où le grand vide entre la barre du bas et le clavier (signalé par
+     Nicolas). Avec cette valeur, le clavier rétrécit aussi la mise en page,
+     donc 100dvh suit et l'écran se pose juste au-dessus du clavier.
+     Ignorée par les navigateurs qui ne la connaissent pas. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title>Motio</title>
 <meta name="theme-color" content="#171A11">
 <meta name="color-scheme" content="light dark">

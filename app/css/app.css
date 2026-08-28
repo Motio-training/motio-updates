@@ -66,6 +66,9 @@
      cachée) et l'en-tête sticky, toujours présent. */
   --barre-bas:0px;
   --haut-appbar:3.2rem;
+  /* Hauteur visible, clavier déduit (main.js, mesurerHauteurVisible). Repli
+     sur 100dvh tant que la mesure n'a pas eu lieu. */
+  --haut-visuel:100dvh;
 }
 
 /* Palette sombre "motio", éclaircie (Theme.kt) : le fond quasi noir d'origine
@@ -1543,7 +1546,7 @@ body:not(.connecte) #vue:has(.onb){
      son rôle de zone défilante : le champ reste dessous, jamais devant, et
      `fil.scrollTop = fil.scrollHeight` retombe bien sur le dernier message. */
   .page.msg-thread,.page.coach{
-    height:calc(100dvh - var(--barre-bas) - var(--haut-appbar) - var(--pad-vue));
+    height:calc(var(--haut-visuel) - var(--barre-bas) - var(--haut-appbar) - var(--pad-vue));
     margin-bottom:calc(-1 * var(--pad-vue));
     display:flex;flex-direction:column;
   }

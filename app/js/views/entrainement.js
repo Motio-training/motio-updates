@@ -200,7 +200,7 @@ export async function vueSeances(_params, toutes = false) {
             <h2>Générer une séance <span class="badge-ia ${accesIA ? 'on' : ''}">✦ IA</span></h2>
           </div>
           <!-- Le corps défile : la fenêtre est plus haute qu'un petit écran
-               ne peut afficher, et sans `.modale-corps` le bouton Générer
+               ne peut afficher, et sans le conteneur qui défile, le bouton Générer
                finissait hors champ, exactement comme l'ancien aperçu de
                séance. -->
           <div class="modale-corps">

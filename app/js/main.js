@@ -134,6 +134,26 @@ function mesurerBarreBas() {
   const entete = document.querySelector('.appbar');
   document.documentElement.style.setProperty('--haut-appbar', entete ? `${entete.offsetHeight}px` : '0px');
 }
+
+/* Hauteur RÉELLEMENT visible, clavier virtuel déduit. `100dvh` ne suffit pas :
+   il tient compte des barres du navigateur, pas du clavier. Sur Android,
+   `interactive-widget=resizes-content` (index.html) règle le problème à la
+   source ; Safari iOS ignore ce réglage, et là seule l'API VisualViewport dit
+   la vérité. Publiée en variable CSS, elle sert de hauteur aux écrans qui
+   doivent tenir dans l'écran sans déborder derrière le clavier — les
+   discussions (coach et messages), où un grand vide s'installait entre la
+   barre du bas et le clavier, signalé par Nicolas.
+   Seul `resize` est écouté : la hauteur ne change pas au défilement, et
+   VisualViewport émet des `scroll` en rafale sur iOS. */
+function mesurerHauteurVisible() {
+  const vv = window.visualViewport;
+  document.documentElement.style.setProperty(
+    '--haut-visuel', `${Math.round(vv ? vv.height : innerHeight)}px`
+  );
+}
+window.visualViewport?.addEventListener('resize', mesurerHauteurVisible);
+addEventListener('resize', mesurerHauteurVisible);
+mesurerHauteurVisible();
 addEventListener('resize', mesurerBarreBas);
 
 $('#menu')?.addEventListener('click', () => {
@@ -170,7 +190,7 @@ start();
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '53';
+const VERSION = '54';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher
