@@ -1,6 +1,6 @@
 {
-  "versionCode": 152,
-  "versionName": "2.49",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.49/motio.apk",
-  "notes": "Un seul bouton Generer une seance, avec une pastille IA : doree, c'est le coach qui ecrit la seance a partir de ta description ; grise, c'est le generateur local de Motio. Meme bouton et memes regles dans l'espace web. La seance generee s'ouvre directement dans l'ecran de modification."
+  "versionCode": 153,
+  "versionName": "2.50",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.50/motio.apk",
+  "notes": "Poids conseille coherent avec l'objectif du jour : il passe par ton 1RM estime et redescend vers la charge correspondant au nombre de repetitions vise. RIR reconduit de la serie precedente quand tu n'y touches pas. Sur la montre, le pave RIR se retire au bout de dix secondes. Espace web : l'ecran Entrainement reprend la disposition de l'appli."
 }
