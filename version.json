@@ -1,6 +1,6 @@
 {
-  "versionCode": 154,
-  "versionName": "2.51",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.51/motio.apk",
-  "notes": "Poids conseille coherent avec l'objectif du jour : il passe par ton 1RM estime et redescend vers la charge correspondant au nombre de repetitions vise. RIR reconduit de la serie precedente quand tu n'y touches pas. Sur la montre, le pave RIR se retire au bout de dix secondes. Espace web : l'ecran Entrainement reprend la disposition de l'appli."
+  "versionCode": 155,
+  "versionName": "2.52",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.52/motio.apk",
+  "notes": "Le lien de partage d'une seance tient enfin sur une ligne : sept caracteres au lieu de trois cents. Le code de la seance est depose une fois sur le serveur, le lien ne porte plus qu'un identifiant. QR code bien plus lisible et plus rapide a scanner. Les liens deja envoyes continuent de fonctionner, et sans reseau le partage repart tout seul sur l'ancien format."
 }

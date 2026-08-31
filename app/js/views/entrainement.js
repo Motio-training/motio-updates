@@ -8,7 +8,8 @@ import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          prochainGroupId, etendueBloc, libelleBloc, GOALS, LEVELS } from '../model.js';
 import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '../catalog.js';
 import { ouvrirPartage } from '../partage.js';
-import { encode as encoderSeance } from '../workout-share.js';
+import { encode as encoderSeance, estIdCourt, creerLienCourt,
+         seancePour } from '../workout-share.js';
 import { ouvrirBilan } from '../bilan.js';
 import { niveauActuel, objectifActuel, definirNiveau, definirObjectif } from '../reglages.js';
 import { etatBrut as seanceEnCours, effacerEtat as oublierSeanceEnCours } from '../run-state.js';
@@ -67,7 +68,14 @@ function extraireCodeSeance(texte) {
   if (!t) return null;
   const m = t.match(/seances\/importer\/([A-Za-z0-9_~.-]+)/);
   if (m) return m[1];
-  // Code collé seul : pas d'espace, pas de barre oblique.
+  // Lien court venu de l'application : page `partage/`, identifiant derrière
+  // le dièse. Même adresse que ShareConfig.SHARE_PAGE_URL côté Android.
+  const c = t.match(/partage\/?#([A-Za-z0-9]{7})\b/);
+  if (c) return c[1].toUpperCase();
+  // Code collé seul. Ici, contrairement à la détection automatique du natif,
+  // c'est un geste explicite : sept caractères suffisent, sans risque de
+  // prendre un mot quelconque pour une séance.
+  if (estIdCourt(t)) return t.toUpperCase();
   return /^[A-Za-z0-9_~.-]{8,}$/.test(t) ? t : null;
 }
 /** fmtDerniereFois (TrainingScreens.kt). */
@@ -503,10 +511,19 @@ export async function vueSeances(_params, toutes = false) {
     document.body.appendChild(modale);
   }
 
+  /* Le lien à envoyer. L'identifiant court demandé au serveur remplace le code
+     complet de la séance : 7 caractères au lieu de 300 à 500. Si le serveur ne
+     répond pas, on repart sur le code long, qui se suffit à lui-même — un
+     partage ne doit pas échouer faute de réseau (même repli que Sharing.kt). */
+  async function lienDeSeance(w) {
+    const code = await encoderSeance(w);
+    const id = await creerLienCourt(w, code);
+    return `${location.origin}${location.pathname}#/seances/importer/${id || code}`;
+  }
+
   async function envoyerLienSeance(w, nom) {
     try {
-      const code = await encoderSeance(w);
-      const url = `${location.origin}${location.pathname}#/seances/importer/${code}`;
+      const url = await lienDeSeance(w);
       if (navigator.share) {
         await navigator.share({ title: nom, text: `Découvre ma séance « ${nom} » sur Motio`, url });
       } else {
@@ -535,8 +552,7 @@ export async function vueSeances(_params, toutes = false) {
     document.body.appendChild(modale);
 
     try {
-      const code = await encoderSeance(w);
-      const url = `${location.origin}${location.pathname}#/seances/importer/${code}`;
+      const url = await lienDeSeance(w);
       const { dessinerQR } = await import('../qr.js');
       const ok = await dessinerQR(modale.querySelector('[data-canvas]'), url, 900);
       if (!ok) throw new Error('trop long');
@@ -731,12 +747,16 @@ export async function vueImporterSeance(params) {
   render(loading('Lecture de la séance'));
   const moi = await currentUser();
 
-  const { decode } = await import('../workout-share.js');
-  const w = await decode(params.code);
+  /* seancePour, et pas decode : le lien peut porter le code complet (ancien
+     format, décodé sur place) comme un identifiant court, qui demande alors
+     un aller-retour serveur. */
+  const w = await seancePour(params.code);
   if (!w) {
+    const court = estIdCourt(params.code);
     return render(empty(
-      'Séance illisible',
-      "Ce lien de séance est invalide ou corrompu.",
+      court ? 'Séance introuvable' : 'Séance illisible',
+      court ? "Ce lien n'a pas pu être ouvert. Vérifie ta connexion, puis réessaie."
+            : "Ce lien de séance est invalide ou corrompu.",
       { href: '#/seances', label: 'Retour à Entraînement' }
     ));
   }

@@ -484,4 +484,9 @@ export const CHANGELOG = [
                 "1RM testé : touche « Modifier » dans Analyse et records pour saisir ton vrai maxi",
                 "Moti connaît tes 1RM testés et s'en sert pour les charges conseillées et tes programmes"
             ] },
+  { date: "31 août 2026", versions: "v2.52", items: [
+                "Le lien de partage d'une séance tient enfin sur une ligne : sept caractères au lieu de trois cents. Fini le pavé illisible qui avait l'air d'un lien douteux dans une messagerie",
+                "QR code de séance bien plus lisible et plus rapide à scanner, puisqu'il a beaucoup moins à encoder",
+                "Les liens déjà envoyés continuent de fonctionner, et sans réseau le partage repart tout seul sur l'ancien format : il ne peut pas échouer"
+            ] },
 ];

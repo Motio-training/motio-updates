@@ -41,15 +41,59 @@
 </div>
 
 <script>
-const code = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
+// Ce qui suit le dièse est soit l'IDENTIFIANT COURT du lien (7 caractères,
+// format actuel), soit le code complet de la séance (ancien format, encore
+// dans tous les liens et QR codes déjà envoyés : il doit continuer de marcher).
+const recu = decodeURIComponent(location.hash.replace(/^#/, "")).trim();
 
-document.getElementById("ouvrir").href = "chrono://seance?d=" + code;
+// Clé anon Supabase : publique par conception, elle est déjà compilée dans
+// l'APK. C'est la Row Level Security qui protège les données, et cette table
+// n'est atteignable que par la fonction resolve_share_link.
+const SUPABASE_URL = "https://mwjfhavvoiafjueecopg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13amZoYXZ2b2lhZmp1ZWVjb3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3MjU1NTIsImV4cCI6MjEwMTMwMTU1Mn0.HESGew6nlDKjs3vRW73VGaKZqY5qpNX_xEq4tLWHoO4";
+
+// Alphabet sans caractère ambigu, identique à share_link_id() en base.
+const estIdCourt = (s) => /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{7}$/i.test(s);
+
+// Le bouton part sur ce qu'on a reçu : l'application sait résoudre les deux
+// formes. Si la résolution aboutit ici, on le remplacera par le code complet,
+// pour que l'import fonctionne même si le téléphone perd le réseau entre-temps.
+document.getElementById("ouvrir").href = "chrono://seance?d=" + encodeURIComponent(recu);
+
+/** Identifiant court → code complet de la séance, ou null. */
+async function resoudre(id) {
+  try {
+    const r = await fetch(SUPABASE_URL + "/rest/v1/rpc/resolve_share_link", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ p_id: id.toUpperCase() })
+    });
+    if (!r.ok) return null;
+    const lignes = await r.json();
+    return (lignes && lignes[0] && lignes[0].code) || null;
+  } catch (e) { return null; }
+}
 
 // Aperçu de la séance : le code est du JSON compressé (deflate) puis encodé en
 // base64 « URL ». Les navigateurs récents savent le décompresser tout seuls ;
 // si ce n'est pas le cas, la page reste utilisable, seul l'aperçu manque.
 (async () => {
-  if (!code) return;
+  if (!recu) return;
+  let code = recu;
+  if (estIdCourt(recu)) {
+    const long = await resoudre(recu);
+    if (!long) {
+      document.getElementById("infos").textContent =
+        "Séance introuvable. Vérifie ta connexion, puis recharge la page.";
+      return;
+    }
+    code = long;
+    document.getElementById("ouvrir").href = "chrono://seance?d=" + code;
+  }
   try {
     const b64 = code.replace(/-/g, "+").replace(/_/g, "/");
     const bin = atob(b64 + "=".repeat((4 - b64.length % 4) % 4));
