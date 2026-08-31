@@ -31,6 +31,62 @@ const BIPS_DEFAUT = {
   freq: 2750, trill: 43, volume: 1.0,
   startFreq: 2200, startTrill: 43, startVolume: 1.0
 };
+
+/* ------------------------------------------ réglages qui suivent le compte
+
+   Les clés listées ici montent dans `user_settings` (prefs-sync.js) et
+   redescendent sur tout appareil connecté au même compte. CLE_BIPS n'y est
+   pas : c'est un réglage d'appareil, pas de compte (voir l'en-tête de
+   prefs-sync.js). Les valeurs voyagent telles qu'elles sont stockées, en
+   chaînes, ce qui évite d'avoir à sérialiser deux fois le JSON des 1RM.
+
+   prefs-sync.js s'abonne par surChangementPrefs() plutôt que d'être importé
+   ici : ce module ne doit rien savoir du réseau, et l'inverse ferait un
+   cycle d'imports. */
+const CLES_SYNCHRO = {
+  theme: CLE_THEME,
+  niveau: CLE_NIVEAU,
+  objectif: CLE_OBJECTIF,
+  records: CLE_RECORDS_EPINGLES,
+  filPortee: CLE_FIL_PORTEE,
+  oneRm: CLE_ONE_RM
+};
+
+let auChangement = null;
+
+/** prefs-sync.js pose ici de quoi être prévenu qu'un réglage a bougé. */
+export function surChangementPrefs(fn) { auChangement = fn; }
+
+function signalerChangement() {
+  try { auChangement?.(); } catch { /* la synchro ne doit jamais casser un réglage */ }
+}
+
+/** Ce que cet appareil a de réglé, prêt à monter. Les clés jamais touchées
+ *  sont omises : envoyer un défaut écraserait un choix fait ailleurs. */
+export function instantanePrefs() {
+  const out = {};
+  for (const [nom, cle] of Object.entries(CLES_SYNCHRO)) {
+    const v = localStorage.getItem(cle);
+    if (v !== null) out[nom] = v;
+  }
+  return out;
+}
+
+/** Applique ce qui vient du compte. Renvoie true si quelque chose a changé. */
+export function appliquerPrefs(prefs) {
+  if (!prefs || typeof prefs !== 'object') return false;
+  let change = false;
+  for (const [nom, cle] of Object.entries(CLES_SYNCHRO)) {
+    const v = prefs[nom];
+    if (typeof v !== 'string' || localStorage.getItem(cle) === v) continue;
+    localStorage.setItem(cle, v);
+    change = true;
+  }
+  /* Le thème a déjà été posé sur <html> au tout début de main.js, avec la
+     valeur locale : si le compte en dit une autre, il faut le reposer. */
+  if (change) appliquerTheme();
+  return change;
+}
 export const BIPS_BORNES = { freqMin: 1500, freqMax: 3500, trillMin: 0, trillMax: 90, volMin: 0.2, volMax: 1.0 };
 
 /* ------------------------------------------------------------------ thème */
@@ -55,6 +111,7 @@ export function appliquerTheme() {
 export function definirTheme(mode) {
   localStorage.setItem(CLE_THEME, mode);
   appliquerTheme();
+  signalerChangement();
 }
 
 export function ouvrirTheme() {
@@ -107,13 +164,13 @@ export function niveauActuel() {
   const v = localStorage.getItem(CLE_NIVEAU);
   return NIVEAUX.some(([id]) => id === v) ? v : 'INTERMEDIAIRE';
 }
-export function definirNiveau(v) { localStorage.setItem(CLE_NIVEAU, v); }
+export function definirNiveau(v) { localStorage.setItem(CLE_NIVEAU, v); signalerChangement(); }
 
 export function objectifActuel() {
   const v = localStorage.getItem(CLE_OBJECTIF);
   return OBJECTIFS.some(([id]) => id === v) ? v : 'MASSE';
 }
-export function definirObjectif(v) { localStorage.setItem(CLE_OBJECTIF, v); }
+export function definirObjectif(v) { localStorage.setItem(CLE_OBJECTIF, v); signalerChangement(); }
 
 /* ------------------------------------------------- portée fil/classement */
 
@@ -125,6 +182,7 @@ export function filPortee() {
 }
 export function definirFilPortee(v) {
   localStorage.setItem(CLE_FIL_PORTEE, v === 'tous' ? 'tous' : 'amis');
+  signalerChangement();
 }
 
 /* ------------------------------------------------------------ 1RM testés */
@@ -146,6 +204,7 @@ export function definirOneRmManuel(exercice, valeur) {
   if (valeur == null || !(valeur > 0)) delete tous[exercice];
   else tous[exercice] = valeur;
   localStorage.setItem(CLE_ONE_RM, JSON.stringify(tous));
+  signalerChangement();
 }
 export function tousOneRmManuels() { return tousOneRm(); }
 
@@ -165,6 +224,7 @@ export function toggleRecordEpingle(nom) {
   const i = cur.indexOf(nom);
   if (i >= 0) cur.splice(i, 1); else cur.push(nom);
   localStorage.setItem(CLE_RECORDS_EPINGLES, cur.join('|'));
+  signalerChangement();
 }
 
 /* ------------------------------------------------------------------- bips */

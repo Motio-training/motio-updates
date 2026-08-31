@@ -3,6 +3,7 @@ import { currentSession, onAuthChange, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty } from './ui.js';
 import { appliquerTheme, ouvrirTheme, ouvrirReglagesBips } from './reglages.js';
 import { etatBrut as seanceEnCours } from './run-state.js';
+import { syncPrefs } from './prefs-sync.js';
 import * as beeper from './beeper.js';
 
 /* Avant tout le reste : évite un flash du mauvais thème au premier rendu. */
@@ -165,8 +166,11 @@ $('#vue')?.addEventListener('click', () => {
   document.body.classList.remove('menu-ouvert');
 });
 
-/* Après un retour d'OAuth, l'URL contient le jeton : on rejoue la route. */
-onAuthChange(() => resolve());
+/* Après un retour d'OAuth, l'URL contient le jeton : on rejoue la route.
+   C'est aussi le moment où les réglages du compte redescendent — la même
+   fonction est rappelée à la déconnexion, où elle se contente d'arrêter
+   d'écrire. */
+onAuthChange((session) => { resolve(); syncPrefs(session); });
 
 /* ==========================================================================
    RETOUR D'UN FOURNISSEUR D'IDENTITÉ (Google)
@@ -220,6 +224,11 @@ if (retourAuth.present) {
 
 start();
 
+/* Session déjà ouverte au chargement. onAuthStateChange émet bien un
+   INITIAL_SESSION, mais ne pas en dépendre coûte une ligne et syncPrefs est
+   idempotente pour un même compte. */
+currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi */ });
+
 /* ==========================================================================
    CONTRÔLE DE VERSION — la ceinture, en plus des bretelles du service worker.
 
@@ -240,7 +249,7 @@ start();
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '57';
+const VERSION = '58';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher
