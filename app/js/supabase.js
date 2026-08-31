@@ -5,6 +5,12 @@ export const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
+/* Un retour d'OAuth qui échoue perd son message en même temps que le fragment
+   de l'URL. main.js le dépose ici, l'écran de connexion le ramasse : sans ça
+   l'échec est parfaitement muet. sessionStorage et non localStorage — le
+   message ne vaut que pour la tentative en cours. */
+export const CLE_ERREUR_AUTH = 'motio.erreur-auth';
+
 export async function currentSession() {
   const { data } = await sb.auth.getSession();
   return data.session ?? null;

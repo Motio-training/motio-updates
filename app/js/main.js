@@ -1,5 +1,5 @@
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
-import { currentSession, onAuthChange } from './supabase.js';
+import { currentSession, onAuthChange, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty } from './ui.js';
 import { appliquerTheme, ouvrirTheme, ouvrirReglagesBips } from './reglages.js';
 import { etatBrut as seanceEnCours } from './run-state.js';
@@ -168,6 +168,56 @@ $('#vue')?.addEventListener('click', () => {
 /* Après un retour d'OAuth, l'URL contient le jeton : on rejoue la route. */
 onAuthChange(() => resolve());
 
+/* ==========================================================================
+   RETOUR D'UN FOURNISSEUR D'IDENTITÉ (Google)
+
+   Le fournisseur repasse par cette page avec, selon le flux configuré côté
+   Supabase, un jeton dans le fragment (`#access_token=…`), un code dans la
+   requête (`?code=…`), ou une erreur dans l'un des deux. Aucune de ces trois
+   formes n'est une route : sans le bloc ci-dessous, le routeur ne reconnaît
+   rien, la garde renvoie sur /connexion, et l'utilisateur voit l'écran de
+   connexion revenir sans un mot — le symptôme exact d'un clic « qui ne fait
+   rien ». Trois choses, donc, avant de démarrer le routeur :
+
+   1. attendre que le client Supabase ait fini de lire l'URL. `getSession()`
+      attend l'initialisation en interne, ce qui supprime la course entre la
+      détection du jeton et le premier `resolve()` ;
+   2. retenir le message d'erreur pour que l'écran de connexion l'affiche, au
+      lieu de le perdre en même temps que le fragment ;
+   3. rendre au routeur un hash qu'il sait lire.
+   ========================================================================== */
+
+function lireRetourAuth() {
+  const frag = new URLSearchParams(location.hash.replace(/^#\/?/, ''));
+  const query = new URLSearchParams(location.search);
+  const lire = (cle) => frag.get(cle) ?? query.get(cle);
+  const erreur = lire('error_description') || lire('error');
+  const jeton = lire('access_token') || lire('code');
+  return { present: !!(erreur || jeton), erreur };
+}
+
+const retourAuth = lireRetourAuth();
+if (retourAuth.present) {
+  let session = null;
+  try { session = await currentSession(); } catch { /* traité juste après */ }
+
+  if (retourAuth.erreur) {
+    try { sessionStorage.setItem(CLE_ERREUR_AUTH, retourAuth.erreur); } catch { /* stockage refusé */ }
+  } else if (!session) {
+    /* Cas muet : le fournisseur a bien renvoyé quelque chose, mais Supabase
+       n'en a pas tiré de session. En pratique c'est l'adresse de retour qui
+       n'est pas dans la liste blanche du projet, ou le code qui ne trouve
+       plus son `code_verifier` parce que le domaine a changé entre l'aller
+       et le retour. */
+    try {
+      sessionStorage.setItem(CLE_ERREUR_AUTH,
+        "Connexion non aboutie : le fournisseur a répondu, mais aucune session n'a pu être ouverte.");
+    } catch { /* stockage refusé */ }
+  }
+
+  history.replaceState(null, '', location.pathname + (session ? '#/seances' : '#/connexion'));
+}
+
 start();
 
 /* ==========================================================================
@@ -190,7 +240,7 @@ start();
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '55';
+const VERSION = '57';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

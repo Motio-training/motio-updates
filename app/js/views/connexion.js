@@ -1,5 +1,5 @@
 import { h, render, toast } from '../ui.js';
-import { signIn, signUp, signInWithGoogle } from '../supabase.js';
+import { signIn, signUp, signInWithGoogle, CLE_ERREUR_AUTH } from '../supabase.js';
 import { CONFIG } from '../config.js';
 
 export function vueConnexion() {
@@ -47,9 +47,16 @@ export function vueConnexion() {
   };
 
   el.querySelector('[data-google]').onclick = async (e) => {
-    e.target.disabled = true;
-    try { await signInWithGoogle(); }
-    catch (err) { toast(err.message); e.target.disabled = false; }
+    const bouton = e.target;
+    bouton.disabled = true;
+    try {
+      await signInWithGoogle();
+      /* signInWithOAuth rend la main sans erreur puis quitte la page. S'il
+         n'a pas quitté, la redirection a été retenue (bloqueur, fenêtre en
+         arrière-plan) : rendre le bouton, sinon l'écran reste figé sur un
+         bouton grisé et le clic suivant ne fait rien du tout. */
+      setTimeout(() => { bouton.disabled = false; }, 4000);
+    } catch (err) { toast(err.message); bouton.disabled = false; }
   };
 
   valider.onclick = async () => {
@@ -76,4 +83,12 @@ export function vueConnexion() {
   };
 
   render(el);
+
+  /* Message laissé par main.js quand un retour d'OAuth a échoué. Il est lu une
+     seule fois : le garder ferait réapparaître l'avertissement à chaque visite
+     de l'écran. */
+  try {
+    const err = sessionStorage.getItem(CLE_ERREUR_AUTH);
+    if (err) { sessionStorage.removeItem(CLE_ERREUR_AUTH); toast(err); }
+  } catch { /* stockage refusé */ }
 }
