@@ -13,7 +13,7 @@ export const CONFIG = {
 
   /* Adresse publique de l'espace web. À déclarer aussi dans
      Supabase › Authentication › URL Configuration › Redirect URLs. */
-  SITE_URL: 'https://motio-training.github.io/motio-updates/app/',
+  SITE_URL: 'https://motiotraining.com/app/',
 
   DOWNLOAD_URL: 'https://github.com/Motio-training/motio-updates/releases/latest',
 
