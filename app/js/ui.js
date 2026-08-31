@@ -1,6 +1,9 @@
 /* Petits outils partagés par les vues. Aucun framework : le squelette doit
    rester lisible et modifiable sans chaîne de build. */
 
+/* router.js n'importe rien : pas de cycle à craindre en lisant la route ici. */
+import { currentPath } from './router.js';
+
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
@@ -16,11 +19,31 @@ export function esc(s) {
   ));
 }
 
+/* Remonter en haut n'a de sens qu'en CHANGEANT d'écran. Or chaque vue se rend
+   deux fois — render(loading()) puis render(contenu) quand les données
+   arrivent — et le second rendu annulait le défilement en cours : pendant la
+   seconde ou deux que dure le chargement, tout geste était ramené en haut, au
+   pavé tactile comme au doigt. Vu de l'écran, l'application « ne défilait
+   pas », sur tous les écrans et sur les deux plateformes (signalé par
+   Nicolas).
+
+   On ne remet donc en haut que lorsque la route a réellement changé : un
+   rafraîchissement de la vue courante laisse le lecteur où il est. La
+   restauration explicite de position (redessiner(), entrainement.js) continue
+   de fonctionner, puisque render ne touche plus au défilement à écran
+   constant. */
+let cheminDernierRendu = null;
+
 export function render(node) {
   const outlet = $('#vue');
   outlet.replaceChildren(node);
   outlet.focus({ preventScroll: true });
-  window.scrollTo(0, 0);
+
+  const chemin = currentPath();
+  if (chemin !== cheminDernierRendu) {
+    cheminDernierRendu = chemin;
+    window.scrollTo(0, 0);
+  }
 }
 
 export function loading(label = 'Chargement') {
