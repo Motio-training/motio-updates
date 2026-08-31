@@ -128,13 +128,29 @@
    d'un écran déclenche le pull-to-refresh du navigateur (spinner, rechar-
    gement) et chaque appui flashe en gris — deux réflexes de navigateur que
    l'application n'a pas (Compose gère ses propres ripples). Les :active déjà
-   en place (.btn, .run-cellule, .pave-touche…) restent le retour au toucher. */
+   en place (.btn, .run-cellule, .pave-touche…) restent le retour au toucher.
+
+   CES DEUX PROPRIÉTÉS VONT SUR html, JAMAIS SUR body. Les avoir eues sur les
+   deux a rendu l'application entièrement impossible à faire défiler au geste
+   — deux doigts sur le pavé tactile, un doigt sur mobile — pendant que la
+   barre de défilement, elle, fonctionnait (signalé par Nicolas). Le
+   mécanisme : `overflow-x:hidden` sur body en fait un conteneur de
+   défilement à part entière (son overflow-y calculé passe de `visible` à
+   `auto`), or ce conteneur ne déborde jamais — sa hauteur visible égale sa
+   hauteur de contenu — donc il n'a rien à faire défiler ; et
+   `overscroll-behavior-y:none` sur ce même body interdit précisément de
+   transmettre le geste à l'ancêtre. Le geste mourait là, sans rien défiler
+   et sans être annulé. La barre de défilement agit directement sur le
+   document et court-circuitait ce chemin, d'où l'asymétrie trompeuse.
+
+   Sur html les deux gardent tout leur effet : l'overflow de l'élément racine
+   est propagé au viewport, et c'est la valeur d'overscroll-behavior de la
+   racine — pas celle du body — que le viewport utilise. Le pull-to-refresh
+   reste donc bien neutralisé. */
 html{overflow-x:hidden;overscroll-behavior-y:none}
 
 body{
   margin:0;
-  overflow-x:hidden;
-  overscroll-behavior-y:none;
   background:var(--creme);
   color:var(--encre);
   font-family:var(--f-body);
