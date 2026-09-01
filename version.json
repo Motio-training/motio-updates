@@ -1,6 +1,6 @@
 {
-  "versionCode": 157,
-  "versionName": "2.54",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.54/motio.apk",
-  "notes": "Le clavier ne decale plus l'ecran : l'en-tete de la conversation reste en place et le vide entre la zone de saisie et le clavier a disparu, dans les messages, les groupes et le Coach."
+  "versionCode": 158,
+  "versionName": "2.56",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.56/motio.apk",
+  "notes": "Chaque exercice a desormais son visuel : position de depart et position d'arrivee. Pendant la seance, appuie sur le nom de l'exercice puis sur Voir le mouvement. Dans le catalogue, appuie sur la vignette. Les images sont embarquees dans l'application, elles s'affichent meme sans reseau."
 }
