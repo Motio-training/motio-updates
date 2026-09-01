@@ -489,4 +489,9 @@ export const CHANGELOG = [
                 "QR code de séance bien plus lisible et plus rapide à scanner, puisqu'il a beaucoup moins à encoder",
                 "Les liens déjà envoyés continuent de fonctionner, et sans réseau le partage repart tout seul sur l'ancien format : il ne peut pas échouer"
             ] },
+  { date: "1er septembre 2026", versions: "v2.53", items: [
+                "Tes réglages suivent ton compte : niveau, objectif, 1RM testés, records épinglés, portée du fil et mode clair ou sombre se retrouvent sur un nouveau téléphone comme sur l'espace web",
+                "Les réglages de son restent propres à chaque appareil : le volume qui convient en salle n'est pas celui d'un ordinateur au calme",
+                "La synchronisation démarre dès l'ouverture de l'application. Elle attendait jusqu'ici que tu sortes et reviennes, ce qui pouvait la laisser en sommeil plusieurs jours"
+            ] },
 ];
