@@ -1,6 +1,6 @@
 {
-  "versionCode": 156,
-  "versionName": "2.53",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.53/motio.apk",
-  "notes": "Tes reglages suivent ton compte : niveau, objectif, 1RM testes, records epingles, portee du fil et mode clair ou sombre se retrouvent sur un nouveau telephone comme sur l'espace web. Les reglages de son restent propres a chaque appareil. La synchronisation demarre des l'ouverture de l'application, alors qu'elle attendait jusqu'ici que tu sortes et reviennes."
+  "versionCode": 157,
+  "versionName": "2.54",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.54/motio.apk",
+  "notes": "Le clavier ne decale plus l'ecran : l'en-tete de la conversation reste en place et le vide entre la zone de saisie et le clavier a disparu, dans les messages, les groupes et le Coach."
 }
