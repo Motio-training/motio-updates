@@ -1,6 +1,6 @@
 {
-  "versionCode": 158,
-  "versionName": "2.56",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.56/motio.apk",
-  "notes": "Chaque exercice a desormais son visuel : position de depart et position d'arrivee. Pendant la seance, appuie sur le nom de l'exercice puis sur Voir le mouvement. Dans le catalogue, appuie sur la vignette. Les images sont embarquees dans l'application, elles s'affichent meme sans reseau."
+  "versionCode": 159,
+  "versionName": "2.57",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.57/motio.apk",
+  "notes": "Les visuels d'exercice sont maintenant des planches dessinees pour Motio : les deux positions sur la meme image, avec la fleche qui donne le sens du mouvement. Les 84 exercices du catalogue par defaut sont couverts, et les memes planches sont arrivees sur l'espace web."
 }
