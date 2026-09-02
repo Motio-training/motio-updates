@@ -18,6 +18,7 @@ import { genererSeanceLocale } from '../generateur-local.js';
 import { ouvrirPaveDuree } from '../numpad.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
+import { vignetteExercice, ouvrirPlanche } from '../exercise-visuals.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -1275,7 +1276,17 @@ export function ouvrirCatalogue(choisir) {
   }
 
   function bouton(nom) {
-    const b = h(`<button class="puce">${esc(nom)}</button>`);
+    const b = h(`<button class="puce" type="button">${esc(nom)}</button>`);
+    // Vignette du mouvement, comme dans l'appli : on reconnaît l'exercice
+    // d'un coup d'œil. Un appui SUR LA VIGNETTE ouvre la planche au lieu de
+    // choisir l'exercice — on regarde le mouvement avant de le mettre dans
+    // sa séance, pas après.
+    const vg = vignetteExercice(nom, 38);
+    if (vg) {
+      b.prepend(vg);
+      b.classList.add('puce-vignettee');
+      vg.addEventListener('click', (e) => { e.stopPropagation(); ouvrirPlanche(nom); });
+    }
     b.onclick = () => { choisir(nom); modale.remove(); };
     return b;
   }

@@ -825,6 +825,23 @@ a.ligne-titre:hover{color:var(--accent)}
 .puce:disabled{opacity:.45;cursor:default;transform:none}
 .puces{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:1.25rem}
 
+/* Planches de mouvement (exercise-visuals.js). Fond blanc FORCÉ, comme le QR
+   plus bas : les dessins sont à l'encre noire sur blanc, posés sur le fond
+   sombre du thème leurs aplats noirs (short, banc, chaussures) disparaîtraient.
+   La même plaque claire sert donc dans les deux thèmes. */
+.puce-vignettee{display:inline-flex;align-items:center;gap:.45rem;padding:.25rem .85rem .25rem .25rem}
+.exo-vignette{
+  display:block;border-radius:calc(var(--r-pill) - .35rem);background:#fff;
+  object-fit:contain;flex:0 0 auto;
+}
+.exo-vignette:hover{outline:2px solid var(--accent);outline-offset:1px}
+.exo-planche{
+  display:block;width:100%;max-width:26rem;margin:.2rem auto 0;
+  aspect-ratio:1;object-fit:contain;
+  background:#fff;border-radius:var(--r-m);
+}
+.exo-planche-legende{margin:.55rem 0 0;text-align:center}
+
 .exo{
   margin-bottom:.6rem;padding-bottom:.6rem;
   border-bottom:1px solid var(--trait);

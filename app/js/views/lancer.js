@@ -49,6 +49,7 @@ import { ouvrirBilan } from '../bilan.js';
 import { ouvrirPave } from '../numpad.js';
 import { ouvrirCatalogue } from './entrainement.js';
 import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
+import { hasVisual, ouvrirPlanche } from '../exercise-visuals.js';
 
 const RIR = [0, 1, 2, 3, 4, 5];
 const SETUP_SEC = 10;
@@ -246,7 +247,7 @@ export async function vueLancerSeance(params) {
      du bas y ramène directement. Rien n'est perdu, rien n'est enregistré. */
   el.querySelector('[data-arriere]').onclick = () => { sauver(); location.hash = '#/seances'; };
   pauseBtn.onclick = () => engine.minuteurTogglePause();
-  titreEl.onclick = () => ouvrirRemplacement();
+  titreEl.onclick = () => ouvrirMenuExercice();
 
   function majCadran(snap) {
     const cadran = corps.querySelector('[data-cadran]');
@@ -838,12 +839,43 @@ export async function vueLancerSeance(params) {
     else ouvrirFin(true);
   }
 
-  /** Appui sur le titre : remplacer l'exercice en cours (ExerciseMenuDialog
-   *  → askSwap, TrainingScreens.kt). La machine est prise, on passe à autre
-   *  chose sans perdre ce qui est déjà fait : ce n'est pas un renommage, les
-   *  séries déjà enregistrées appartiennent à l'ancien exercice et le
-   *  restent — coupe en deux, comme le natif (ex.blank() + plannedSets
-   *  ajusté des deux côtés). */
+  /** Appui sur le titre : le menu de l'exercice en cours (ExerciseMenuDialog,
+   *  TrainingScreens.kt). « Voir le mouvement » vient en premier — au milieu
+   *  d'une série, c'est la question la plus fréquente — et n'apparaît que si
+   *  l'exercice a une planche, plutôt qu'une entrée de menu qui ne mène nulle
+   *  part. Le remplacement, lui, garde son dialogue d'avertissement. */
+  function ouvrirMenuExercice() {
+    if (termine) return;
+    const ex = session.exercises[exIndex];
+    const modale = h(`
+      <div class="modale" role="dialog" aria-label="Exercice">
+        <div class="modale-boite modale-boite-etroite menu-action">
+          <p class="menu-action-titre">${esc(ex.name || 'Exercice')}</p>
+          <div class="menu-action-lignes">
+            ${hasVisual(ex.name)
+              ? '<button class="menu-action-ligne" data-visuel type="button">Voir le mouvement</button>'
+              : ''}
+            <button class="menu-action-ligne" data-remplacer type="button">Remplacer l'exercice</button>
+          </div>
+          <button class="lien-inline menu-action-annuler" data-annuler type="button">Annuler</button>
+        </div>
+      </div>`);
+    const fermer = () => modale.remove();
+    modale.querySelector('[data-annuler]').onclick = fermer;
+    modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+    const visuel = modale.querySelector('[data-visuel]');
+    // La planche ne touche à aucun chrono : on peut la consulter pendant une
+    // récupération sans que la séance s'arrête.
+    if (visuel) visuel.onclick = () => { fermer(); ouvrirPlanche(ex.name); };
+    modale.querySelector('[data-remplacer]').onclick = () => { fermer(); ouvrirRemplacement(); };
+    document.body.appendChild(modale);
+  }
+
+  /** Remplacer l'exercice en cours (ExerciseMenuDialog → askSwap,
+   *  TrainingScreens.kt). La machine est prise, on passe à autre chose sans
+   *  perdre ce qui est déjà fait : ce n'est pas un renommage, les séries déjà
+   *  enregistrées appartiennent à l'ancien exercice et le restent — coupe en
+   *  deux, comme le natif (ex.blank() + plannedSets ajusté des deux côtés). */
   function ouvrirRemplacement() {
     if (termine) return;
     const ex = session.exercises[exIndex];

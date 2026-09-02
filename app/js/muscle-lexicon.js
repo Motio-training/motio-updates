@@ -79,7 +79,7 @@ export function musNorm(raw) {
 }
 
 /** Distance de Levenshtein bornée — absorbe les fautes de frappe. */
-function lev(a, b, maxD) {
+export function lev(a, b, maxD) {
   if (Math.abs(a.length - b.length) > maxD) return maxD + 1;
   let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
   let cur = new Array(b.length + 1);
