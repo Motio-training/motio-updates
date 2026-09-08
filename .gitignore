@@ -1,0 +1,5 @@
+# Artefacts de build laissés à la racine par les sessions de publication.
+# L'APK se télécharge depuis la release GitHub (voir index.html), jamais
+# depuis le dépôt : un binaire de 20 Mo n'a rien à y faire. Il avait déjà
+# été retiré une fois (commit 7c98d0a).
+motio.apk
