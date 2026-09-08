@@ -1,6 +1,6 @@
 {
-  "versionCode": 159,
-  "versionName": "2.57",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.57/motio.apk",
-  "notes": "Les visuels d'exercice sont maintenant des planches dessinees pour Motio : les deux positions sur la meme image, avec la fleche qui donne le sens du mouvement. Les 84 exercices du catalogue par defaut sont couverts, et les memes planches sont arrivees sur l'espace web."
+  "versionCode": 160,
+  "versionName": "2.58",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.58/motio.apk",
+  "notes": "Moti explique desormais ce qu'il ecrit : chaque seance et chaque programme genere arrive avec le mot du coach, conserve avec la seance. Il s'y connait aussi en prevention des blessures, en reathletisation et en mobilite : decris-lui une douleur, il pose des questions avant de proposer du renforcement, des etirements, de la proprioception ou une seance de stretching. Nouveau mode Maintien pour les positions tenues, cinq nouveaux groupes au catalogue (mobilite, etirements, proprioception, prevention, yoga) et les elastiques comme famille de materiel."
 }
