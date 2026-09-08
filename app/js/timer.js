@@ -30,6 +30,13 @@ export class Engine {
     this.workSec = 20; this.restSec = 10; this.series = 8;
     this.tabT0 = 0; this.tabRunning = false; this.tabPaused = false; this.tabPausedElapsed = 0;
     this.tabLastPhaseIdx = -Infinity; this.tabLastRemainSec = Infinity; this.tabDoneBeeped = false;
+    /* Circuit : le déroulé complet posé à l'avance (circuitPlan, model.js) et
+       ses fins cumulées. Le moteur ne décide de rien, il lit une horloge et
+       dit dans quel segment on se trouve — un circuit reprend donc exactement
+       où il en était après un rechargement de page. */
+    this.circPlan = []; this.circEnds = [];
+    this.circT0 = 0; this.circRunning = false; this.circPaused = false; this.circPausedElapsed = 0;
+    this.circLastIdx = -Infinity; this.circLastRemainSec = Infinity; this.circDoneBeeped = false;
   }
 
   get tensionActive() { return this.tensionStart != null; }
@@ -42,7 +49,7 @@ export class Engine {
     this._interval = setInterval(() => this._tick(), 100);
   }
   _stopLoopIfIdle() {
-    if (this.chronoStart == null && !this.minRunning && !this.tabRunning) {
+    if (this.chronoStart == null && !this.minRunning && !this.tabRunning && !this.circRunning) {
       clearInterval(this._interval); this._interval = null;
     }
   }
@@ -70,6 +77,42 @@ export class Engine {
     this.tabLastPhaseIdx = -Infinity; this.tabLastRemainSec = Infinity; this.tabDoneBeeped = false;
     this._startLoop(); this._tick();
   }
+  /* ---- Circuit ---- */
+
+  /** Charge un déroulé (circuitPlan, model.js) sans rien démarrer. */
+  circuitLoad(plan) {
+    this.circPlan = plan || [];
+    this.circEnds = [];
+    let cumul = 0;
+    for (const s of this.circPlan) { cumul += s.durSec; this.circEnds.push(cumul); }
+  }
+
+  circuitStart() {
+    if (!this.circPlan.length) return;
+    this.circT0 = Date.now(); this.circRunning = true;
+    this.circPaused = false; this.circPausedElapsed = 0;
+    this.circLastIdx = -Infinity; this.circLastRemainSec = Infinity; this.circDoneBeeped = false;
+    this._startLoop(); this._tick();
+  }
+
+  circuitStop() { this.circRunning = false; this.circPaused = false; this._tick(); this._stopLoopIfIdle(); }
+
+  circuitTogglePause() {
+    if (!this.circRunning) return;
+    if (this.circPaused) { this.circT0 = Date.now() - this.circPausedElapsed; this.circPaused = false; }
+    else { this.circPausedElapsed = Date.now() - this.circT0; this.circPaused = true; }
+    this._tick();
+  }
+
+  /** Index du segment en cours, ou -1 si le circuit est fini ou à l'arrêt. */
+  circuitIndex(now = Date.now()) {
+    if (!this.circRunning || !this.circPlan.length) return -1;
+    const elapsedMs = this.circPaused ? this.circPausedElapsed : now - this.circT0;
+    const elapsedSec = Math.floor(elapsedMs / 1000);
+    for (let i = 0; i < this.circEnds.length; i++) if (elapsedSec < this.circEnds[i]) return i;
+    return -1;
+  }
+
   tabataStop() { this.tabRunning = false; this.tabPaused = false; this._tick(); this._stopLoopIfIdle(); }
   tabataTogglePause() {
     if (!this.tabRunning) return;
@@ -92,7 +135,12 @@ export class Engine {
       minPausedElapsed: this.minPausedElapsed,
       workSec: this.workSec, restSec: this.restSec, series: this.series,
       tabT0: this.tabT0, tabRunning: this.tabRunning,
-      tabPaused: this.tabPaused, tabPausedElapsed: this.tabPausedElapsed
+      tabPaused: this.tabPaused, tabPausedElapsed: this.tabPausedElapsed,
+      /* Le PLAN du circuit n'est pas capturé : il se reconstruit à
+         l'identique depuis la séance (circuitPlan), et c'est l'écran qui le
+         recharge avant de restaurer cet état. Seule l'horloge compte. */
+      circT0: this.circT0, circRunning: this.circRunning,
+      circPaused: this.circPaused, circPausedElapsed: this.circPausedElapsed
     };
   }
 
@@ -113,7 +161,12 @@ export class Engine {
     this.minStartBeeped = this.minRunning && !this.minPaused
       && (Date.now() - this.minT0) >= this.minDurSec * 1000;
     this.tabLastPhaseIdx = -Infinity; this.tabLastRemainSec = Infinity; this.tabDoneBeeped = false;
-    if (this.chronoStart != null || this.minRunning || this.tabRunning) { this._startLoop(); this._tick(); }
+    this.circT0 = e.circT0 || 0; this.circRunning = !!e.circRunning;
+    this.circPaused = !!e.circPaused; this.circPausedElapsed = e.circPausedElapsed || 0;
+    this.circLastIdx = -Infinity; this.circLastRemainSec = Infinity; this.circDoneBeeped = false;
+    if (this.chronoStart != null || this.minRunning || this.tabRunning || this.circRunning) {
+      this._startLoop(); this._tick();
+    }
   }
 
   _tick() {
@@ -156,6 +209,25 @@ export class Engine {
         }
         if (remainSec >= 1 && remainSec <= 3 && remainSec < this.tabLastRemainSec) beeper.shortBeep();
         this.tabLastRemainSec = remainSec;
+      }
+    }
+    if (this.circRunning && !this.circPaused) {
+      // Mêmes bips que le tabata, pour la même raison : sans le son, un
+      // circuit oblige à regarder l'écran en permanence, alors que c'est
+      // justement le format où l'on a les mains prises.
+      const idx = this.circuitIndex(now);
+      if (idx < 0) {
+        if (!this.circDoneBeeped) { this.circDoneBeeped = true; beeper.startBeep(); }
+      } else {
+        const remainMs = this.circEnds[idx] * 1000 - (now - this.circT0);
+        const remainSec = Math.ceil(remainMs / 1000);
+        if (idx !== this.circLastIdx) {
+          beeper.startBeep();
+          this.circLastIdx = idx;
+          this.circLastRemainSec = Infinity;
+        }
+        if (remainSec >= 1 && remainSec <= 3 && remainSec < this.circLastRemainSec) beeper.shortBeep();
+        this.circLastRemainSec = remainSec;
       }
     }
   }
@@ -207,6 +279,38 @@ export class Engine {
           label: (working ? 'Travail' : 'Repos') + `  ${idx + 1}/${this.series}`,
           value: String(Math.ceil(remainMs / 1000)), colorKey: working ? 'work' : 'rest',
           active: true, serie: idx + 1, serieTot: this.series };
+      }
+      case 'CIRCUIT': {
+        const tours = this.circPlan.length ? this.circPlan[this.circPlan.length - 1].round : 0;
+        const vide = { mode: 'CIRCUIT', station: -1, round: 0, roundTot: tours, segment: -1 };
+        if (!this.circRunning || !this.circPlan.length) {
+          return { ...vide, phase: 'IDLE', label: 'Circuit', value: '—', colorKey: 'neutral', active: false };
+        }
+        const idx = this.circuitIndex(now);
+        if (this.circPaused) {
+          const seg = this.circPlan[idx];
+          return { ...vide, phase: 'PAUSED', label: 'Pause', value: '⏸', colorKey: 'pause',
+            active: true, station: seg ? seg.station : -1, round: seg ? seg.round : 0, segment: idx };
+        }
+        if (idx < 0) {
+          this.circRunning = false;
+          return { ...vide, phase: 'DONE', label: 'Terminé', value: '✓',
+            colorKey: 'neutral', active: false };
+        }
+        const seg = this.circPlan[idx];
+        const remainMs = this.circEnds[idx] * 1000 - (now - this.circT0);
+        // Un repos entre deux tours porte station = -1 : c'est ce qui
+        // distingue « souffle avant de repartir » d'un repos entre stations.
+        const entreTours = !seg.work && seg.station < 0;
+        return {
+          mode: 'CIRCUIT',
+          phase: seg.work ? 'WORK' : 'REST',
+          label: seg.work ? 'Effort' : (entreTours ? 'Repos entre les tours' : 'Repos'),
+          value: String(Math.max(0, Math.ceil(remainMs / 1000))),
+          colorKey: seg.work ? 'work' : 'rest',
+          active: true,
+          station: seg.station, round: seg.round, roundTot: tours, segment: idx
+        };
       }
     }
   }

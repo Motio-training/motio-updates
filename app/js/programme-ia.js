@@ -25,7 +25,7 @@
 
 import { sb } from './supabase.js';
 import { GROUPES, devineMateriel } from './catalog.js';
-import { nouvelleSeance, nouvelExercice } from './model.js';
+import { nouvelleSeance, nouvelExercice, CIRCUIT_WORK_SEC } from './model.js';
 
 /** Jours de la semaine dans l'ordre français (lundi d'abord), avec la
  *  numérotation de Date.getDay() (0 = dimanche) — pas besoin de conversion
@@ -99,7 +99,13 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
       .filter(e => e.name);
     return {
       title, category: (s.category || '').trim() || title,
-      notes: (s.notes || '').trim(), exercices
+      notes: (s.notes || '').trim(),
+      // Séance en circuit : les exercices deviennent des stations qui
+      // s'enchaînent seules, sans charge ni répétitions (circuit.js).
+      circuit: !!s.circuit,
+      rounds: clamp(Math.round(s.rounds ?? 3), 1, 20),
+      roundRestSec: clamp(Math.round(s.round_rest_sec ?? 60), 0, 600),
+      exercices
     };
   });
 
@@ -138,10 +144,22 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
        une séance générée seule (genererSeanceIA, weeks = 1) n'a que
        celle-là, et repartir les mains vides serait le manque qu'on comble. */
     w.notes = def.notes || notes;
+    w.circuit = def.circuit;
+    w.rounds = def.rounds;
+    w.roundRestSec = def.roundRestSec;
     def.exercices.forEach((d, ei) => {
       const creneau = creneauPour(premierePhase, bi, ei);
       const ex = nouvelExercice(d.name);
-      if (d.holdSec > 0) {
+      if (def.circuit) {
+        /* Station de circuit : l'effort se mesure en secondes, le reste
+           (tours, ordre) appartient au circuit. */
+        ex.mode = 'MAINTIEN';
+        ex.plannedSets = 1; ex.targetReps = 0;
+        ex.recupSec = d.holdRestSec;
+        ex.workSec = d.holdSec > 0 ? d.holdSec : CIRCUIT_WORK_SEC;
+        ex.restSec = d.holdRestSec;
+        ex.tabataSeries = 1;
+      } else if (d.holdSec > 0) {
         ex.mode = 'MAINTIEN';
         ex.plannedSets = creneau.sets; ex.targetReps = 0;
         ex.recupSec = d.holdRestSec;
@@ -166,15 +184,19 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
       const date = plusJours(premier, 7 * (semaine - 1));
       const items = def.exercices.map((d, ei) => {
         const creneau = creneauPour(phase, bi, ei);
-        const tenu = d.holdSec > 0;
+        const tenu = def.circuit || d.holdSec > 0;
+        const duree = def.circuit && !d.holdSec ? CIRCUIT_WORK_SEC : d.holdSec;
         return {
-          name: d.name, sets: creneau.sets,
+          // En circuit, le « nombre de séries » d'une station EST le nombre
+          // de tours : c'est autant de fois qu'on y repassera.
+          name: d.name, sets: def.circuit ? def.rounds : creneau.sets,
           reps: tenu ? 0 : creneau.reps,
           recupSec: tenu ? d.holdRestSec : creneau.recupSec,
           hint: phase.deload ? 'Semaine de décharge — charges allégées'
-            : tenu ? `${phase.label} — tenir la position sans forcer`
-              : `${phase.label} — poids conseillé pendant la séance, selon ton RIR`,
-          holdSec: d.holdSec
+            : def.circuit ? `${phase.label} — circuit, ${def.rounds} tours`
+              : d.holdSec > 0 ? `${phase.label} — tenir la position sans forcer`
+                : `${phase.label} — poids conseillé pendant la séance, selon ton RIR`,
+          holdSec: duree
         };
       });
       program.sessions.push({

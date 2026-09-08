@@ -18,7 +18,7 @@
 import { h, render, esc, toast } from '../ui.js';
 import { sb, currentUser } from '../supabase.js';
 import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
-import { nouvelleSeance, MODE_LABELS } from '../model.js';
+import { nouvelleSeance, MODE_LABELS, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
 import { motifLisible } from '../programme-ia.js';
 import { saveWorkout } from '../api.js';
 import { tousOneRmManuels } from '../reglages.js';
@@ -137,23 +137,36 @@ export async function vueCoach() {
    *  détail directement dans le fil. */
   /** Détail lisible d'un exercice proposé : une position tenue s'annonce en
    *  tours × secondes, jamais en répétitions (voir MAINTIEN, model.js). */
-  function detailPropose(ex) {
+  function detailPropose(ex, circuit) {
     const tours = Math.min(10, Math.max(1, ex.sets || 3));
+    // En circuit, une station se décrit par ses deux durées : le nombre de
+    // tours appartient au circuit, pas à la station.
+    if (circuit) {
+      return `${Math.min(600, Math.max(5, ex.hold_sec || CIRCUIT_WORK_SEC))} s d'effort · ` +
+        `${Math.min(600, Math.max(0, ex.rest_sec ?? CIRCUIT_REST_SEC))} s de repos`;
+    }
     if (ex.hold_sec > 0) return `${tours} × ${Math.min(600, Math.max(5, ex.hold_sec))} s`;
     return `${tours} × ${Math.min(30, Math.max(1, ex.reps || 8))} reps`;
   }
 
   function ouvrirApercuSeance(workout) {
     const explication = (workout.notes || '').trim();
+    const enCircuit = !!workout.circuit;
+    const tours = Math.min(20, Math.max(1, workout.rounds || 3));
+    const reposTour = Math.min(600, Math.max(0, workout.round_rest_sec ?? 60));
     const modale = h(`
       <div class="modale" role="dialog" aria-label="Séance proposée">
         <div class="modale-boite modale-boite-etroite">
           <div class="modale-tete" style="justify-content:center"><h2>${esc(workout.name)}</h2></div>
-          <p class="ligne-meta">${workout.exercises.length} exercice${workout.exercises.length > 1 ? 's' : ''}</p>
+          <p class="ligne-meta">${enCircuit
+            ? `Circuit · ${tours} tour${tours > 1 ? 's' : ''} · ${workout.exercises.length} stations`
+            : `${workout.exercises.length} exercice${workout.exercises.length > 1 ? 's' : ''}`}</p>
           ${explication ? `<div class="coach-note"><b>POURQUOI CETTE SÉANCE</b><p>${esc(explication).replace(/\n/g, '<br>')}</p></div>` : ''}
           <ul class="liste" style="margin-top:1rem;text-align:left">
-            ${workout.exercises.map(ex => `<li class="ligne"><span class="ligne-titre">${esc(ex.name)}</span> <span class="ligne-meta">${esc(detailPropose(ex))}</span></li>`).join('')}
+            ${workout.exercises.map(ex => `<li class="ligne"><span class="ligne-titre">${esc(ex.name)}</span> <span class="ligne-meta">${esc(detailPropose(ex, enCircuit))}</span></li>`).join('')}
           </ul>
+          ${enCircuit && reposTour > 0 && tours > 1
+            ? `<p class="etat-mono">Puis ${reposTour} s de repos avant le tour suivant.</p>` : ''}
           <div class="modale-pied" style="justify-content:center">
             <button class="lien-inline" data-fermer type="button">Fermer</button>
             <button class="btn" data-importer type="button">Importer dans mes séances</button>
@@ -170,8 +183,21 @@ export async function vueCoach() {
         /* L'explication voyage AVEC la séance : elle reste lisible une fois
            importée, pas seulement dans la bulle qui l'a apportée. */
         seance.notes = explication;
+        seance.circuit = enCircuit;
+        seance.rounds = tours;
+        seance.roundRestSec = reposTour;
         seance.exercises = workout.exercises.map(ex => {
-          const tours = Math.min(10, Math.max(1, ex.sets || 3));
+          const series = Math.min(10, Math.max(1, ex.sets || 3));
+          if (enCircuit) {
+            // Station de circuit : seules les deux durées comptent.
+            const repos = Math.min(600, Math.max(0, ex.rest_sec ?? CIRCUIT_REST_SEC));
+            return {
+              name: ex.name, mode: 'MAINTIEN',
+              plannedSets: 1, targetReps: 0, recupSec: repos,
+              workSec: Math.min(600, Math.max(5, ex.hold_sec || CIRCUIT_WORK_SEC)),
+              restSec: repos, tabataSeries: 1, groupId: 0, sets: []
+            };
+          }
           /* Position TENUE : c'est la durée du maintien qui fait foi, pas un
              nombre de répétitions (workoutFromProposal, CoachChat.kt). */
           const maintien = Math.min(600, Math.max(0, ex.hold_sec || 0));
@@ -179,14 +205,14 @@ export async function vueCoach() {
             const repos = Math.min(600, Math.max(0, ex.rest_sec ?? 20));
             return {
               name: ex.name, mode: 'MAINTIEN',
-              plannedSets: tours, targetReps: 0, recupSec: repos,
-              workSec: maintien, restSec: repos, tabataSeries: tours,
+              plannedSets: series, targetReps: 0, recupSec: repos,
+              workSec: maintien, restSec: repos, tabataSeries: series,
               groupId: 0, sets: []
             };
           }
           return {
             name: ex.name, mode: 'MINUTEUR',
-            plannedSets: tours,
+            plannedSets: series,
             targetReps: Math.min(30, Math.max(1, ex.reps || 8)),
             recupSec: Math.min(600, Math.max(15, ex.rest_sec || 90)),
             workSec: 20, restSec: 10, tabataSeries: 8, groupId: 0, sets: []

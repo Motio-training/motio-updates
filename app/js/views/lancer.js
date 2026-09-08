@@ -118,6 +118,14 @@ export async function vueLancerSeance(params) {
     if (!modele.exercises?.length) return render(empty('Séance vide',
       'Ajoute au moins un exercice avant de la lancer.',
       { href: `#/seances/${esc(params.id)}`, label: "Modifier la séance" }));
+
+    /* Séance en CIRCUIT : rien à saisir, rien à valider, l'enchaînement se
+       joue tout seul. Écran entièrement différent (circuit.js), chargé à la
+       demande pour ne pas alourdir le démarrage des séances ordinaires. */
+    if (modele.circuit) {
+      const { vueCircuit } = await import('./circuit.js');
+      return vueCircuit({ moi, modele, params });
+    }
   }
 
   const session = {

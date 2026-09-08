@@ -1,6 +1,6 @@
 {
-  "versionCode": 160,
-  "versionName": "2.58",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.58/motio.apk",
-  "notes": "Moti explique desormais ce qu'il ecrit : chaque seance et chaque programme genere arrive avec le mot du coach, conserve avec la seance. Il s'y connait aussi en prevention des blessures, en reathletisation et en mobilite : decris-lui une douleur, il pose des questions avant de proposer du renforcement, des etirements, de la proprioception ou une seance de stretching. Nouveau mode Maintien pour les positions tenues, cinq nouveaux groupes au catalogue (mobilite, etirements, proprioception, prevention, yoga) et les elastiques comme famille de materiel."
+  "versionCode": 161,
+  "versionName": "2.59",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.59/motio.apk",
+  "notes": "Les seances en circuit. Circuit training, routine d'epaule ou de dos : les stations s'enchainent toutes seules (temps d'effort, temps de repos, station suivante), sans rien saisir et sans appuyer sur exercice suivant. Ni charge, ni repetitions, ni RIR : c'est le temps d'effort tenu qui est enregistre. L'illustration du mouvement occupe tout l'ecran, et pendant un repos c'est deja celle de la station suivante qui s'affiche ; un bouton la masque quand la routine est sue par coeur. Moti sait construire des circuits et le fait de lui-meme pour les routines de prevention et de mobilite."
 }

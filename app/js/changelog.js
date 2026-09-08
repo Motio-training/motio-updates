@@ -502,4 +502,12 @@ export const CHANGELOG = [
                 "Cinq nouveaux groupes au catalogue : mobilité articulaire, étirements, proprioception et équilibre, renforcement préventif, yoga",
                 "Nouvelle famille de matériel : les élastiques"
             ] },
+  { date: "8 septembre 2026", versions: "v2.59", items: [
+                "Séances en circuit : circuit training, routine d'épaule ou de dos. Les stations s'enchaînent toutes seules — temps d'effort, temps de repos, station suivante — sans rien à saisir et sans appuyer sur « exercice suivant »",
+                "Ni charge, ni répétitions, ni RIR pendant un circuit : c'est le temps d'effort tenu qui est enregistré",
+                "L'illustration du mouvement occupe tout l'écran pendant le circuit, et pendant un repos c'est déjà celle de la station suivante qui s'affiche",
+                "Un bouton masque les illustrations quand on connaît la routine : le décompte prend alors toute la place",
+                "Moti sait construire des circuits, et le fait de lui-même pour les routines de prévention, de mobilité et d'échauffement",
+                "La durée annoncée d'un circuit est exacte à la seconde près, pas une estimation"
+            ] },
 ];

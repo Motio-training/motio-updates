@@ -55,8 +55,63 @@ export function nouvelleSeance(nom = '', categorie = 'Push') {
        exercices, ce qu'elle cherche à produire. Conservé AVEC la séance
        (Workout.notes, WorkoutModel.kt), pas seulement montré à la
        génération. Vide pour une séance écrite à la main. */
-    notes: ''
+    notes: '',
+    /* SÉANCE EN CIRCUIT — circuit training, routine d'épaule, routine de dos.
+       Une propriété de la SÉANCE et non d'un exercice, parce que c'est
+       l'enchaînement qui la définit : on passe d'une station à la suivante
+       sans rien toucher, sans compter ni charge ni répétitions ni RIR. Chaque
+       exercice devient une station, `workSec` sa durée d'effort et `restSec`
+       le repos qui l'enchaîne à la suivante ; `mode` est ignoré. */
+    circuit: false,
+    rounds: 3,
+    roundRestSec: 60
   };
+}
+
+/* ---- Circuit (WorkoutModel.kt) ---- */
+
+/** Durée d'effort par défaut d'une station, quand rien n'est réglé. */
+export const CIRCUIT_WORK_SEC = 40;
+/** Repos par défaut entre deux stations. */
+export const CIRCUIT_REST_SEC = 20;
+
+/**
+ * TOUT LE CIRCUIT, DÉPLIÉ À L'AVANCE.
+ *
+ * Un circuit n'a aucune décision à prendre en cours de route : la liste des
+ * segments est entièrement déterminée par les exercices, le nombre de tours et
+ * le repos entre tours. La déplier d'un coup rend le déroulé reproductible —
+ * le moteur n'a plus qu'à lire une horloge et dire où l'on en est, y compris
+ * après un rechargement de la page.
+ *
+ * Un segment porte `station` = index de l'exercice, ou -1 pour le repos entre
+ * deux tours (il n'appartient à aucune station). Le repos de la DERNIÈRE
+ * station du dernier tour est retiré : un circuit se termine sur un effort.
+ */
+export function circuitPlan(exercices, rounds, roundRestSec) {
+  if (!exercices || !exercices.length) return [];
+  const tours = Math.min(20, Math.max(1, rounds || 3));
+  const borne = (v, min, max) => Math.min(max, Math.max(min, v));
+  const out = [];
+  for (let tour = 1; tour <= tours; tour++) {
+    exercices.forEach((e, i) => {
+      const effort = borne(e.workSec > 0 ? e.workSec : CIRCUIT_WORK_SEC, 5, 600);
+      out.push({ durSec: effort, work: true, station: i, round: tour });
+      if (i === exercices.length - 1) {
+        const entreTours = tour === tours ? 0 : borne(roundRestSec ?? 60, 0, 600);
+        if (entreTours > 0) out.push({ durSec: entreTours, work: false, station: -1, round: tour });
+      } else {
+        const repos = borne(e.restSec > 0 ? e.restSec : CIRCUIT_REST_SEC, 0, 600);
+        if (repos > 0) out.push({ durSec: repos, work: false, station: i, round: tour });
+      }
+    });
+  }
+  return out;
+}
+
+/** Durée totale d'un circuit, à la seconde près. */
+export function circuitTotalSec(exercices, rounds, roundRestSec) {
+  return circuitPlan(exercices, rounds, roundRestSec).reduce((t, s) => t + s.durSec, 0);
 }
 
 /** Durée estimée d'un exercice, en secondes. Même calcul que Exercise.estimatedSec. */
@@ -81,6 +136,21 @@ export function dureeExercice(e) {
 /** Durée estimée d'une séance, en secondes. Même calcul que estimateSec. */
 export function dureeSeance(exercices) {
   return WARMUP_SEC + exercices.reduce((t, e) => t + dureeExercice(e), 0);
+}
+
+/**
+ * Durée d'une séance, circuit compris.
+ *
+ * Un circuit ne s'estime pas, il se CALCULE : chaque seconde est écrite à
+ * l'avance. Le forfait d'échauffement et les hypothèses de temps sous tension
+ * d'une séance ordinaire donnaient une heure et demie pour un circuit de vingt
+ * minutes.
+ */
+export function dureeDeLaSeance(seance) {
+  if (seance?.circuit) {
+    return circuitTotalSec(seance.exercises || [], seance.rounds, seance.roundRestSec);
+  }
+  return dureeSeance(seance?.exercises || []);
 }
 
 /**

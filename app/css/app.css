@@ -932,6 +932,96 @@ a.ligne-titre:hover{color:var(--accent)}
 .notes-ia-repli p{margin-top:.5rem}
 
 /* ==========================================================================
+   Séance en circuit (circuit.js)
+
+   La planche du mouvement prend TOUT ce qui reste : en circuit on découvre
+   souvent la station en y arrivant, et il faut la lire à deux mètres, entre
+   deux respirations. Quand elle est masquée, la place revient au décompte,
+   qui devient géant.
+   ========================================================================== */
+
+.page.circuit{display:flex;flex-direction:column;height:100%;gap:.6rem}
+.circuit-tete{display:flex;align-items:flex-start;gap:.8rem}
+.circuit-tete-bloc{display:flex;flex-direction:column}
+.circuit-tete-centre{flex:1;align-items:center}
+.circuit-tete-droite{flex-direction:row;align-items:center;gap:.5rem}
+.circuit-label{
+  font-family:var(--f-mono);font-size:.6rem;font-weight:700;
+  letter-spacing:.12em;color:var(--encre-2);
+}
+.circuit-chrono{font-family:var(--f-display);font-size:1.1rem;font-weight:700;color:var(--dore)}
+.circuit-tour{font-family:var(--f-display);font-size:1.1rem;font-weight:700;color:var(--encre)}
+
+.circuit-corps{flex:1;min-height:0;display:flex;flex-direction:column}
+.circuit-jeu{flex:1;min-height:0;display:flex;flex-direction:column;gap:.7rem}
+
+/* Le fond blanc des planches est FORCÉ dans les deux thèmes, comme partout
+   ailleurs : sur fond sombre, les aplats noirs du dessin disparaîtraient. */
+.circuit-planche{
+  flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  background:#fff;border-radius:var(--r-m);overflow:hidden;
+}
+.circuit-planche img{max-width:100%;max-height:100%;object-fit:contain}
+
+.circuit-compte-geant{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  font-family:var(--f-display);font-weight:700;line-height:1;
+  font-size:clamp(5rem,34vw,12rem);
+}
+.circuit-bas{display:flex;align-items:center;gap:.8rem}
+.circuit-info{display:flex;flex-direction:column;min-width:0;flex:1}
+.circuit-phase{
+  font-family:var(--f-mono);font-size:.68rem;font-weight:700;letter-spacing:.14em;
+}
+.circuit-nom{
+  font-family:var(--f-display);font-size:1.35rem;font-weight:700;color:var(--encre);
+  line-height:1.15;overflow:hidden;text-overflow:ellipsis;
+}
+.circuit-ensuite{font-size:.72rem;color:var(--encre-2)}
+.circuit-compte{
+  font-family:var(--f-display);font-weight:700;font-size:3.4rem;line-height:1;
+}
+
+/* La couleur porte la phase, comme le cadran d'une séance ordinaire. */
+.circuit-jeu.effort .circuit-phase,
+.circuit-jeu.effort .circuit-compte,
+.circuit-jeu.effort .circuit-compte-geant{color:var(--accent)}
+.circuit-jeu.repos .circuit-phase,
+.circuit-jeu.repos .circuit-compte,
+.circuit-jeu.repos .circuit-compte-geant{color:var(--accent2)}
+.circuit-jeu.pause .circuit-phase,
+.circuit-jeu.pause .circuit-compte,
+.circuit-jeu.pause .circuit-compte-geant{color:var(--encre-2)}
+
+.circuit-actions{display:flex;gap:.6rem}
+.circuit-actions .btn{flex:1}
+
+.circuit-briefing{display:flex;flex-direction:column;gap:.5rem;height:100%}
+.circuit-briefing h1{margin:0}
+.circuit-stations{flex:1;overflow-y:auto;margin:.4rem 0}
+.circuit-station{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+.circuit-station .ligne-titre{flex:1;min-width:0}
+
+.circuit-fin{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:.5rem;text-align:center;
+}
+.circuit-fin-coche{font-size:4.5rem;line-height:1;color:var(--accent)}
+.circuit-fin h2{margin:0}
+
+/* Bascule « séance en circuit » dans l'éditeur de séance. */
+.circuit-bascule{display:flex;align-items:flex-start;gap:.9rem;cursor:pointer}
+.circuit-bascule span{flex:1}
+.circuit-bascule b{display:block;color:var(--encre);font-size:.98rem}
+.circuit-bascule em{
+  display:block;margin-top:.15rem;font-style:normal;
+  color:var(--encre-2);font-size:.78rem;line-height:1.35;
+}
+.circuit-bascule input{width:1.35rem;height:1.35rem;flex:none;accent-color:var(--accent)}
+.circuit-reglage [data-circuit-champs]{display:flex;gap:.6rem;margin-top:.9rem}
+.circuit-reglage [data-circuit-champs] .champ{flex:1}
+
+/* ==========================================================================
    Modale du catalogue
    ========================================================================== */
 

@@ -5,7 +5,8 @@ import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
 import { currentUser } from '../supabase.js';
 import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
-         prochainGroupId, etendueBloc, libelleBloc, GOALS, LEVELS } from '../model.js';
+         prochainGroupId, etendueBloc, libelleBloc, GOALS, LEVELS,
+         circuitTotalSec, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
 import { GROUPES, CATEGORIES_CATALOGUE, GEARS, devineMateriel, chercher } from '../catalog.js';
 import { ouvrirPartage } from '../partage.js';
 import { encode as encoderSeance, estIdCourt, creerLienCourt,
@@ -38,6 +39,11 @@ let brouillonIA = null;
 /** estimateSec (TrainingScreens.kt) : le modèle brut est systématiquement
  *  trop généreux, le facteur 0,9 rapproche l'estimation du terrain. */
 function estimatedSec(w) {
+  // Un circuit ne s'estime pas, il se CALCULE : chaque seconde est écrite à
+  // l'avance. Le forfait d'échauffement et les hypothèses de temps sous
+  // tension d'une séance ordinaire donnaient une heure et demie pour un
+  // circuit de vingt minutes.
+  if (w.circuit) return circuitTotalSec(w.exercises || [], w.rounds, w.roundRestSec);
   return Math.round((WARMUP_SEC + (w.exercises || []).reduce((t, e) => t + dureeExercice(e), 0)) * 0.9);
 }
 function displaySec(w) {
@@ -409,7 +415,12 @@ export async function vueSeances(_params, toutes = false) {
             <b>${esc(dansBloc ? s.category : (s.name || `Séance ${s.category}`))}</b>
             ${aFaire ? '<span class="badge-faire">à faire</span>' : ''}
           </span>
-          <span class="meta">${dansBloc ? '' : esc(s.category) + ' · '}${(w.exercises || []).length} exos · ${fmtDerniereFois(lastDoneAt(w))}</span>
+          <span class="meta">${dansBloc ? '' : esc(s.category) + ' · '}${
+            // Un circuit ne se lance pas comme une séance ordinaire : il faut
+            // le savoir AVANT d'appuyer, pas en arrivant sur l'écran.
+            w.circuit ? `circuit ${w.rounds || 3} tours · ${(w.exercises || []).length} stations`
+              : `${(w.exercises || []).length} exos`
+          } · ${fmtDerniereFois(lastDoneAt(w))}</span>
           <span class="duree">⏱ ${durationIsMeasured(w) ? fmtEstimate(displaySec(w)) + ' en moyenne' : 'environ ' + fmtEstimate(displaySec(w))}</span>
         </span>
         <span class="chevron">›</span>
@@ -861,8 +872,28 @@ export async function vueSeanceEdition(params) {
       <label class="champ" data-champ-section hidden><span>Nom du bloc</span>
         <input type="text" data-section-nom maxlength="40" placeholder="Force + hypertrophie"></label>
 
+      <!-- CIRCUIT : la séance entière bascule d'un coup. Les exercices
+           deviennent des stations, on ne saisit plus ni charge ni répétitions,
+           et tout s'enchaîne sans appui pendant la séance (circuit.js). -->
+      <div class="bloc circuit-reglage" data-circuit-bloc>
+        <label class="circuit-bascule">
+          <span>
+            <b>Séance en circuit</b>
+            <em>Circuit training, routine d'épaule ou de dos : temps d'effort,
+              temps de repos, station suivante — rien à saisir, rien à valider.</em>
+          </span>
+          <input type="checkbox" data-circuit ${seance.circuit ? 'checked' : ''}>
+        </label>
+        <div data-circuit-champs ${seance.circuit ? '' : 'hidden'}>
+          <label class="champ champ-mini"><span>Nombre de tours</span>
+            <input type="number" min="1" max="20" data-rounds value="${seance.rounds ?? 3}"></label>
+          <label class="champ champ-mini"><span>Repos entre les tours (s)</span>
+            <input type="number" min="0" max="600" step="5" data-round-rest value="${seance.roundRestSec ?? 60}"></label>
+        </div>
+      </div>
+
       <div class="bloc">
-        <p class="bloc-titre">Exercices</p>
+        <p class="bloc-titre" data-titre-exos>Exercices</p>
         <div class="exos-liste" data-exos></div>
         <button class="btn btn-ghost" data-ajouter style="width:100%">＋ Ajouter un exercice</button>
       </div>
@@ -938,6 +969,41 @@ export async function vueSeanceEdition(params) {
   const zone = el.querySelector('[data-exos]');
   const estim = el.querySelector('[data-estim]');
 
+  /* Circuit : la bascule reconstruit toute la liste, parce qu'une station ne
+     se règle pas comme un exercice ordinaire (deux durées au lieu d'un mode,
+     de séries et de répétitions). */
+  const champsCircuit = el.querySelector('[data-circuit-champs]');
+  const titreExos = el.querySelector('[data-titre-exos]');
+  el.querySelector('[data-circuit]').addEventListener('change', (e) => {
+    seance.circuit = e.target.checked;
+    champsCircuit.hidden = !seance.circuit;
+    titreExos.textContent = seance.circuit ? 'Stations' : 'Exercices';
+    /* Une station neuve part sur les durées habituelles d'un circuit
+       (40 s / 20 s) plutôt que sur celles d'un tabata : les exercices déjà
+       saisis n'ont souvent aucune durée d'effort utilisable. */
+    if (seance.circuit) {
+      seance.exercises.forEach(ex => {
+        if (!ex.workSec || ex.workSec === 20) ex.workSec = CIRCUIT_WORK_SEC;
+        if (!ex.restSec || ex.restSec === 10) ex.restSec = CIRCUIT_REST_SEC;
+      });
+    }
+    deplie = -1;
+    redessiner();
+  });
+  el.querySelector('[data-rounds]').addEventListener('change', (e) => {
+    const v = parseInt(e.target.value, 10);
+    seance.rounds = Number.isNaN(v) ? 3 : Math.min(20, Math.max(1, v));
+    e.target.value = seance.rounds;
+    redessiner();
+  });
+  el.querySelector('[data-round-rest]').addEventListener('change', (e) => {
+    const v = parseInt(e.target.value, 10);
+    seance.roundRestSec = Number.isNaN(v) ? 60 : Math.min(600, Math.max(0, v));
+    e.target.value = seance.roundRestSec;
+    redessiner();
+  });
+  titreExos.textContent = seance.circuit ? 'Stations' : 'Exercices';
+
   async function redessiner() {
     // « Enchaîner » recrée tout le bloc (zone.replaceChildren()) : le bouton
     // tapé disparaît du DOM et perd le focus, ce qui faisait remonter la
@@ -949,7 +1015,8 @@ export async function vueSeanceEdition(params) {
       zone.appendChild(carteExercice(ex, i));
       if (i < seance.exercises.length - 1) zone.appendChild(lienEnchainer(i));
     });
-    estim.textContent = 'environ ' + fmtEstimate(estimatedSec(seance));
+    // Un circuit dure exactement ce qu'il annonce : « environ » serait faux.
+    estim.textContent = (seance.circuit ? '' : 'environ ') + fmtEstimate(estimatedSec(seance));
     window.scrollTo(0, y);
     await dessinerMuscles();
   }
@@ -1023,7 +1090,9 @@ export async function vueSeanceEdition(params) {
           <span class="exo-edit-nom">${i + 1}.  ${esc(ex.name || `Exercice ${i + 1}`)}</span>
           <span class="exo-edit-suppr">✕</span>
         </div>
-        <p class="exo-edit-meta">${ex.mode === 'MAINTIEN' ? '' : `${ex.plannedSets} séries${ex.targetReps ? ` × ${ex.targetReps} reps` : ''} · `}${esc(labelMode(ex))}
+        <p class="exo-edit-meta">${seance.circuit
+          ? `${ex.workSec || CIRCUIT_WORK_SEC} s d'effort · ${ex.restSec ?? CIRCUIT_REST_SEC} s de repos`
+          : `${ex.mode === 'MAINTIEN' ? '' : `${ex.plannedSets} séries${ex.targetReps ? ` × ${ex.targetReps} reps` : ''} · `}${esc(labelMode(ex))}`}
           ${etiquette && b - a + 1 > 1 ? `<span class="etiquette">${esc(etiquette)}</span>` : ''}</p>
 
         <div class="rangee rangee-serree" data-champs></div>
@@ -1034,6 +1103,36 @@ export async function vueSeanceEdition(params) {
     // Le panneau replié se rouvrait à chaque redessin, donc à chaque réglage
     // touché : on garde en mémoire l'exercice déplié.
     champs.hidden = deplie !== i;
+
+    /* Station de circuit : seules la durée d'effort et le repos ont un sens.
+       Mode de chronométrage, séries et répétitions sont décidés par le
+       circuit lui-même — les demander ici ne produirait que des réglages
+       morts. */
+    if (seance.circuit) {
+      champs.appendChild(champDuree("Durée de l'effort", ex.workSec || CIRCUIT_WORK_SEC, 5, 600,
+        (v) => { ex.workSec = v; redessiner(); }));
+      champs.appendChild(champDuree('Repos avant la station suivante', ex.restSec ?? CIRCUIT_REST_SEC, 0, 600,
+        (v) => { ex.restSec = v; redessiner(); }));
+      c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler cette station' : 'Masquer';
+      c.querySelector('[data-deplier]').onclick = () => {
+        champs.hidden = !champs.hidden;
+        deplie = champs.hidden ? -1 : i;
+        c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler cette station' : 'Masquer';
+      };
+      c.querySelector('.exo-edit-suppr').onclick = () => { seance.exercises.splice(i, 1); redessiner(); };
+      // L'ordre des stations compte au moins autant qu'en séance ordinaire :
+      // on n'enchaîne pas deux postes qui épuisent le même groupe. La poignée
+      // reste donc active (appui bref = monter d'un cran, appui long = glisser).
+      const poigneeStation = c.querySelector('.exo-edit-poignee');
+      poigneeStation.onclick = () => {
+        if (i > 0) {
+          [seance.exercises[i - 1], seance.exercises[i]] = [seance.exercises[i], seance.exercises[i - 1]];
+          redessiner();
+        }
+      };
+      activerGlisser(poigneeStation, c, i);
+      return c;
+    }
     const tabata = ex.mode === 'TABATA';
     const emom = ex.mode === 'EMOM';
     const minuteur = ex.mode === 'MINUTEUR';
@@ -1201,7 +1300,12 @@ export async function vueSeanceEdition(params) {
 
   el.querySelector('[data-ajouter]').onclick = () => {
     ouvrirCatalogue((nom) => {
-      seance.exercises.push(nouvelExercice(nom));
+      const ex = nouvelExercice(nom);
+      // Une station neuve part sur les durées habituelles d'un circuit
+      // (40 s / 20 s), pas sur celles d'un tabata : sinon il faudrait
+      // corriger les deux champs à chaque ajout.
+      if (seance.circuit) { ex.workSec = CIRCUIT_WORK_SEC; ex.restSec = CIRCUIT_REST_SEC; }
+      seance.exercises.push(ex);
       redessiner();
     });
   };
