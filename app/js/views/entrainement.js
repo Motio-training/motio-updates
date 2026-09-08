@@ -312,7 +312,12 @@ export async function vueSeances(_params, toutes = false) {
        Nicolas). Dans l'éditeur, tout est modifiable et rien n'est écrit tant
        qu'« Enregistrer » n'a pas été touché. */
     function versEditeur(workout, notes) {
-      brouillonIA = { workout, notes: notes || '' };
+      /* L'explication voyage AVEC la séance (Workout.notes) et non à côté :
+         elle est ainsi enregistrée avec elle, et se relit des semaines plus
+         tard depuis la fiche, pas seulement dans l'éditeur qui suit la
+         génération. */
+      if (!workout.notes) workout.notes = notes || '';
+      brouillonIA = { workout, notes: workout.notes };
       location.hash = '#/seances/nouvelle';
     }
 
@@ -803,11 +808,9 @@ export async function vueSeanceEdition(params) {
      la ressorte pas une deuxième fois). Les notes du coach s'affichent en tête
      de l'éditeur : c'est le raisonnement derrière la séance, il disparaîtrait
      sinon avec la fenêtre de génération. */
-  let notesIA = '';
   if (neuve) {
     if (brouillonIA) {
       seance = brouillonIA.workout;
-      notesIA = brouillonIA.notes || '';
       brouillonIA = null;
     } else {
       seance = nouvelleSeance('', catsCompte[0] || CATEGORIES_DEFAUT[0]);
@@ -824,6 +827,9 @@ export async function vueSeanceEdition(params) {
     } catch (e) { return render(failure(e, "La séance n'a pas pu être chargée")); }
   }
   if (!seance.section) seance.section = '';
+  /* Le mot du coach, qu'il vienne de la génération qui précède ou d'une
+     séance déjà enregistrée : il est porté par la séance elle-même. */
+  const notesIA = (seance.notes || '').trim();
 
   /* Les catégories du compte, plus celles déjà portées par des séances
      existantes (une séance importée peut en avoir une qui n'est pas déclarée —
@@ -837,8 +843,8 @@ export async function vueSeanceEdition(params) {
       <h1 style="text-transform:uppercase">${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
 
       ${notesIA ? `<div class="notes-ia">
-        <p class="notes-ia-tag">Ce que Moti a construit</p>
-        <p>${esc(notesIA)}</p>
+        <p class="notes-ia-tag">Pourquoi cette séance</p>
+        <p>${esc(notesIA).replace(/\n/g, '<br>')}</p>
       </div>` : ''}
 
       <label class="champ"><span>Nom</span>
@@ -1017,7 +1023,7 @@ export async function vueSeanceEdition(params) {
           <span class="exo-edit-nom">${i + 1}.  ${esc(ex.name || `Exercice ${i + 1}`)}</span>
           <span class="exo-edit-suppr">✕</span>
         </div>
-        <p class="exo-edit-meta">${ex.plannedSets} séries${ex.targetReps ? ` × ${ex.targetReps} reps` : ''} · ${esc(labelMode(ex))}
+        <p class="exo-edit-meta">${ex.mode === 'MAINTIEN' ? '' : `${ex.plannedSets} séries${ex.targetReps ? ` × ${ex.targetReps} reps` : ''} · `}${esc(labelMode(ex))}
           ${etiquette && b - a + 1 > 1 ? `<span class="etiquette">${esc(etiquette)}</span>` : ''}</p>
 
         <div class="rangee rangee-serree" data-champs></div>
@@ -1031,10 +1037,13 @@ export async function vueSeanceEdition(params) {
     const tabata = ex.mode === 'TABATA';
     const emom = ex.mode === 'EMOM';
     const minuteur = ex.mode === 'MINUTEUR';
+    /* Maintien : mêmes réglages que le tabata, dits avec les mots de la
+       position tenue — et pas de répétitions à demander. */
+    const maintien = ex.mode === 'MAINTIEN';
     champs.appendChild(h(`
       <label class="champ champ-mini"><span>Mode</span>
         <select data-mode>${MODES.map(m => `<option value="${m}"${m === ex.mode ? ' selected' : ''}>${MODE_LABELS[m]}</option>`).join('')}</select></label>`));
-    if (!tabata) {
+    if (!tabata && !maintien) {
       champs.appendChild(h(`<label class="champ champ-mini"><span>Séries</span><input type="number" min="1" max="20" data-series value="${ex.plannedSets}"></label>`));
       champs.appendChild(h(`<label class="champ champ-mini"><span>Répétitions</span><input type="number" min="0" max="100" data-reps value="${ex.targetReps}"></label>`));
     }
@@ -1052,6 +1061,11 @@ export async function vueSeanceEdition(params) {
        dirait la même chose. */
     if (emom) {
       champs.appendChild(champDuree('Intervalle', ex.workSec, 5, 600, (v) => { ex.workSec = v; redessiner(); }));
+    }
+    if (maintien) {
+      champs.appendChild(champDuree('Maintien', ex.workSec, 5, 600, (v) => { ex.workSec = v; redessiner(); }));
+      champs.appendChild(champDuree('Repos', ex.restSec, 0, 600, (v) => { ex.restSec = v; redessiner(); }));
+      champs.appendChild(h(`<label class="champ champ-mini"><span>Tours</span><input type="number" min="1" max="30" data-blocs value="${ex.tabataSeries}"></label>`));
     }
 
     c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
@@ -1181,6 +1195,7 @@ export async function vueSeanceEdition(params) {
     if (ex.mode === 'MINUTEUR') return 'Minuteur ' + fmtRecup(ex.recupSec);
     if (ex.mode === 'TABATA') return `Tabata ${ex.workSec}/${ex.restSec}×${ex.tabataSeries}`;
     if (ex.mode === 'EMOM') return `EMOM ${fmtRecup(ex.workSec)} ×${ex.plannedSets}`;
+    if (ex.mode === 'MAINTIEN') return `Maintien ${ex.workSec} s ×${ex.tabataSeries}`;
     return 'Chrono';
   }
 
@@ -1363,6 +1378,10 @@ export async function vueProgrammes() {
           <span>${d.daysPerWeek || '?'} séances / semaine</span>
           <span>${faites} / ${total} faites</span>
         </p>
+        ${(d.notes || '').trim() ? `<details class="notes-ia notes-ia-repli">
+          <summary>Pourquoi ce programme</summary>
+          <p>${esc(d.notes.trim()).replace(/\n/g, '<br>')}</p>
+        </details>` : ''}
       </li>`));
   }
   render(el);
@@ -1491,7 +1510,10 @@ export async function vueProgrammeNouveau() {
       <div>
         <p class="eyebrow">Entraînement</p>
         <h1>${esc(program.name)}</h1>
-        ${notes ? `<p class="lede">${esc(notes)}</p>` : ''}
+        ${notes ? `<div class="notes-ia">
+          <p class="notes-ia-tag">Pourquoi ce programme</p>
+          <p>${esc(notes).replace(/\n/g, '<br>')}</p>
+        </div>` : ''}
         <p class="ligne-stats" style="margin:0 0 1rem">
           <span>${program.weeks} semaines</span>
           <span>${program.daysPerWeek} séances / semaine</span>

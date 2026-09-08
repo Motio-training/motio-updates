@@ -14,7 +14,9 @@
    côtés pour les mêmes réglages, ce qui est précisément ce qu'on corrige.
    ========================================================================== */
 
-import { GROUPES, CATEGORIES_CATALOGUE, devineMateriel } from './catalog.js';
+import {
+  GROUPES, CATEGORIES_CATALOGUE, devineMateriel, MAINTIEN_DEFAUT_SEC
+} from './catalog.js';
 import { nouvelleSeance, nouvelExercice } from './model.js';
 
 function norm(s) {
@@ -81,12 +83,23 @@ function estBasDuCorps(nom) {
   return ['quadri', 'ischio', 'fessier', 'mollet', 'cuisse', 'jambe'].some(k => n.includes(k));
 }
 
-/** groupsOfCategory : groupes musculaires d'une catégorie ; repli sur tout le
- *  catalogue pour une catégorie personnalisée que le catalogue ne connaît pas. */
+/**
+ * groupsOfCategory : groupes musculaires d'une catégorie ; repli sur tout le
+ * catalogue pour une catégorie personnalisée que le catalogue ne connaît pas.
+ *
+ * Une catégorie « tous les groupes » (Full body) EXCLUT les groupes de
+ * mobilité, d'étirement et de yoga : full body veut dire tout le corps, pas
+ * tout le catalogue. Sans ce filtre, l'arrivée de ces cinq groupes faisait
+ * apparaître « Posture du pigeon » au milieu d'une séance de force, parce que
+ * la répartition distribue les exercices entre TOUS les groupes. Une
+ * catégorie qui les désigne explicitement — Mobilité, Prévention, Yoga — les
+ * garde évidemment, c'est tout son objet.
+ */
 function groupesDeCategorie(nomCat) {
   const cible = norm(nomCat);
   const cat = CATEGORIES_CATALOGUE.find(c => norm(c.nom) === cible);
-  if (!cat || cat.tous) return [...GROUPES];
+  const muscu = GROUPES.filter(g => !g.sante);
+  if (!cat || cat.tous) return muscu.length ? muscu : [...GROUPES];
   const gs = GROUPES.filter(g => cat.groupes.includes(g.id));
   return gs.length ? gs : [...GROUPES];
 }
@@ -202,7 +215,10 @@ function construireSlots(bp, slots, exclus, gears) {
       if (estMain) mains++;
       out.push({
         name: nom, main: estMain,
-        lower: estBasDuCorps(g.nom), minor: estPetitGroupe(g.nom)
+        lower: estBasDuCorps(g.nom), minor: estPetitGroupe(g.nom),
+        // Position tenue plutôt que comptée : « 3 × 8 » n'a aucun sens sur un
+        // étirement des ischio-jambiers (voir MAINTIEN, model.js).
+        holdSec: g.sante ? MAINTIEN_DEFAUT_SEC : 0
       });
       pris++;
     }
@@ -232,10 +248,20 @@ export function genererSeanceLocale({ goal, level, category, gears = [], exclude
   choisis.forEach(s => {
     const t = palier(sc, s);
     const ex = nouvelExercice(s.name);
-    ex.mode = 'MINUTEUR';
-    ex.plannedSets = t.sets;
-    ex.targetReps = t.repLow;
-    ex.recupSec = t.recupSec;
+    if (s.holdSec > 0) {
+      ex.mode = 'MAINTIEN';
+      ex.plannedSets = t.sets;
+      ex.targetReps = 0;
+      ex.recupSec = 20;
+      ex.workSec = s.holdSec;
+      ex.restSec = 20;
+      ex.tabataSeries = t.sets;
+    } else {
+      ex.mode = 'MINUTEUR';
+      ex.plannedSets = t.sets;
+      ex.targetReps = t.repLow;
+      ex.recupSec = t.recupSec;
+    }
     w.exercises.push(ex);
   });
   return w;

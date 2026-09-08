@@ -10,9 +10,17 @@
    Contrat exact de la fonction (lu depuis Supabase, la fonction n'est pas
    versionnée dans ce dépôt) :
      entrée  { goal_text, level, days_per_week, weeks, gears, catalog }
-     sortie  { name, notes, sessions:[{title,category,exercises:[{name}]}],
+     sortie  { name, notes,
+               sessions:[{title,category,notes,
+                          exercises:[{name,hold_sec?,hold_rest_sec?}]}],
                phases:[{label,week_start,week_end,deload,
                         sessions:[{exercises:[{sets,reps,recup_sec}]}]}] }
+
+   `notes` — l'explication écrite par le coach, au niveau du programme ET de
+   chaque séance. Elle est CONSERVÉE avec eux (Workout.notes, Program.notes),
+   pas seulement montrée à la génération : c'est en semaine 5 qu'on se demande
+   pourquoi le volume baisse. `hold_sec` — les positions tenues (étirement,
+   gainage, équilibre, posture de yoga), qui sortent en mode MAINTIEN.
    ========================================================================== */
 
 import { sb } from './supabase.js';
@@ -82,8 +90,17 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
   const sessionDefs = sessionsArr.map((s, i) => {
     const title = (s.title || '').trim() || `Séance ${i + 1}`;
     const exercices = (Array.isArray(s.exercises) ? s.exercises : [])
-      .map(e => (e?.name || '').trim()).filter(Boolean);
-    return { title, category: (s.category || '').trim() || title, exercices };
+      .map(e => ({
+        name: (e?.name || '').trim(),
+        // 0 = exercice compté en répétitions, c'est l'immense majorité.
+        holdSec: clamp(Math.round(e?.hold_sec ?? 0), 0, 600),
+        holdRestSec: clamp(Math.round(e?.hold_rest_sec ?? 20), 0, 600)
+      }))
+      .filter(e => e.name);
+    return {
+      title, category: (s.category || '').trim() || title,
+      notes: (s.notes || '').trim(), exercices
+    };
   });
 
   const phasesArr = Array.isArray(root.phases) ? root.phases : [];
@@ -107,19 +124,32 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
   const phaseDe = (semaine) => phases.find(p => semaine >= p.debut && semaine <= p.fin) || phases[phases.length - 1];
 
   const now = Date.now();
+  const notes = (root.notes || '').trim();
   const program = {
     id: now, name, goal: 'PERSONNALISE', level, weeks, daysPerWeek, createdAt: now,
-    workoutIds: [], sessions: []
+    workoutIds: [], sessions: [], notes
   };
 
   const premierePhase = phases[0];
   const workouts = sessionDefs.map((def, bi) => {
     const w = nouvelleSeance(def.title, def.category);
     w.id = now + bi;
-    def.exercices.forEach((exName, ei) => {
+    /* L'explication de CETTE séance ; à défaut, celle du programme entier —
+       une séance générée seule (genererSeanceIA, weeks = 1) n'a que
+       celle-là, et repartir les mains vides serait le manque qu'on comble. */
+    w.notes = def.notes || notes;
+    def.exercices.forEach((d, ei) => {
       const creneau = creneauPour(premierePhase, bi, ei);
-      const ex = nouvelExercice(exName);
-      ex.plannedSets = creneau.sets; ex.targetReps = creneau.reps; ex.recupSec = creneau.recupSec;
+      const ex = nouvelExercice(d.name);
+      if (d.holdSec > 0) {
+        ex.mode = 'MAINTIEN';
+        ex.plannedSets = creneau.sets; ex.targetReps = 0;
+        ex.recupSec = d.holdRestSec;
+        ex.workSec = d.holdSec; ex.restSec = d.holdRestSec;
+        ex.tabataSeries = creneau.sets;
+      } else {
+        ex.plannedSets = creneau.sets; ex.targetReps = creneau.reps; ex.recupSec = creneau.recupSec;
+      }
       w.exercises.push(ex);
     });
     program.workoutIds.push(w.id);
@@ -134,12 +164,17 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
       const dow = jours[bi] ?? jours[jours.length - 1] ?? 1;
       const premier = premierJourApres(startMs, dow, minuteOfDay);
       const date = plusJours(premier, 7 * (semaine - 1));
-      const items = def.exercices.map((exName, ei) => {
+      const items = def.exercices.map((d, ei) => {
         const creneau = creneauPour(phase, bi, ei);
+        const tenu = d.holdSec > 0;
         return {
-          name: exName, sets: creneau.sets, reps: creneau.reps, recupSec: creneau.recupSec,
+          name: d.name, sets: creneau.sets,
+          reps: tenu ? 0 : creneau.reps,
+          recupSec: tenu ? d.holdRestSec : creneau.recupSec,
           hint: phase.deload ? 'Semaine de décharge — charges allégées'
-            : `${phase.label} — poids conseillé pendant la séance, selon ton RIR`
+            : tenu ? `${phase.label} — tenir la position sans forcer`
+              : `${phase.label} — poids conseillé pendant la séance, selon ton RIR`,
+          holdSec: d.holdSec
         };
       });
       program.sessions.push({

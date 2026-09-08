@@ -8,13 +8,19 @@
 
 import { devineMateriel } from './catalog.js';
 
-export const MODES = ['CHRONO', 'MINUTEUR', 'TABATA', 'EMOM'];
+/* MAINTIEN — les postures TENUES : étirement, gainage, équilibre, posture de
+   yoga. Mécaniquement le même moteur que le tabata (travail `workSec`, repos
+   `restSec`, répétés `tabataSeries` fois), mais un mode à part et non un
+   tabata déguisé : on n'annonce pas « Tabata 30/15×3 » à quelqu'un qui étire
+   ses ischios. Un maintien ne compte pas de répétitions. */
+export const MODES = ['CHRONO', 'MINUTEUR', 'TABATA', 'EMOM', 'MAINTIEN'];
 
 export const MODE_LABELS = {
   CHRONO: 'Chrono',
   MINUTEUR: 'Minuteur',
   TABATA: 'Tabata',
-  EMOM: 'EMOM'
+  EMOM: 'EMOM',
+  MAINTIEN: 'Maintien'
 };
 
 /* Constantes d'estimation — WorkoutModel.kt */
@@ -44,7 +50,12 @@ export function nouvelleSeance(nom = '', categorie = 'Push') {
     name: nom,
     category: categorie,
     exercises: [],
-    history: []
+    history: [],
+    /* Le mot d'explication d'une séance écrite par Moti — pourquoi ces
+       exercices, ce qu'elle cherche à produire. Conservé AVEC la séance
+       (Workout.notes, WorkoutModel.kt), pas seulement montré à la
+       génération. Vide pour une séance écrite à la main. */
+    notes: ''
   };
 }
 
@@ -59,6 +70,9 @@ export function dureeExercice(e) {
     case 'TABATA': base = e.tabataSeries * (e.workSec + e.restSec); break;
     /* EMOM : l'intervalle EST la duree, recuperation comprise. */
     case 'EMOM': base = n * e.workSec; break;
+    /* Maintien : comme le tabata, la duree tient entierement dans les tours —
+       le temps sous tension EST le temps de travail. */
+    case 'MAINTIEN': base = e.tabataSeries * (e.workSec + e.restSec); break;
     default: base = 0;
   }
   return EX_WARMUP_SEC + base;

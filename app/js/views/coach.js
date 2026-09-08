@@ -111,7 +111,12 @@ export async function vueCoach() {
       <form class="coach-saisie" data-form>
         <input type="text" data-texte placeholder="Écris à ton coach…" autocomplete="off" maxlength="1000">
         <button class="btn" type="submit">↑</button>
-      </form>` : `
+      </form>
+      <!-- Rappel PERMANENT, pas seulement au premier message : Moti donne de
+           vrais conseils sur les douleurs et la reprise, et ce cadre-là doit
+           rester sous les yeux (CoachScreen.kt). -->
+      <p class="coach-cadre-sante">Moti n'est pas un professionnel de santé et ne pose pas
+      de diagnostic. En cas de douleur qui dure, s'aggrave ou t'inquiète, consulte.</p>` : `
       <div class="coach-abonnement">
         <b>Moti est réservé aux abonnés</b>
         <p>Ton coach personnel répond à partir de tes vraies séances, de tes records
@@ -130,14 +135,24 @@ export async function vueCoach() {
   /** Bulle « séance proposée » dorée (CoachBubble, CoachScreen.kt ~209-227) :
    *  compacte, avatar Moti + libellé, ouvre un aperçu au lieu d'afficher le
    *  détail directement dans le fil. */
+  /** Détail lisible d'un exercice proposé : une position tenue s'annonce en
+   *  tours × secondes, jamais en répétitions (voir MAINTIEN, model.js). */
+  function detailPropose(ex) {
+    const tours = Math.min(10, Math.max(1, ex.sets || 3));
+    if (ex.hold_sec > 0) return `${tours} × ${Math.min(600, Math.max(5, ex.hold_sec))} s`;
+    return `${tours} × ${Math.min(30, Math.max(1, ex.reps || 8))} reps`;
+  }
+
   function ouvrirApercuSeance(workout) {
+    const explication = (workout.notes || '').trim();
     const modale = h(`
       <div class="modale" role="dialog" aria-label="Séance proposée">
         <div class="modale-boite modale-boite-etroite">
           <div class="modale-tete" style="justify-content:center"><h2>${esc(workout.name)}</h2></div>
           <p class="ligne-meta">${workout.exercises.length} exercice${workout.exercises.length > 1 ? 's' : ''}</p>
+          ${explication ? `<div class="coach-note"><b>POURQUOI CETTE SÉANCE</b><p>${esc(explication).replace(/\n/g, '<br>')}</p></div>` : ''}
           <ul class="liste" style="margin-top:1rem;text-align:left">
-            ${workout.exercises.map(ex => `<li class="ligne"><span class="ligne-titre">${esc(ex.name)}</span></li>`).join('')}
+            ${workout.exercises.map(ex => `<li class="ligne"><span class="ligne-titre">${esc(ex.name)}</span> <span class="ligne-meta">${esc(detailPropose(ex))}</span></li>`).join('')}
           </ul>
           <div class="modale-pied" style="justify-content:center">
             <button class="lien-inline" data-fermer type="button">Fermer</button>
@@ -151,14 +166,32 @@ export async function vueCoach() {
     modale.querySelector('[data-importer]').onclick = async (e) => {
       e.target.disabled = true;
       try {
-        const seance = nouvelleSeance(workout.name, 'Coach IA');
-        seance.exercises = workout.exercises.map(ex => ({
-          name: ex.name, mode: 'MINUTEUR',
-          plannedSets: Math.min(10, Math.max(1, ex.sets || 3)),
-          targetReps: Math.min(30, Math.max(1, ex.reps || 8)),
-          recupSec: Math.min(600, Math.max(15, ex.rest_sec || 90)),
-          workSec: 20, restSec: 10, tabataSeries: 8, groupId: 0, sets: []
-        }));
+        const seance = nouvelleSeance(workout.name, workout.category || 'Coach IA');
+        /* L'explication voyage AVEC la séance : elle reste lisible une fois
+           importée, pas seulement dans la bulle qui l'a apportée. */
+        seance.notes = explication;
+        seance.exercises = workout.exercises.map(ex => {
+          const tours = Math.min(10, Math.max(1, ex.sets || 3));
+          /* Position TENUE : c'est la durée du maintien qui fait foi, pas un
+             nombre de répétitions (workoutFromProposal, CoachChat.kt). */
+          const maintien = Math.min(600, Math.max(0, ex.hold_sec || 0));
+          if (maintien > 0) {
+            const repos = Math.min(600, Math.max(0, ex.rest_sec ?? 20));
+            return {
+              name: ex.name, mode: 'MAINTIEN',
+              plannedSets: tours, targetReps: 0, recupSec: repos,
+              workSec: maintien, restSec: repos, tabataSeries: tours,
+              groupId: 0, sets: []
+            };
+          }
+          return {
+            name: ex.name, mode: 'MINUTEUR',
+            plannedSets: tours,
+            targetReps: Math.min(30, Math.max(1, ex.reps || 8)),
+            recupSec: Math.min(600, Math.max(15, ex.rest_sec || 90)),
+            workSec: 20, restSec: 10, tabataSeries: 8, groupId: 0, sets: []
+          };
+        });
         await saveWorkout(moi.id, seance);
         toast('Séance importée.');
         e.target.textContent = 'Importée ✓';
@@ -200,7 +233,7 @@ export async function vueCoach() {
   function redessiner() {
     fil.replaceChildren();
     if (!messages.length) {
-      fil.appendChild(h(`<li class="etat-mono coach-vide">Pose une question sur tes séances, ta récupération, ou demande-lui de te construire une séance.</li>`));
+      fil.appendChild(h(`<li class="etat-mono coach-vide">Pose une question sur tes séances, ta récupération, ou demande-lui de te construire une séance.<br><br>Il s'y connaît aussi en prévention des blessures, en mobilité et en reprise après une gêne : décris-lui une douleur, il te posera des questions avant de proposer du renforcement, des étirements, de la proprioception, ou une séance de stretching.</li>`));
     } else {
       messages.forEach(bulle);
     }

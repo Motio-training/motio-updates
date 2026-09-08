@@ -494,4 +494,12 @@ export const CHANGELOG = [
                 "Les réglages de son restent propres à chaque appareil : le volume qui convient en salle n'est pas celui d'un ordinateur au calme",
                 "La synchronisation démarre dès l'ouverture de l'application. Elle attendait jusqu'ici que tu sortes et reviennes, ce qui pouvait la laisser en sommeil plusieurs jours"
             ] },
+  { date: "8 septembre 2026", versions: "v2.58", items: [
+                "Moti explique ce qu'il écrit : chaque séance et chaque programme généré arrive avec le mot du coach — à quoi ça sert, comment c'est construit, ce à quoi il faut être attentif. L'explication reste attachée à la séance et au programme",
+                "Moti s'y connaît en prévention des blessures, en réathlétisation et en mobilité : décris-lui une douleur, il pose des questions avant de proposer quoi que ce soit, et il sait reconnaître ce qui doit envoyer consulter",
+                "Il construit de vraies séances de mobilité, d'étirement, de proprioception et de yoga",
+                "Nouveau mode Maintien pour les positions tenues : durée du maintien, repos et tours, sans poids ni répétitions à saisir",
+                "Cinq nouveaux groupes au catalogue : mobilité articulaire, étirements, proprioception et équilibre, renforcement préventif, yoga",
+                "Nouvelle famille de matériel : les élastiques"
+            ] },
 ];

@@ -922,6 +922,14 @@ a.ligne-titre:hover{color:var(--accent)}
   margin:0 0 .35rem;font-family:var(--f-mono);font-size:.66rem;font-weight:600;
   letter-spacing:.12em;text-transform:uppercase;color:var(--dore);
 }
+/* Variante repliée, dans une liste : l'explication d'un programme fait dix
+   lignes, elle ne peut pas s'étaler sous chaque ligne de la liste. */
+.notes-ia-repli{margin:.6rem 0 0;padding:.6rem .8rem}
+.notes-ia-repli summary{
+  cursor:pointer;font-family:var(--f-mono);font-size:.66rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--dore);
+}
+.notes-ia-repli p{margin-top:.5rem}
 
 /* ==========================================================================
    Modale du catalogue
@@ -1845,3 +1853,23 @@ body:not(.connecte) #vue:has(.onb){
 .coach-abonnement b{display:block;color:var(--encre);font-size:.98rem;margin-bottom:.5rem}
 .coach-abonnement p{margin:0 0 .6rem;color:var(--encre-2);font-size:.9rem;line-height:1.5}
 .coach-abonnement p:last-child{margin-bottom:0;font-size:.8rem}
+
+/* Cadre santé du coach : discret mais TOUJOURS visible sous la zone de
+   saisie — Moti conseille désormais sur les douleurs et la reprise, et ce
+   rappel-là ne doit pas disparaître après le premier message. */
+.coach-cadre-sante{
+  margin:.5rem .9rem 0;color:var(--encre-2);
+  font-size:.72rem;line-height:1.35;text-align:center;
+}
+
+/* Le mot du coach — l'explication qui accompagne une séance ou un programme
+   écrit par Moti (CoachNoteCard, Components.kt côté Android). */
+.coach-note{
+  margin-top:1rem;padding:.8rem .9rem;text-align:left;
+  background:var(--creme-2);border-radius:var(--r-m);
+}
+.coach-note b{
+  display:block;color:var(--dore);font-size:.68rem;
+  font-weight:700;letter-spacing:.08em;margin-bottom:.35rem;
+}
+.coach-note p{margin:0;color:var(--encre);font-size:.85rem;line-height:1.5}

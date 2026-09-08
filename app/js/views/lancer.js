@@ -644,9 +644,10 @@ export async function vueLancerSeance(params) {
    *  suivante démarre réellement, jamais pendant le décompte de récupération. */
   function dessinerSousligne(surLePoint = true) {
     const ex = session.exercises[exIndex];
-    /* Un bloc tabata entier ne compte que pour UNE série ; un EMOM, lui,
-       compte ses tours — c'est le « nombre de séries prévu » de l'exercice. */
-    const total = ex.mode === 'TABATA' ? 1 : ex.plannedSets;
+    /* Un bloc tabata entier ne compte que pour UNE série, et un enchaînement
+       de maintiens aussi ; un EMOM, lui, compte ses tours — c'est le
+       « nombre de séries prévu » de l'exercice. */
+    const total = (ex.mode === 'TABATA' || ex.mode === 'MAINTIEN') ? 1 : ex.plannedSets;
     const numSerie = Math.min(ex.sets.length + (surLePoint ? 1 : 0), total);
     const bits = [
       `Exo ${exIndex + 1}/${session.exercises.length}`,
@@ -745,10 +746,10 @@ export async function vueLancerSeance(params) {
   function dessinerControles() {
     const ex = session.exercises[exIndex];
     const zone = corps.querySelector('[data-controles]');
-    /* Tabata et EMOM se déroulent d'un bloc : une fois lancés, le moteur va
-       jusqu'au bout tout seul, et l'exercice est fini dès qu'une série est
-       enregistrée. */
-    const auto = ex.mode === 'TABATA' || ex.mode === 'EMOM';
+    /* Tabata, EMOM et maintien se déroulent d'un bloc : une fois lancés, le
+       moteur va jusqu'au bout tout seul, et l'exercice est fini dès qu'une
+       série est enregistrée. */
+    const auto = ex.mode === 'TABATA' || ex.mode === 'EMOM' || ex.mode === 'MAINTIEN';
     const complet = ex.sets.length >= ex.plannedSets && !auto;
     const tabataFait = auto && ex.sets.length > 0;
     zone.replaceChildren();
@@ -817,7 +818,7 @@ export async function vueLancerSeance(params) {
       if (snap.phase === 'DONE') {
         clearInterval(t);
         const tours = ex.mode === 'EMOM' ? ex.plannedSets : ex.tabataSeries;
-        /* Ces deux modes n'ont pas de RIR : la série s'y valide au top du
+        /* Ces modes n'ont pas de RIR : la série s'y valide au top du
            chronomètre, pas quand on décide d'arrêter (rir -1 = non renseigné). */
         ex.sets.push({ weight: 0, reps: 0, tensionMs: ex.workSec * tours * 1000, rir: -1 });
         redessinerSeries();
