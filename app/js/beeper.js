@@ -112,32 +112,48 @@ export function phraseDisponible(reglages) {
 /* Prénoms des voix françaises courantes, par genre. Aucun navigateur n'expose
    le genre d'une voix : il est dans son NOM, soit explicitement (« male »,
    « female » sur Android) soit par le prénom (Thomas, Amélie…). D'où ces deux
-   listes, et un repli sur n'importe quelle voix française quand rien ne
-   tranche — mieux vaut la mauvaise voix que pas de voix. */
+   listes — mais elles ne suffisent pas. Sur le téléphone de Nicolas, les deux
+   choix sortaient la MÊME voix de femme : aucune voix d'homme n'est installée,
+   et le repli « n'importe quelle voix française » renvoyait donc deux fois la
+   même, à la hauteur près. Le genre n'est donc plus qu'une préférence, et
+   `genreVoix` rend null quand le nom ne dit rien au lieu de trancher au
+   hasard ; les réglages montrent la liste réelle et laissent choisir. */
 const VOIX_HOMME = ['thomas', 'paul', 'nicolas', 'henri', 'claude', 'daniel', 'guillaume', 'mathieu'];
 const VOIX_FEMME = ['amelie', 'amélie', 'audrey', 'marie', 'hortense', 'julie', 'virginie', 'chantal', 'aurelie', 'aurélie'];
 
+export function genreVoix(v) {
+  const n = ((v && v.name) || '').toLowerCase();
+  if (n.includes('female') || VOIX_FEMME.some(x => n.includes(x))) return false;
+  if (n.includes('male') || VOIX_HOMME.some(x => n.includes(x))) return true;
+  return null;
+}
+
 /**
- * LA MEILLEURE VOIX FRANÇAISE DU GENRE DEMANDÉ.
+ * TOUTES LES VOIX FRANÇAISES DISPONIBLES, la meilleure d'abord.
  *
  * Nicolas trouvait le résultat « robotique » : les navigateurs listent souvent
  * plusieurs voix françaises, dont une compacte à la prosodie plate qui se
  * trouve être la première. Les voix distantes (`localService` faux) sonnent
  * nettement mieux, on les préfère quand elles sont là.
  */
-function meilleureVoix(masculine) {
-  const fr = speechSynthesis.getVoices()
-    .filter(v => (v.lang || '').toLowerCase().startsWith('fr'));
+export function voixFrancaises() {
+  if (typeof speechSynthesis === 'undefined') return [];
+  return speechSynthesis.getVoices()
+    .filter(v => (v.lang || '').toLowerCase().startsWith('fr'))
+    .sort((a, b) => (a.localService === b.localService ? 0 : a.localService ? 1 : -1));
+}
+
+/** La voix retenue : celle choisie explicitement si elle est encore là, sinon
+ *  la meilleure du genre demandé, sinon la meilleure tout court. */
+function meilleureVoix(masculine, nom) {
+  const fr = voixFrancaises();
   if (!fr.length) return null;
-  const genre = (v) => {
-    const n = (v.name || '').toLowerCase();
-    if (n.includes('female') || VOIX_FEMME.some(x => n.includes(x))) return false;
-    if (n.includes('male') || VOIX_HOMME.some(x => n.includes(x))) return true;
-    return null;
-  };
-  const duGenre = fr.filter(v => genre(v) === masculine);
-  const pool = duGenre.length ? duGenre : fr;
-  return pool.find(v => !v.localService) || pool[0];
+  if (nom) {
+    const exacte = fr.find(v => v.name === nom);
+    if (exacte) return exacte;
+  }
+  const duGenre = fr.filter(v => genreVoix(v) === masculine);
+  return (duGenre.length ? duGenre : fr)[0];
 }
 
 /**
@@ -154,11 +170,12 @@ export function say(texte, suite = false, reglages) {
     const u = new SpeechSynthesisUtterance(texte);
     u.lang = 'fr-FR';
     // Lent et posé : on annonce une posture à quelqu'un qui a la tête en bas,
-    // pas une station de métro. Et la voix masculine descend d'un cran, les
-    // moteurs de synthèse sortant par défaut un timbre un peu haut.
+    // pas une station de métro. La hauteur est un réglage à part entière :
+    // c'est le seul moyen d'obtenir un timbre grave sur un appareil qui n'a
+    // que des voix de femme.
     u.rate = r.voixDebit ?? 0.88;
-    u.pitch = r.voixMasculine ? 0.9 : 1.0;
-    const v = meilleureVoix(!!r.voixMasculine);
+    u.pitch = r.voixHauteur ?? 0.9;
+    const v = meilleureVoix(!!r.voixMasculine, r.voixNom || '');
     if (v) u.voice = v;
     speechSynthesis.speak(u);
     return true;

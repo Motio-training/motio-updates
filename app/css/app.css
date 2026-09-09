@@ -1419,6 +1419,19 @@ body:not(.connecte) .page-etroite{width:100%;max-width:25rem}
 }
 .chip-cat.on{background:var(--accent);border-color:var(--accent);color:var(--accent-sur)}
 
+/* Liste des voix de synthèse installées (réglage du son). Une ligne = une
+   voix, qu'on choisit et qu'on entend du même appui : le nom technique d'une
+   voix n'apprend rien, il faut l'écouter. */
+.voix-ligne{
+  display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+  width:100%;margin:.25rem 0;padding:.55rem .8rem;text-align:left;cursor:pointer;
+  border:1px solid var(--encre-2);border-radius:var(--r-s);
+  background:transparent;color:var(--encre);font-family:inherit;
+}
+.voix-ligne.on{background:var(--accent);border-color:var(--accent);color:var(--accent-sur)}
+.voix-ligne b{display:block;font-size:.86rem}
+.voix-ligne em{display:block;font-style:normal;font-size:.72rem;opacity:.75}
+
 .social-entete{margin-bottom:1.25rem}
 .social-titre-rangee{display:flex;align-items:baseline;justify-content:space-between;gap:1rem}
 .social-entete h1{margin:0 0 .85rem}

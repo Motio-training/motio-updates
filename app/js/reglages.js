@@ -36,11 +36,17 @@ const BIPS_DEFAUT = {
      préviennent d'un changement imminent, ce qu'une phrase ne sait pas faire
      en une seconde. */
   voix: false,
-  /* Genre et calage de la voix. Sur une séance d'étirements ou de yoga, ce
+  /* Choix et calage de la voix. Sur une séance d'étirements ou de yoga, ce
      qu'on attend d'une voix c'est qu'elle soit calme et posée — d'où un débit
-     lent et, pour la voix masculine, une hauteur légèrement abaissée. */
+     lent et une hauteur abaissée. `voixNom` est le choix EXPLICITE d'une voix
+     de la liste réelle ; vide, on retombe sur `voixMasculine`, qui n'est qu'une
+     préférence de genre : encore faut-il que l'appareil ait une voix de ce
+     genre, ce qui n'est pas garanti. La hauteur est un réglage à part entière,
+     seul moyen d'obtenir un timbre grave quand toutes les voix sont féminines. */
   voixMasculine: true,
-  voixDebit: 0.88
+  voixNom: '',
+  voixDebit: 0.88,
+  voixHauteur: 0.9
 };
 
 /* ------------------------------------------ réglages qui suivent le compte
@@ -273,10 +279,9 @@ export function ouvrirReglagesBips(beeper) {
             <button class="chip-cat ${r.voixMasculine ? 'on' : ''}" data-voix-h type="button">Masculine</button>
             <button class="chip-cat ${r.voixMasculine ? '' : 'on'}" data-voix-f type="button">Féminine</button>
           </div>
+          <p class="etat-mono" style="font-size:.72rem;margin-top:.35rem" data-voix-note></p>
+          <div data-voix-liste></div>
           <div data-voix-debit></div>
-          <p class="etat-mono" style="font-size:.72rem">Le genre dépend des voix installées
-            sur l'appareil. Si le choix ne change rien, installe les voix françaises depuis
-            les réglages du système.</p>
         </div>
 
         <p class="champ-label" style="margin-top:1rem">Décompte</p>
@@ -330,14 +335,75 @@ export function ouvrirReglagesBips(beeper) {
   });
   const bH = modale.querySelector('[data-voix-h]');
   const bF = modale.querySelector('[data-voix-f]');
-  const majGenre = () => {
-    bH.classList.toggle('on', r.voixMasculine);
-    bF.classList.toggle('on', !r.voixMasculine);
+  const zoneListe = modale.querySelector('[data-voix-liste]');
+  const note = modale.querySelector('[data-voix-note]');
+
+  /* Un extrait de VRAI guidage, pas une phrase inventée pour le test : c'est
+     exactement ce qu'on entendra sur une posture (coach-guide.js). */
+  const ecouter = () => {
+    beeper.unlock();
+    beeper.say("Posture de l'enfant, côté droit.", false, r);
+    beeper.say('À genoux, fesses sur les talons, bras tendus devant, front au sol.', true, r);
+    beeper.say('Inspire dans le dos, sens les côtes s’ouvrir.', true, r);
   };
-  bH.onclick = () => { r.voixMasculine = true; majGenre(); };
-  bF.onclick = () => { r.voixMasculine = false; majGenre(); };
+
+  /* LA LISTE RÉELLE DES VOIX FRANÇAISES DE L'APPAREIL.
+     Demander « masculine ou féminine » ne suffit pas : quand aucune voix
+     d'homme n'est installée, les deux choix donnent la même voix. Montrer
+     l'inventaire est la seule réponse honnête, et chaque voix s'écoute d'un
+     appui. Les navigateurs peuplent getVoices() de façon asynchrone, d'où le
+     redessin sur voiceschanged. */
+  const dessinerVoix = () => {
+    const dispo = beeper.voixFrancaises();
+    bH.classList.toggle('on', r.voixMasculine && !r.voixNom);
+    bF.classList.toggle('on', !r.voixMasculine && !r.voixNom);
+    const manque = dispo.length && !dispo.some(v => beeper.genreVoix(v) === r.voixMasculine);
+    note.textContent = !dispo.length
+      ? 'Aucune voix française trouvée sur cet appareil.'
+      : manque
+        ? `Aucune voix ${r.voixMasculine ? 'masculine' : 'féminine'} n'est installée ici : `
+          + 'c\'est une autre voix qui parle. Choisis-en une ci-dessous, ou installe les voix '
+          + 'françaises depuis les réglages du système. La hauteur, elle, s\'applique à toutes.'
+        : 'Le genre est déduit du nom de la voix ; touche une voix pour l\'entendre.';
+    note.style.color = manque ? 'var(--alerte, #c76b3a)' : '';
+    zoneListe.innerHTML = '';
+    const ligne = (titre, detail, actif, onClick) => {
+      const el = h(`<button type="button" class="voix-ligne${actif ? ' on' : ''}">
+          <span><b>${titre}</b><em>${detail}</em></span><span>▶</span>
+        </button>`);
+      el.onclick = onClick;
+      return el;
+    };
+    zoneListe.append(ligne(
+      'Automatique',
+      `la meilleure voix ${r.voixMasculine ? 'masculine' : 'féminine'} installée`,
+      !r.voixNom,
+      () => { r.voixNom = ''; dessinerVoix(); ecouter(); }
+    ));
+    dispo.forEach((v) => {
+      const g = beeper.genreVoix(v);
+      // « female_2 » dans le nom devient « Voix féminine 2 » : plusieurs voix
+      // du même genre cohabitent souvent, il faut pouvoir les distinguer.
+      const num = (v.name.toLowerCase().match(/(?:male|female)_(\d+)/) || [])[1];
+      const titre = (g === true ? 'Voix masculine' : g === false ? 'Voix féminine' : v.name)
+        + (num ? ' ' + num : '');
+      const detail = (g === null ? v.name + ' · genre non déclaré' : v.name)
+        + (v.localService ? '' : ' · demande le réseau');
+      zoneListe.append(ligne(titre, detail, r.voixNom === v.name,
+        () => { r.voixNom = v.name; dessinerVoix(); ecouter(); }));
+    });
+  };
+  bH.onclick = () => { r.voixMasculine = true; r.voixNom = ''; dessinerVoix(); ecouter(); };
+  bF.onclick = () => { r.voixMasculine = false; r.voixNom = ''; dessinerVoix(); ecouter(); };
+  dessinerVoix();
+  if (typeof speechSynthesis !== 'undefined') {
+    const majListe = () => { if (document.body.contains(modale)) dessinerVoix(); };
+    speechSynthesis.addEventListener?.('voiceschanged', majListe);
+  }
   modale.querySelector('[data-voix-debit]').append(
-    curseur('Débit', r.voixDebit, 0.7, 1.15, 0.01, '', v => { r.voixDebit = v; })
+    curseur('Débit', r.voixDebit, 0.7, 1.15, 0.01, '', v => { r.voixDebit = v; }),
+    // Hauteur : réglage à part entière, et non valeur déduite du genre.
+    curseur('Hauteur', r.voixHauteur ?? 0.9, 0.6, 1.2, 0.01, '', v => { r.voixHauteur = v; })
   );
 
   modale.querySelector('[data-tester]').onclick = () => {
@@ -346,15 +412,7 @@ export function ouvrirReglagesBips(beeper) {
     setTimeout(() => beeper.shortBeep(r), 520);
     // Avec la voix, le test doit faire entendre la VOIX au départ : c'est
     // exactement ce qui remplace le sifflet en séance.
-    setTimeout(() => {
-      // Un vrai extrait de guidage, pas une phrase inventée pour le test :
-      // c'est exactement ce qu'on entendra sur une posture (coach-guide.js).
-      if (r.voix) {
-        beeper.say("Posture de l'enfant.", false, r);
-        beeper.say('À genoux, fesses sur les talons, bras tendus devant, front au sol.', true, r);
-        beeper.say('Inspire dans le dos, sens les côtes s’ouvrir.', true, r);
-      } else beeper.startBeep(r);
-    }, 900);
+    setTimeout(() => { if (r.voix) ecouter(); else beeper.startBeep(r); }, 900);
   };
   modale.querySelector('[data-annuler]').onclick = () => modale.remove();
   modale.querySelector('[data-valider]').onclick = () => { sauverBips(r); modale.remove(); };
