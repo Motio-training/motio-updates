@@ -31,13 +31,15 @@
 <main>
 
 <h1>Politique de confidentialité — Motio</h1>
-<p class="date">Dernière mise à jour : 31 août 2026</p>
+<p class="date">Dernière mise à jour : 9 septembre 2026</p>
 
 <div class="card">
-  <p><strong>En deux phrases.</strong> Sans compte, Motio ne transmet rien, à la seule
+  <p><strong>En résumé.</strong> Sans compte, Motio ne transmet rien, à la seule
   exception d'une séance que vous choisissez vous-même de partager par lien ou par QR
   code. Avec un compte, ce qui part sur le serveur est décrit ci-dessous ligne par ligne,
-  et le tableau du paragraphe 4 dit exactement qui peut voir quoi.</p>
+  et le tableau du paragraphe 4 dit exactement qui peut voir quoi. Si vous parlez d'une
+  douleur ou d'une blessure au coach IA, vous écrivez une donnée de santé : le
+  paragraphe 5 lui est entièrement consacré.</p>
 </div>
 
 <h2>1. Qui est responsable</h2>
@@ -52,6 +54,7 @@ hormis le partage décrit juste en dessous. Sont enregistrés localement, dans l
 privé de l'application :</p>
 <ul>
   <li>vos entraînements, séances réalisées, séries, charges et répétitions ;</li>
+  <li>la note libre et le ressenti que vous attachez à une séance ;</li>
   <li>votre catalogue d'exercices et vos programmes ;</li>
   <li>votre taille et vos réglages (thème, sons, unités).</li>
 </ul>
@@ -63,8 +66,9 @@ ni sur l'espace web, ni sur ce site.</p>
 <p>C'est le seul envoi que l'application effectue sans compte, et seulement quand vous le
 demandez. Pour que le lien envoyé reste court et lisible, la <strong>définition</strong>
 de la séance partagée — son nom, sa catégorie, ses exercices, séries, répétitions visées
-et temps de repos — est déposée sur le serveur, qui rend en échange un identifiant de sept
-caractères. C'est cet identifiant, et lui seul, que contient le lien.</p>
+et temps de repos — est déposée sur le serveur, dans la table <code>share_links</code>,
+qui rend en échange un identifiant de sept caractères. C'est cet identifiant, et lui seul,
+que contient le lien.</p>
 <p>Ne sont <strong>jamais</strong> déposés par ce biais : votre historique, vos charges,
 vos performances, ni la moindre donnée vous identifiant. Un lien partagé est par nature
 consultable par toute personne qui le reçoit, ou à qui on le retransmet. Si vous êtes
@@ -106,9 +110,12 @@ plus long.</p>
   <tr><td><strong>Appartenance à vos groupes</strong></td>
       <td>Faire fonctionner les groupes d'entraînement</td><td>Exécution du service</td></tr>
 
-  <tr><td><strong>Vos conversations avec Moti, le coach IA</strong></td>
-      <td>Garder le fil de la discussion d'un appareil à l'autre</td>
-      <td>Exécution du service — effaçable par « Recommencer »</td></tr>
+  <tr><td><strong>Vos conversations avec Moti, le coach IA</strong>, y compris ce que vous
+      y écrivez au sujet d'une douleur ou d'une blessure</td>
+      <td>Garder le fil de la discussion d'un appareil à l'autre, et permettre au coach de
+          tenir compte de votre situation</td>
+      <td>Consentement explicite pour ce qui touche à la santé (article 9.2.a du RGPD) —
+          voir le paragraphe 5. Effaçable par « Recommencer »</td></tr>
 
   <tr><td><strong>Identifiant de notification de votre appareil</strong></td>
       <td>Vous envoyer les notifications que vous avez activées</td>
@@ -154,13 +161,18 @@ identifiant de compte. Aucune autre donnée de votre compte Google n'est demand�
           séances » est activée. En la désactivant, le détail déjà envoyé est effacé du
           serveur à la synchronisation suivante</td></tr>
 
+  <tr><td>La note libre d'une séance</td>
+      <td>Personne d'autre que vous — elle n'est jamais publiée dans le fil</td></tr>
+
   <tr><td>Vos messages privés</td><td>Vous et votre destinataire</td></tr>
 
   <tr><td>Vos messages de groupe</td>
       <td>Les membres du groupe. Un groupe est privé : on n'y entre que par lien, QR code
           ou code d'invitation</td></tr>
 
-  <tr><td>Vos conversations avec le coach IA</td><td>Personne d'autre que vous</td></tr>
+  <tr><td>Vos conversations avec le coach IA</td>
+      <td>Aucun autre utilisateur. Les derniers messages sont en revanche transmis à
+          Anthropic pour produire la réponse : voir le paragraphe 5</td></tr>
 
   <tr><td>Votre sauvegarde de carnet</td><td>Personne d'autre que vous</td></tr>
 </table>
@@ -169,18 +181,89 @@ identifiant de compte. Aucune autre donnée de votre compte Google n'est demand�
 (<em>Row Level Security</em>), et non par l'application. Elles demeurent donc valables
 même si quelqu'un utilisait une version modifiée de l'application.</p>
 
-<h2>5. Hébergement et sous-traitants</h2>
+<h2>5. Données de santé et coach IA</h2>
+
+<div class="card">
+  <p><strong>Moti n'est pas un professionnel de santé.</strong> Il ne pose aucun
+  diagnostic et ne prescrit rien. Ses réponses sont produites par un modèle de langage et
+  peuvent être inexactes ou inadaptées à votre cas. En cas de douleur qui dure, qui
+  s'aggrave ou qui vous inquiète, consultez un médecin ou un kinésithérapeute.</p>
+</div>
+
+<p>Depuis la version 2.58 du 8 septembre 2026, Moti, le coach IA, conseille aussi sur les
+douleurs, les blessures, la prévention et la reprise après une gêne. Si vous lui décrivez
+une douleur, une blessure ou une limitation physique, vous écrivez alors une
+<strong>donnée de santé</strong>, que le RGPD range parmi les catégories particulières de
+données (article 9). Ce paragraphe dit exactement ce qu'elle devient.</p>
+
+<h3>Ce qui est enregistré, et où</h3>
+<p>La conversation avec Moti est enregistrée sur le serveur, dans la table
+<code>coach_messages</code>, hébergée par Supabase à Stockholm (Union européenne). Chaque
+message y porte : un identifiant, votre identifiant de compte, l'auteur du message (vous
+ou le coach), <strong>le texte du message tel que vous l'avez écrit</strong>, la séance
+que le coach a éventuellement proposée, et la date d'envoi. Une copie locale sert de cache
+sur l'appareil, pour que l'écran s'ouvre sans attendre le réseau.</p>
+<p>Pourquoi sur le serveur, et non sur le seul téléphone : pour que vous retrouviez la
+même conversation depuis l'application et depuis l'espace web. C'est le seul usage qui en
+est fait. Elle n'alimente ni le fil, ni les classements, ni aucune statistique, et aucun
+autre utilisateur n'y a accès.</p>
+
+<h3>Ce qui part chez Anthropic</h3>
+<p>À chaque message que vous envoyez sont transmis à Anthropic, qui fait fonctionner le
+modèle : <strong>les douze derniers messages de la conversation</strong> — les vôtres
+comme ceux du coach — et un instantané de votre situation d'entraînement (prénom ou
+pseudo, niveau et objectif déclarés, programme en cours, cinq dernières séances, records).
+Si une douleur a été décrite dans ces douze messages, elle en fait partie : c'est
+précisément ce qui permet au coach d'en tenir compte, au lieu de proposer la même chose
+qu'à tout le monde.</p>
+<p>Ne sont <strong>jamais</strong> transmis votre adresse e-mail ni votre identifiant de
+compte. Ce traitement a lieu aux États-Unis. Anthropic agit comme sous-traitant : il
+traite ces échanges pour produire la réponse, les conserve temporairement au titre de ses
+propres contrôles d'abus, et ne s'en sert pas pour entraîner ses modèles.</p>
+<p>Si vous ne souhaitez pas que des données de santé soient traitées, ni qu'elles quittent
+l'Union européenne, <strong>n'écrivez pas à Moti</strong> : tout le reste de l'application
+fonctionne sans lui, et rien d'autre n'est envoyé à Anthropic.</p>
+
+<h3>Sur quelle base</h3>
+<p>Motio ne vous demande jamais de renseigner votre état de santé : aucun champ ne le
+réclame, aucune fonctionnalité ne l'exige. Si vous choisissez d'en parler à Moti, ce
+traitement repose sur votre <strong>consentement explicite</strong> (article 9.2.a du
+RGPD), que vous donnez en écrivant le message et que vous retirez en effaçant la
+conversation. Le retrait vaut pour l'avenir : il n'annule pas les réponses déjà
+produites.</p>
+
+<h3>Combien de temps, et comment effacer</h3>
+<p>La conversation est conservée tant que vous ne l'effacez pas, et au plus tard jusqu'à
+la suppression de votre compte.</p>
+<p>Le bouton <strong>« Recommencer »</strong>, en haut de l'écran Coach — dans
+l'application comme dans l'espace web — supprime la conversation <strong>du
+serveur</strong>, et pas seulement de l'écran : les lignes correspondantes sont effacées
+de la table <code>coach_messages</code>, ainsi que du cache de l'appareil utilisé. Un
+autre appareil sur lequel vous étiez connecté peut en garder une copie locale jusqu'à ce
+que vous y appuyiez aussi sur « Recommencer », ou que vous y désinstalliez
+l'application.</p>
+<p>La suppression du compte efface également l'intégralité de la conversation.</p>
+
+<h3>La note d'une séance</h3>
+<p>La note libre attachée à une séance (« douleur épaule », « mauvaise nuit ») peut elle
+aussi contenir une donnée de santé. Elle <strong>reste sur votre téléphone</strong> : elle
+n'est ni publiée dans le fil, ni transmise à Moti. Elle ne part sur le serveur que si vous
+utilisez la sauvegarde du carnet, laquelle n'est lisible que par vous.</p>
+
+<h2>6. Hébergement et sous-traitants</h2>
 <ul>
   <li><strong>Supabase</strong> — héberge la base de données et les fichiers, dans la
       région <code>eu-north-1</code> (Stockholm, Union européenne).</li>
 
   <li><strong>Anthropic</strong> — fait fonctionner Moti, le coach IA, ainsi que le
-      générateur de programme. Lorsque vous écrivez à Moti, sont transmis : vos messages,
-      votre prénom ou pseudo, vos séances récentes, vos records saisis et votre programme
-      en cours. <strong>Ni votre adresse e-mail ni votre identifiant de compte ne sont
-      transmis.</strong> Ce traitement a lieu aux États-Unis. Si vous ne souhaitez pas que
-      ces données quittent l'Union européenne, n'utilisez pas le coach : le reste de
-      l'application fonctionne sans lui.</li>
+      générateur de programme. Lorsque vous écrivez à Moti, sont transmis : les douze
+      derniers messages de la conversation, votre prénom ou pseudo, votre niveau et votre
+      objectif déclarés, vos séances récentes, vos records saisis et votre programme en
+      cours. <strong>Ni votre adresse e-mail ni votre identifiant de compte ne sont
+      transmis.</strong> Ce traitement a lieu aux États-Unis. C'est le seul sous-traitant
+      susceptible de recevoir une donnée de santé, dans les conditions détaillées au
+      paragraphe 5. Si vous ne souhaitez pas que ces données quittent l'Union européenne,
+      n'utilisez pas le coach : le reste de l'application fonctionne sans lui.</li>
 
   <li><strong>Google (Firebase Cloud Messaging)</strong> — achemine les notifications vers
       votre téléphone, et reçoit pour cela l'identifiant de votre appareil ainsi que le
@@ -192,7 +275,7 @@ même si quelqu'un utilisait une version modifiée de l'application.</p>
 </ul>
 <p>Aucune donnée n'est vendue, louée ni transmise à des fins publicitaires.</p>
 
-<h2>6. Durée de conservation</h2>
+<h2>7. Durée de conservation</h2>
 <p>Vos données en ligne sont conservées tant que votre compte existe. Sa suppression
 efface immédiatement et définitivement : le profil et la photo de profil, les abonnements,
 les séances partagées, les kudos, les commentaires, les messages privés et de groupe que
@@ -200,41 +283,50 @@ vous avez envoyés, les conversations avec le coach, le poids, les appairages de
 la sauvegarde du carnet.</p>
 <p>Les messages que vous avez envoyés disparaissent également des conversations de leurs
 destinataires. Votre carnet local, lui, demeure sur votre téléphone.</p>
+<p>La conversation avec le coach obéit à une règle plus stricte, décrite au paragraphe 5 :
+vous pouvez l'effacer du serveur à tout moment, sans attendre la suppression du compte,
+par le bouton « Recommencer ».</p>
 <p>Les séances déposées pour un partage par lien ou par QR code font exception : elles
 sont conservées sans limite de durée, y compris après la suppression du compte, pour que
 les liens déjà envoyés à vos proches ne cessent pas de fonctionner. Elles ne contiennent
 aucune donnée vous identifiant. Vous pouvez en demander la suppression à tout moment à
 l'adresse de contact du paragraphe 1.</p>
 
-<h2>7. Vos droits</h2>
+<h2>8. Vos droits</h2>
 <ul>
   <li><strong>Accès et portabilité</strong> — Profil › Exporter produit un fichier lisible
       contenant l'intégralité de vos données.</li>
   <li><strong>Rectification</strong> — le pseudo, le nom affiché, la photo et le poids se
       modifient depuis le Profil.</li>
-  <li><strong>Effacement</strong> — Profil › Compte › Supprimer.</li>
+  <li><strong>Effacement</strong> — Profil › Compte › Supprimer. Pour la seule conversation
+      avec le coach, « Recommencer » sur l'écran Coach suffit.</li>
   <li><strong>Opposition et retrait du consentement</strong> — l'interrupteur de partage du
-      détail et les réglages de notification se désactivent à tout moment.</li>
+      détail et les réglages de notification se désactivent à tout moment. Le consentement
+      au traitement des données de santé se retire en effaçant la conversation avec le
+      coach, ou en cessant de l'utiliser.</li>
 </ul>
 <p>Pour toute demande, écrivez à
 <a href="mailto:admin.motio@gmail.com">admin.motio@gmail.com</a>. Vous pouvez également
 introduire une réclamation auprès de la CNIL
 (<a href="https://www.cnil.fr">cnil.fr</a>).</p>
 
-<h2>8. Sécurité</h2>
+<h2>9. Sécurité</h2>
 <p>Les échanges avec le serveur sont chiffrés (HTTPS). Les mots de passe ne sont jamais
 stockés en clair. Les jetons de connexion sont conservés dans l'espace privé de
 l'application et exclus des sauvegardes automatiques d'Android. Le jeton d'appairage d'une
 montre n'est conservé que sous forme hachée.</p>
 
-<h2>9. Âge minimum</h2>
+<h2>10. Âge minimum</h2>
 <p>L'application n'est pas destinée aux personnes de moins de 15 ans. Aucun compte ne doit
 être créé en deçà de cet âge sans l'accord du titulaire de l'autorité parentale.</p>
 
-<h2>10. Modifications</h2>
+<h2>11. Modifications</h2>
 <p>Cette politique peut évoluer avec l'application. La date de dernière mise à jour figure
 en haut de page ; les changements substantiels sont signalés dans les nouveautés de
 l'application.</p>
+
+<p><a href="../conditions/">Conditions d'utilisation</a> —
+<a href="../mentions-legales/">Mentions légales</a></p>
 
 </main>
 </body>
