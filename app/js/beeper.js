@@ -69,3 +69,79 @@ export function startBeep(reglages) {
   const r = reglages || reglagesBips();
   tone(r.startFreq, 340, r.startVolume, r.startTrill);
 }
+
+/* ============================================================
+   LA VOIX DU COACH (CoachVoice.kt côté natif)
+
+   Demande de Nicolas après sa première séance de mobilité : sur un réveil du
+   dos ou une séance de yoga, le coup de sifflet est agressif et contredit
+   exactement ce que la séance cherche à produire. Une voix qui annonce la
+   posture, rappelle de respirer et prévient de ce qui arrive fait le même
+   travail — dire où l'on en est sans regarder l'écran — dans le registre de
+   la séance.
+
+   Quand la synthèse vocale manque, on retombe sur le sifflet plutôt que sur
+   le silence.
+   ============================================================ */
+
+/** Ce que la voix dit au départ du prochain EFFORT et du prochain REPOS,
+ *  renseignés par l'écran de séance — seul à connaître les exercices. */
+export const cues = { effort: '', repos: '' };
+
+function voixDisponible() {
+  if (typeof speechSynthesis === 'undefined') return false;
+  const v = speechSynthesis.getVoices();
+  // Liste vide = pas encore chargée par le navigateur ; on tente quand même,
+  // la synthèse choisira sa voix par défaut.
+  return !v.length || v.some(x => (x.lang || '').toLowerCase().startsWith('fr'));
+}
+
+export function say(texte) {
+  if (!texte || typeof speechSynthesis === 'undefined') return false;
+  try {
+    // On coupe ce qui était en train d'être dit : au changement de phase, la
+    // phrase qui compte est la nouvelle. Empiler laisserait la voix décrire
+    // une posture déjà quittée, avec un retard qui s'aggrave à chaque tour.
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texte);
+    u.lang = 'fr-FR';
+    u.rate = 0.94;
+    const fr = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith('fr'));
+    if (fr) u.voice = fr;
+    speechSynthesis.speak(u);
+    return true;
+  } catch { return false; }
+}
+
+/**
+ * Changement de phase d'un enchaînement chronométré — tabata, EMOM, maintien,
+ * circuit. Seul endroit où la voix remplace vraiment le sifflet : ici on a
+ * quelque chose à dire, là où un minuteur de récupération n'annonce rien de
+ * plus que « c'est l'heure ».
+ */
+export function phaseBeep(effort, reglages) {
+  const r = reglages || reglagesBips();
+  if (r.voix && voixDisponible()) {
+    const phrase = effort ? cues.effort : cues.repos;
+    if (phrase && say(phrase)) return;
+  }
+  startBeep(r);
+}
+
+/** Phrase d'annonce d'une posture tenue : son nom, sa durée, et une consigne
+ *  de respiration quand le maintien est assez long pour qu'elle serve. */
+export function phraseEffort(nom, secondes) {
+  let t = nom || 'Position suivante';
+  if (secondes > 0) t += `, ${secondes} secondes`;
+  t += secondes >= 20 ? '. Respire lentement, relâche les épaules.' : '.';
+  return t;
+}
+
+/** Phrase de repos : ce qu'on fait maintenant, et ce qui arrive après. */
+export function phraseRepos(suivant, secondes) {
+  let t = 'Relâche';
+  if (secondes > 0) t += `, ${secondes} secondes`;
+  t += '.';
+  if (suivant) t += ` Ensuite : ${suivant}.`;
+  return t;
+}

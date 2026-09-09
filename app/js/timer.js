@@ -203,7 +203,9 @@ export class Engine {
         const remainSec = Math.ceil(remainMs / 1000);
         const phaseIdx = idx * 2 + (working ? 0 : 1);
         if (phaseIdx !== this.tabLastPhaseIdx) {
-          beeper.startBeep();
+          // phaseBeep et non startBeep : en mode voix, c'est ici que le coach
+          // annonce la posture ou le repos plutôt que de siffler.
+          beeper.phaseBeep(working);
           this.tabLastPhaseIdx = phaseIdx;
           this.tabLastRemainSec = Infinity;
         }
@@ -222,7 +224,7 @@ export class Engine {
         const remainMs = this.circEnds[idx] * 1000 - (now - this.circT0);
         const remainSec = Math.ceil(remainMs / 1000);
         if (idx !== this.circLastIdx) {
-          beeper.startBeep();
+          beeper.phaseBeep(this.circPlan[idx].work);
           this.circLastIdx = idx;
           this.circLastRemainSec = Infinity;
         }

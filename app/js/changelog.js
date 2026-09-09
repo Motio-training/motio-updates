@@ -515,4 +515,10 @@ export const CHANGELOG = [
                 "Pour une position tenue, une seule silhouette avec la zone travaillée en vert — pas de flèche là où il n'y a pas de mouvement",
                 "La salutation au soleil s'affiche en bande, ses sept postures à la suite, sans être écrasée dans un carré"
             ] },
+  { date: "9 septembre 2026", versions: "v2.61", items: [
+                "La planche du mouvement s'affiche en grand PENDANT la séance, plus seulement dans le menu du crayon. Un appui sous le chrono la masque ou la remontre, et le choix est retenu",
+                "Un exercice en maintien enchaîne tout seul sur le suivant : une séance d'étirements ne réclame plus un appui entre deux postures",
+                "Le gros décompte disait « RÉCUPÉRATION » pendant qu'on tenait une posture. Il dit maintenant MAINTIEN, TRAVAIL ou REPOS selon ce qu'il compte vraiment",
+                "Nouvelle voix du coach, dans Réglage du son : sur les enchaînements chronométrés, Moti annonce la posture, la respiration et ce qui arrive, au lieu de siffler. Pour la mobilité, les étirements et le yoga, où le sifflet allait à l'encontre de la séance"
+            ] },
 ];

@@ -182,6 +182,7 @@ export async function vueCircuit({ moi, modele, params }) {
     const nom = ex?.name || '';
     const v = visuels && nom ? visualFor(nom) : null;
 
+
     corps.replaceChildren(h(`
       <div class="circuit-jeu ${effort ? 'effort' : pause ? 'pause' : 'repos'}">
         ${v
@@ -208,6 +209,30 @@ export async function vueCircuit({ moi, modele, params }) {
     };
   }
 
+  /**
+   * Ce que la voix du coach dira aux prochains changements de segment.
+   *
+   * Toujours en avance d'un cran : pendant un repos on prépare la phrase de
+   * l'effort qui suit, pendant un effort celle du repos. Le moteur lit la
+   * phrase telle qu'elle est AU MOMENT du changement (beeper.phaseBeep), et
+   * il déclenche le premier changement dans le tick même du démarrage —
+   * d'où l'appel dès l'écran d'attente, sans quoi la toute première posture
+   * n'était pas annoncée.
+   */
+  function preparerVoix(segment) {
+    const depart = Math.max(0, segment);
+    const prochainEffort = plan.slice(depart).find(s => s.work);
+    const apres = plan.slice(depart + 1);
+    const iRepos = apres.findIndex(s => !s.work);
+    const suivantEffort = iRepos < 0 ? null : apres.slice(iRepos + 1).find(s => s.work);
+    beeper.cues.effort = beeper.phraseEffort(
+      session.exercises[prochainEffort?.station]?.name || '', prochainEffort?.durSec || 0
+    );
+    beeper.cues.repos = beeper.phraseRepos(
+      session.exercises[suivantEffort?.station]?.name || '', plan[depart + 1]?.durSec || 0
+    );
+  }
+
   /* Redessin complet uniquement quand la STATION ou la PHASE change : sinon
      on se contente de réécrire le décompte. Sans ça, on reconstruirait le DOM
      — et on rechargerait la planche — dix fois par seconde. */
@@ -215,6 +240,7 @@ export async function vueCircuit({ moi, modele, params }) {
   function dessiner(snap) {
     dernierSnap = snap;
     if (termine) return;
+    preparerVoix(snap.segment);
 
     const ecoule = Math.floor((Date.now() - session.startedAt) / 1000);
     chronoEl.textContent = fmtClock(ecoule);

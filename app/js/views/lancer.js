@@ -49,7 +49,11 @@ import { ouvrirBilan } from '../bilan.js';
 import { ouvrirPave } from '../numpad.js';
 import { ouvrirCatalogue } from './entrainement.js';
 import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
-import { hasVisual, ouvrirPlanche } from '../exercise-visuals.js';
+import { hasVisual, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
+
+/** Afficher la planche en grand pendant une séance ORDINAIRE. Distinct du
+ *  réglage du circuit (motio.circuit-visuels) : voir dessinerPlanche. */
+const CLE_VISUELS_SEANCE = 'motio.seance-visuels';
 
 const RIR = [0, 1, 2, 3, 4, 5];
 const SETUP_SEC = 10;
@@ -184,6 +188,9 @@ export async function vueLancerSeance(params) {
      demandé par Nicolas (« le choix du RIR, nombre de reps et poids n'est
      pas disponible pendant la récupération »). */
   let serieEnEdition = -1;
+  let visuelsSeance = true;
+  try { visuelsSeance = localStorage.getItem(CLE_VISUELS_SEANCE) !== '0'; }
+  catch { /* stockage refusé : on affiche, c'est le défaut utile */ }
 
   const totalEstimeSec = dureeSeance(modele.exercises);
   const engine = new Engine((snap) => majCadran(snap));
@@ -257,6 +264,58 @@ export async function vueLancerSeance(params) {
   pauseBtn.onclick = () => engine.minuteurTogglePause();
   titreEl.onclick = () => ouvrirMenuExercice();
 
+  /**
+   * La planche du mouvement en cours, et son interrupteur.
+   *
+   * Repliable, et le choix est retenu (localStorage) : une fois la routine sue
+   * par cœur, le décompte reprend tout l'écran. Réglage DISTINCT de celui du
+   * circuit — en circuit on découvre la station en y arrivant et la planche
+   * est indispensable, alors qu'en musculation classique on connaît ses
+   * mouvements et c'est le chrono qu'on veut en grand.
+   */
+  function dessinerPlanche() {
+    const zone = corps.querySelector('[data-planche]');
+    const bascule = corps.querySelector('[data-planche-bascule]');
+    if (!zone || !bascule) return;
+    const ex = session.exercises[exIndex];
+    const v = ex ? visualFor(ex.name) : null;
+    if (!v) { zone.hidden = true; bascule.hidden = true; return; }
+
+    bascule.hidden = false;
+    bascule.textContent = visuelsSeance ? 'Masquer le mouvement' : 'Afficher le mouvement';
+    bascule.onclick = () => {
+      visuelsSeance = !visuelsSeance;
+      try { localStorage.setItem(CLE_VISUELS_SEANCE, visuelsSeance ? '1' : '0'); }
+      catch { /* stockage refusé : le choix vaut pour cette séance */ }
+      dessinerPlanche();
+    };
+
+    zone.hidden = !visuelsSeance;
+    if (!visuelsSeance) { zone.replaceChildren(); return; }
+    zone.replaceChildren(h(
+      `<img src="${v.image}" alt="Mouvement de l'exercice ${esc(ex.name)}">`
+    ));
+  }
+
+  /**
+   * Ce que la voix du coach dira aux prochains changements de phase.
+   *
+   * Préparé À L'AVANCE, exercice par exercice : le changement de phase est
+   * déclenché par le moteur et il lit la phrase telle qu'elle est à cet
+   * instant. La calculer au moment du bip aurait fait annoncer l'exercice
+   * précédent avec un tour de retard.
+   */
+  function preparerVoix() {
+    const ex = session.exercises[exIndex];
+    if (!ex) return;
+    const suivant = session.exercises[exIndex + 1]?.name || '';
+    const chronometre = ex.mode === 'MAINTIEN' || ex.mode === 'TABATA' || ex.mode === 'EMOM';
+    beeper.cues.effort = ex.mode === 'MAINTIEN'
+      ? beeper.phraseEffort(ex.name, ex.workSec)
+      : chronometre ? (ex.name || 'C’est parti') : '';
+    beeper.cues.repos = chronometre ? beeper.phraseRepos(suivant, ex.restSec) : '';
+  }
+
   function majCadran(snap) {
     const cadran = corps.querySelector('[data-cadran]');
     if (!cadran) return;
@@ -266,7 +325,20 @@ export async function vueLancerSeance(params) {
     const etat = enTension ? 'serie' : (snap.phase === 'COUNTDOWN' ? 'place' : 'recup');
     cadran.className = `run-cadran run-cad-${etat}`;
     label.hidden = false;
-    label.textContent = etat === 'serie' ? 'SÉRIE' : etat === 'place' ? 'MISE EN PLACE' : 'RÉCUPÉRATION';
+    /* Le libellé était un binaire série / récupération, qui ne vaut que pour le
+       minuteur. Sur les modes pilotés par le moteur tabata — tabata, EMOM,
+       maintien — il n'y a PAS de temps sous tension mesuré : le décompte
+       affichait donc « RÉCUPÉRATION » pendant l'effort, y compris pendant qu'on
+       tenait une posture. C'est la phase du moteur qui fait foi là. */
+    const ex = session.exercises[exIndex];
+    const chronometre = ex && (ex.mode === 'MAINTIEN' || ex.mode === 'TABATA' || ex.mode === 'EMOM');
+    label.textContent = enTension ? 'SÉRIE'
+      : etat === 'place' ? 'MISE EN PLACE'
+        : chronometre
+          ? (snap.phase === 'WORK'
+            ? (ex.mode === 'MAINTIEN' ? 'MAINTIEN' : 'TRAVAIL')
+            : 'REPOS')
+          : 'RÉCUPÉRATION';
     valeur.textContent = snap.value;
 
     if (snap.mode === 'MINUTEUR' && snap.phase !== 'DONE') {
@@ -501,10 +573,18 @@ export async function vueLancerSeance(params) {
           <p class="run-conseil" data-conseil></p>
         </div>
 
+        <!-- LA PLANCHE DU MOUVEMENT, PENDANT LA SÉANCE. Elle n'était
+             atteignable que par le menu du crayon — trois appuis en pleine
+             série, autant dire jamais. Sur une séance de mobilité, savoir à
+             quoi ressemble la posture EST l'essentiel de l'information. -->
+        <div class="run-planche" data-planche hidden></div>
+
         <div class="run-cadran run-cad-warmup" data-cadran>
           <span class="run-cadran-label" data-label hidden>ÉCHAUFFEMENT</span>
           <span class="run-cadran-value" data-value>ÉCHAUFFEMENT</span>
         </div>
+
+        <button class="lien-inline run-planche-bascule" data-planche-bascule type="button" hidden></button>
 
         <p class="run-pr-banniere" data-pr hidden></p>
 
@@ -565,6 +645,9 @@ export async function vueLancerSeance(params) {
       if (saisie && !saisie.hidden && serieEnEdition < 0) { validerSerie(); return; }
       corps.querySelector('[data-controles] button')?.click();
     };
+
+    dessinerPlanche();
+    preparerVoix();
 
     /* Pavé numérique dédié (NumPadDialog) au lieu du clavier système : les
        cellules sont des boutons, la valeur vit dans poidsVal/repsVal. */
@@ -831,6 +914,15 @@ export async function vueLancerSeance(params) {
         ex.sets.push({ weight: 0, reps: 0, tensionMs: ex.workSec * tours * 1000, rir: -1 });
         redessinerSeries();
         dessinerControles();
+        /* Un MAINTIEN enchaîne tout seul sur l'exercice suivant : une séance
+           d'étirements se fait les mains au sol, elle n'a aucune raison de
+           réclamer un appui entre deux postures (demande de Nicolas). Le court
+           délai laisse le temps de lire la fin avant que l'écran ne change. */
+        if (ex.mode === 'MAINTIEN' && exIndex < session.exercises.length - 1) {
+          setTimeout(() => {
+            if (!termine && document.body.contains(el)) passerExercice();
+          }, 1500);
+        }
       }
     }, 300);
   }

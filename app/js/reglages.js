@@ -29,7 +29,13 @@ const CLE_ONE_RM = 'motio_one_rm';         // ManualOneRm (Stats.kt) : {exercice
 
 const BIPS_DEFAUT = {
   freq: 2750, trill: 43, volume: 1.0,
-  startFreq: 2200, startTrill: 43, startVolume: 1.0
+  startFreq: 2200, startTrill: 43, startVolume: 1.0,
+  /* La voix du coach à la place du sifflet, sur les enchaînements
+     chronométrés seulement (maintien, tabata, EMOM, circuit) — voir
+     beeper.phaseBeep. Les 3 bips du décompte restent des bips : ils
+     préviennent d'un changement imminent, ce qu'une phrase ne sait pas faire
+     en une seconde. */
+  voix: false
 };
 
 /* ------------------------------------------ réglages qui suivent le compte
@@ -245,6 +251,18 @@ export function ouvrirReglagesBips(beeper) {
         <p class="etat-mono">Sifflet synthétisé — pas de fichier à charger, marche hors ligne.
           Le décompte (3 bips identiques) et le bip de départ se règlent séparément.</p>
 
+        <label class="circuit-bascule" style="margin-top:1rem">
+          <span>
+            <b>Voix du coach</b>
+            <em>Sur les enchaînements chronométrés — maintien, tabata, EMOM, circuit —
+              le coach annonce la posture, la respiration et ce qui arrive, au lieu de
+              siffler. Pour la mobilité, les étirements et le yoga, où le coup de
+              sifflet va à l'encontre de la séance. Les 3 bips du décompte restent
+              joués.</em>
+          </span>
+          <input type="checkbox" data-voix ${r.voix ? 'checked' : ''}>
+        </label>
+
         <p class="champ-label" style="margin-top:1rem">Décompte</p>
         <div data-decompte></div>
 
@@ -289,10 +307,18 @@ export function ouvrirReglagesBips(beeper) {
     curseur('Volume', r.startVolume, BIPS_BORNES.volMin, BIPS_BORNES.volMax, 0.05, ' %', v => r.startVolume = v)
   );
 
+  modale.querySelector('[data-voix]').addEventListener('change', (e) => { r.voix = e.target.checked; });
+
   modale.querySelector('[data-tester]').onclick = () => {
     beeper.unlock();
     beeper.shortBeep(r); setTimeout(() => beeper.shortBeep(r), 260);
-    setTimeout(() => beeper.shortBeep(r), 520); setTimeout(() => beeper.startBeep(r), 900);
+    setTimeout(() => beeper.shortBeep(r), 520);
+    // Avec la voix, le test doit faire entendre la VOIX au départ : c'est
+    // exactement ce qui remplace le sifflet en séance.
+    setTimeout(() => {
+      if (r.voix) beeper.say(beeper.phraseEffort("Posture de l'enfant", 30));
+      else beeper.startBeep(r);
+    }, 900);
   };
   modale.querySelector('[data-annuler]').onclick = () => modale.remove();
   modale.querySelector('[data-valider]').onclick = () => { sauverBips(r); modale.remove(); };
