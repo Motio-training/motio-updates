@@ -835,9 +835,13 @@ a.ligne-titre:hover{color:var(--accent)}
   object-fit:contain;flex:0 0 auto;
 }
 .exo-vignette:hover{outline:2px solid var(--accent);outline-offset:1px}
+/* Le cadre prend la FORME de la planche plutôt que d'imposer un carré : la
+   plupart sont carrées et rien ne change pour elles, mais la salutation au
+   soleil est une bande de sept postures, à qui un cadre carré collait deux
+   grosses bandes vides pour rien. */
 .exo-planche{
-  display:block;width:100%;max-width:26rem;margin:.2rem auto 0;
-  aspect-ratio:1;object-fit:contain;
+  display:block;width:100%;max-width:26rem;max-height:26rem;margin:.2rem auto 0;
+  object-fit:contain;
   background:#fff;border-radius:var(--r-m);
 }
 .exo-planche-legende{margin:.55rem 0 0;text-align:center}
@@ -940,7 +944,15 @@ a.ligne-titre:hover{color:var(--accent)}
    qui devient géant.
    ========================================================================== */
 
-.page.circuit{display:flex;flex-direction:column;height:100%;gap:.6rem}
+/* La page occupe la hauteur que la coquille lui laisse, sans chercher à
+   reprendre celle de la barre du bas : une planche carrée — c'est-à-dire
+   presque toutes — est limitée par la LARGEUR de l'écran, pas par sa hauteur,
+   donc gagner cent pixels verticaux ne l'agrandit pas d'un pixel et suffit en
+   revanche à pousser les boutons hors de l'écran. */
+.page.circuit{
+  max-width:none;
+  display:flex;flex-direction:column;height:100%;min-height:0;gap:.6rem;
+}
 .circuit-tete{display:flex;align-items:flex-start;gap:.8rem}
 .circuit-tete-bloc{display:flex;flex-direction:column}
 .circuit-tete-centre{flex:1;align-items:center}

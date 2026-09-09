@@ -1,6 +1,6 @@
 {
-  "versionCode": 161,
-  "versionName": "2.59",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.59/motio.apk",
-  "notes": "Les seances en circuit. Circuit training, routine d'epaule ou de dos : les stations s'enchainent toutes seules (temps d'effort, temps de repos, station suivante), sans rien saisir et sans appuyer sur exercice suivant. Ni charge, ni repetitions, ni RIR : c'est le temps d'effort tenu qui est enregistre. L'illustration du mouvement occupe tout l'ecran, et pendant un repos c'est deja celle de la station suivante qui s'affiche ; un bouton la masque quand la routine est sue par coeur. Moti sait construire des circuits et le fait de lui-meme pour les routines de prevention et de mobilite."
+  "versionCode": 162,
+  "versionName": "2.60",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.60/motio.apk",
+  "notes": "Tout le catalogue est illustre. Les 62 exercices de mobilite, d'etirement, de proprioception, de prevention et de yoga ont desormais leur planche : 146 mouvements sur 146. Pour une position tenue, une seule silhouette avec la zone travaillee en vert, sans fleche. La salutation au soleil s'affiche en bande, ses sept postures a la suite. L'APK passe de 19 a 23 Mo : les planches restent embarquees pour etre disponibles en salle sans reseau."
 }

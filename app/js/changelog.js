@@ -510,4 +510,9 @@ export const CHANGELOG = [
                 "Moti sait construire des circuits, et le fait de lui-même pour les routines de prévention, de mobilité et d'échauffement",
                 "La durée annoncée d'un circuit est exacte à la seconde près, pas une estimation"
             ] },
+  { date: "9 septembre 2026", versions: "v2.60", items: [
+                "Les 62 exercices de mobilité, d'étirement, de proprioception, de prévention et de yoga ont désormais leur planche : tout le catalogue est illustré, 146 mouvements sur 146",
+                "Pour une position tenue, une seule silhouette avec la zone travaillée en vert — pas de flèche là où il n'y a pas de mouvement",
+                "La salutation au soleil s'affiche en bande, ses sept postures à la suite, sans être écrasée dans un carré"
+            ] },
 ];
