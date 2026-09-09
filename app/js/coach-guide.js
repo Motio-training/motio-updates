@@ -39,8 +39,15 @@ const PAS_SEC = 5;
  */
 const SILENCE_FIN_SEC = 6;
 
-/** État posé par l'écran de séance — le moteur, lui, ne connaît que le temps. */
-export const etat = { exercice: '', suivant: '', actif: false };
+/**
+ * État posé par l'écran de séance — le moteur, lui, ne connaît que le temps.
+ *
+ * `coteImpose` : dans une séance ordinaire, un exercice unilatéral se fait en
+ * deux tours et le côté se déduit de leur parité. Dans un circuit, une station
+ * ne passe qu'une fois par tour : c'est le TOUR du circuit qui donne le côté,
+ * et seul l'écran de circuit le connaît. Vide en dehors de ce cas.
+ */
+export const etat = { exercice: '', suivant: '', actif: false, coteImpose: '' };
 
 let derniereCle = '';
 /**
@@ -81,14 +88,19 @@ export function seconde(effort, tour, tours, restant, duree) {
     if (ecoule === 0) {
       // Le nom seul au deuxième tour : la consigne d'installation a déjà été
       // donnée, la répéter ferait bavard.
+      const cote = coteDe(tour, tours);
       if (tour <= 1) {
-        say(etat.exercice || 'C’est parti');
+        say((etat.exercice || 'C’est parti') + cote);
         // Première posture de la séance : personne ne l'a expliquée pendant
         // un repos, puisqu'il n'y en a pas eu.
         if (consigneDonneePour !== etat.exercice && g.consigne) {
           say(g.consigne, true);
           consigneDonneePour = etat.exercice;
         }
+      } else if (estUnilateral(etat.exercice)) {
+        // « Autre côté » dit tout, là où « deuxième fois » laisse penser
+        // qu'on refait la même chose.
+        say(`Autre côté${cote}.`);
       } else say(`${ORDINAUX[tour] || tour + 'e'} fois.`);
       if (g.cycle.length) say(texteCycle(g, 0, tour), true);
       return;
@@ -96,7 +108,17 @@ export function seconde(effort, tour, tours, restant, duree) {
     if (restant <= SILENCE_FIN_SEC) return;
     if (ecoule % PAS_SEC !== 0) return;
     if (!g.cycle.length) return;
-    say(texteCycle(g, ecoule / PAS_SEC, tour));
+    const i = ecoule / PAS_SEC;
+    // POSITION TENUE : le cycle de respiration est dit UNE FOIS, pour les
+    // points techniques, puis on se tait — sauf pour annoncer le temps qui
+    // reste. Répéter « inspire, expire » sur un étirement n'apprend rien à
+    // personne : on respire, c'est tout. Ce qu'on veut savoir, c'est combien
+    // de temps il reste à tenir.
+    if (!estRythme(etat.exercice) && i >= g.cycle.length) {
+      if (restant >= 10 && restant % 10 === 0) say(`Encore ${restant} secondes.`);
+      return;
+    }
+    say(texteCycle(g, i, tour));
     return;
   }
 
@@ -105,7 +127,8 @@ export function seconde(effort, tour, tours, restant, duree) {
   if (tour < tours) {
     // Encore un tour du MÊME mouvement : c'était le bug relevé par Nicolas, la
     // voix annonçait déjà l'exercice d'après entre deux séries de chat-vache.
-    say(`Relâche. On repart dans ${restant} secondes.`);
+    if (estUnilateral(etat.exercice)) say(`Change de côté. Tu as ${restant} secondes.`);
+    else say(`Relâche. On repart dans ${restant} secondes.`);
     return;
   }
   // Dernier tour terminé : on le DIT. Le décompte « trois, deux, un » annonce
@@ -117,6 +140,19 @@ export function seconde(effort, tour, tours, restant, duree) {
   // qui arrive, pour ne pas avoir à lire l'écran en y arrivant.
   const gs = guidagePour(etat.suivant);
   if (gs.consigne && restant >= 8) { say(gs.consigne, true); consigneDonneePour = etat.suivant; }
+}
+
+/**
+ * « , côté droit » / « , côté gauche », ou rien.
+ *
+ * Sur un exercice unilatéral fait en plusieurs tours, la parité du tour donne
+ * le côté — premier tour à droite, deuxième à gauche. Sur un seul tour, on
+ * s'en remet à `etat.coteImpose` : c'est le cas du circuit.
+ */
+function coteDe(tour, tours) {
+  if (!estUnilateral(etat.exercice)) return '';
+  if (tours >= 2) return tour % 2 === 1 ? ', côté droit' : ', côté gauche';
+  return etat.coteImpose ? `, ${etat.coteImpose}` : '';
 }
 
 /**
@@ -178,6 +214,133 @@ export function guidagePour(nom) {
   let best = -1, trouve = null;
   for (const [k, v] of idx) if (q.includes(k) && k.length > best) { best = k.length; trouve = v; }
   return trouve || GENERIQUE;
+}
+
+/* ============================================================
+   MOUVEMENTS RYTHMÉS PAR LE SOUFFLE, et EXERCICES UNILATÉRAUX.
+
+   Sur un mouvement rythmé — dos rond, dos creux, et on recommence — répéter
+   « inspire / expire » toutes les cinq secondes EST l'exercice : c'est le
+   métronome. Sur une position simplement TENUE, ça n'apporte rien ; là, c'est
+   le temps restant qui intéresse. Tout ce qui n'est pas listé est traité comme
+   une position tenue.
+
+   Un exercice unilatéral se fait d'un côté PUIS DE L'AUTRE : la voix annonce
+   le côté et dit « change de côté », et les générateurs s'assurent d'un nombre
+   pair de tours.
+
+   GÉNÉRÉ depuis CoachGuide.kt — ne pas éditer ici.
+   ============================================================ */
+const RYTHMES = [
+  'Chat-vache',
+  'Ouverture thoracique allongé sur le côté',
+  'Rotations d\'épaules bâton',
+  'Glissés d\'épaules au mur',
+  'Mobilisation de cheville genou au mur',
+  'Fente avec rotation thoracique',
+  'Cercles de hanche en quadrupédie',
+  'Excursions du pied (Y-balance)',
+  'Marche talon-pointe',
+  'Fente avant avec arrêt contrôlé',
+  'Réception de saut amortie',
+  'Sauts unipodaux avec réception stabilisée',
+  'Squat unipodal sur boîte',
+  'Transferts de poids sur un pied',
+  'Rotation externe d\'épaule à l\'élastique',
+  'Rotation interne d\'épaule à l\'élastique',
+  'Élévation dans le plan de l\'omoplate',
+  'Pallof press à l\'élastique',
+  'Marche latérale à l\'élastique (monster walk)',
+  'Y-T-W au sol',
+  'Traction scapulaire',
+  'Dead bug',
+  'Pont fessier unipodal',
+  'Nordic curl assisté',
+  'Mollets excentriques sur marche',
+  'Relevés de pointes de pieds (tibial)',
+  'Salutation au soleil',
+  'Bird Dog'
+];
+
+const UNILATERAUX = [
+  'Ouverture thoracique allongé sur le côté',
+  'Position 90/90 hanches',
+  'Fente avec rotation thoracique',
+  'Cercles de hanche en quadrupédie',
+  'Mobilisation de cheville genou au mur',
+  'Mobilisation du rachis en torsion assise',
+  'Étirement des ischio-jambiers',
+  'Étirement des quadriceps debout',
+  'Étirement du fessier assis (figure 4)',
+  'Étirement du psoas en fente',
+  'Étirement du mollet au mur',
+  'Étirement des pectoraux au chambranle',
+  'Étirement du piriforme allongé',
+  'Étirement du trapèze supérieur',
+  'Équilibre unipodal',
+  'Équilibre unipodal yeux fermés',
+  'Équilibre unipodal sur surface instable',
+  'Excursions du pied (Y-balance)',
+  'Fente avant avec arrêt contrôlé',
+  'Sauts unipodaux avec réception stabilisée',
+  'Squat unipodal sur boîte',
+  'Rotation externe d\'épaule à l\'élastique',
+  'Rotation interne d\'épaule à l\'élastique',
+  'Élévation dans le plan de l\'omoplate',
+  'Pallof press à l\'élastique',
+  'Gainage latéral',
+  'Pont fessier unipodal',
+  'Copenhagen (adducteurs)',
+  'Mollets excentriques sur marche',
+  'Posture du guerrier I',
+  'Posture du guerrier II',
+  'Posture du guerrier III',
+  'Posture de l\'arbre',
+  'Posture du pigeon',
+  'Posture du triangle',
+  'Torsion vertébrale assise'
+];
+
+let setsIndex = null;
+function sets() {
+  if (!setsIndex) {
+    setsIndex = {
+      rythmes: new Set(RYTHMES.map(musNorm)),
+      unilateraux: new Set(UNILATERAUX.map(musNorm))
+    };
+  }
+  return setsIndex;
+}
+
+/** Vrai si le mouvement est rythmé par le souffle plutôt que simplement tenu. */
+export function estRythme(nom) { return sets().rythmes.has(musNorm(nom || '')); }
+
+/** Vrai si le mouvement se fait d'un côté puis de l'autre. */
+export function estUnilateral(nom) { return sets().unilateraux.has(musNorm(nom || '')); }
+
+/**
+ * Nombre de tours à retenir pour `nom`, en partant de `voulu`. Un exercice
+ * unilatéral en réclame un nombre PAIR, au minimum deux : un par côté. Filet
+ * posé côté application et non consigne laissée au modèle — il suffit qu'il
+ * l'oublie une fois pour qu'une séance entière se fasse d'un seul côté.
+ */
+export function toursPour(nom, voulu) {
+  const n = Math.max(1, voulu || 1);
+  if (!estUnilateral(nom)) return n;
+  return n % 2 === 0 ? n : n + 1;
+}
+
+/**
+ * Nombre de TOURS DE CIRCUIT à retenir, en partant de `voulu`.
+ *
+ * Dans un circuit, une station ne passe qu'une fois par tour : c'est donc le
+ * tour qui donne le côté, droite puis gauche. Un circuit d'un seul tour
+ * comportant une station unilatérale ne ferait qu'un côté — on en impose alors
+ * deux.
+ */
+export function toursCircuitPour(noms, voulu) {
+  const n = Math.max(1, voulu || 1);
+  return (n < 2 && (noms || []).some(estUnilateral)) ? 2 : n;
 }
 
 /* Consignes et respiration, mouvement par mouvement — GÉNÉRÉ depuis

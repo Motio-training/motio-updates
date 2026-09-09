@@ -533,4 +533,9 @@ export const CHANGELOG = [
                 "Le décompte se compte à la voix — « trois, deux, un » — au lieu du coup de sifflet, puis « fin de l'exercice »",
                 "Les points techniques ne sont plus répétés en boucle : ils sont donnés pendant le repos qui précède et au premier cycle de respiration, ensuite la voix rythme seulement le souffle — « inspire », « expire »"
             ] },
+  { date: "9 septembre 2026", versions: "v2.64", items: [
+                "Les exercices unilatéraux se font des DEUX CÔTÉS : le générateur prévoit toujours un nombre pair de tours, la voix annonce le côté et dit « change de côté » entre les deux",
+                "Sur une position simplement tenue, la voix ne répète plus « inspire, expire » : elle annonce le temps qui reste. Le rythme du souffle est gardé là où il sert, sur les mouvements comme le chat-vache",
+                "Choix de la voix, masculine ou féminine, et réglage du débit dans Réglage du son"
+            ] },
 ];

@@ -232,6 +232,13 @@ export async function vueCircuit({ moi, modele, params }) {
     const suivantEffort = plan.slice(depart + 1).find(s => s.work);
     guide.etat.exercice = session.exercises[effortCourant?.station]?.name || '';
     guide.etat.suivant = session.exercises[suivantEffort?.station]?.name || '';
+    // Une station unilatérale ne passe qu'une fois par tour : c'est le TOUR du
+    // circuit qui donne le côté, droite aux tours impairs, gauche aux pairs.
+    // Sur un circuit à un seul tour, on ne dit rien plutôt que de faire croire
+    // qu'un seul côté suffit.
+    const tourCourant = enCours?.round || 1;
+    guide.etat.coteImpose = tours >= 2
+      ? (tourCourant % 2 === 1 ? 'côté droit' : 'côté gauche') : '';
     guide.etat.actif = true;
     guide.reinitialiser();
   }

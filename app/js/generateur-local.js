@@ -18,6 +18,7 @@ import {
   GROUPES, CATEGORIES_CATALOGUE, devineMateriel, MAINTIEN_DEFAUT_SEC
 } from './catalog.js';
 import { nouvelleSeance, nouvelExercice } from './model.js';
+import { toursPour } from './coach-guide.js';
 
 function norm(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -249,13 +250,17 @@ export function genererSeanceLocale({ goal, level, category, gears = [], exclude
     const t = palier(sc, s);
     const ex = nouvelExercice(s.name);
     if (s.holdSec > 0) {
+      // Un exercice unilatéral réclame un nombre PAIR de tours : un par côté.
+      // Un étirement du psoas fait vingt secondes à droite et rien à gauche,
+      // c'est un étirement raté.
+      const tours = toursPour(s.name, t.sets);
       ex.mode = 'MAINTIEN';
-      ex.plannedSets = t.sets;
+      ex.plannedSets = tours;
       ex.targetReps = 0;
       ex.recupSec = 20;
       ex.workSec = s.holdSec;
       ex.restSec = 20;
-      ex.tabataSeries = t.sets;
+      ex.tabataSeries = tours;
     } else {
       ex.mode = 'MINUTEUR';
       ex.plannedSets = t.sets;

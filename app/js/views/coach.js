@@ -19,6 +19,7 @@ import { h, render, esc, toast } from '../ui.js';
 import { sb, currentUser } from '../supabase.js';
 import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
 import { nouvelleSeance, MODE_LABELS, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
+import { toursPour } from '../coach-guide.js';
 import { motifLisible } from '../programme-ia.js';
 import { saveWorkout } from '../api.js';
 import { tousOneRmManuels } from '../reglages.js';
@@ -203,10 +204,13 @@ export async function vueCoach() {
           const maintien = Math.min(600, Math.max(0, ex.hold_sec || 0));
           if (maintien > 0) {
             const repos = Math.min(600, Math.max(0, ex.rest_sec ?? 20));
+            // Filet posé côté application : un exercice unilatéral réclame un
+            // nombre PAIR de tours, un par côté.
+            const tenus = toursPour(ex.name, series);
             return {
               name: ex.name, mode: 'MAINTIEN',
-              plannedSets: series, targetReps: 0, recupSec: repos,
-              workSec: maintien, restSec: repos, tabataSeries: series,
+              plannedSets: tenus, targetReps: 0, recupSec: repos,
+              workSec: maintien, restSec: repos, tabataSeries: tenus,
               groupId: 0, sets: []
             };
           }

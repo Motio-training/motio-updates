@@ -26,6 +26,7 @@
 import { sb } from './supabase.js';
 import { GROUPES, devineMateriel } from './catalog.js';
 import { nouvelleSeance, nouvelExercice, CIRCUIT_WORK_SEC } from './model.js';
+import { toursPour, toursCircuitPour } from './coach-guide.js';
 
 /** Jours de la semaine dans l'ordre français (lundi d'abord), avec la
  *  numérotation de Date.getDay() (0 = dimanche) — pas besoin de conversion
@@ -160,16 +161,23 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
         ex.restSec = d.holdRestSec;
         ex.tabataSeries = 1;
       } else if (d.holdSec > 0) {
+        // Filet posé côté application : un exercice unilatéral réclame un
+        // nombre PAIR de tours, un par côté. Il suffit que le modèle l'oublie
+        // une fois pour qu'une séance entière se fasse d'un seul côté.
+        const tours = toursPour(d.name, creneau.sets);
         ex.mode = 'MAINTIEN';
-        ex.plannedSets = creneau.sets; ex.targetReps = 0;
+        ex.plannedSets = tours; ex.targetReps = 0;
         ex.recupSec = d.holdRestSec;
         ex.workSec = d.holdSec; ex.restSec = d.holdRestSec;
-        ex.tabataSeries = creneau.sets;
+        ex.tabataSeries = tours;
       } else {
         ex.plannedSets = creneau.sets; ex.targetReps = creneau.reps; ex.recupSec = creneau.recupSec;
       }
       w.exercises.push(ex);
     });
+    // Un circuit d'un seul tour comportant une station unilatérale ne ferait
+    // qu'un côté : on en impose deux (voir coach-guide.js).
+    if (w.circuit) w.rounds = toursCircuitPour(w.exercises.map(e => e.name), w.rounds);
     program.workoutIds.push(w.id);
     return w;
   });

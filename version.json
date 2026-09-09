@@ -1,6 +1,6 @@
 {
-  "versionCode": 165,
-  "versionName": "2.63",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.63/motio.apk",
-  "notes": "L'exercice suivant demarre tout seul : plus besoin de toucher l'ecran entre deux postures, du debut a la fin de la seance. Le decompte se compte a la voix, trois deux un, au lieu du coup de sifflet, puis fin de l'exercice. Et les points techniques ne sont plus repetes en boucle : ils sont donnes pendant le repos qui precede et au premier cycle de respiration, ensuite la voix rythme seulement le souffle, inspire, expire."
+  "versionCode": 166,
+  "versionName": "2.64",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.64/motio.apk",
+  "notes": "Les exercices unilateraux se font des deux cotes : le generateur prevoit toujours un nombre pair de tours, la voix annonce le cote et dit change de cote entre les deux. Sur une position simplement tenue, elle ne repete plus inspire expire mais annonce le temps qui reste ; le rythme du souffle est garde la ou il sert, sur les mouvements comme le chat-vache. Et tu peux desormais choisir une voix masculine ou feminine, et regler son debit, dans Reglage du son."
 }

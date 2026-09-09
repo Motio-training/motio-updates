@@ -35,7 +35,12 @@ const BIPS_DEFAUT = {
      beeper.phaseBeep. Les 3 bips du décompte restent des bips : ils
      préviennent d'un changement imminent, ce qu'une phrase ne sait pas faire
      en une seconde. */
-  voix: false
+  voix: false,
+  /* Genre et calage de la voix. Sur une séance d'étirements ou de yoga, ce
+     qu'on attend d'une voix c'est qu'elle soit calme et posée — d'où un débit
+     lent et, pour la voix masculine, une hauteur légèrement abaissée. */
+  voixMasculine: true,
+  voixDebit: 0.88
 };
 
 /* ------------------------------------------ réglages qui suivent le compte
@@ -262,6 +267,17 @@ export function ouvrirReglagesBips(beeper) {
           </span>
           <input type="checkbox" data-voix ${r.voix ? 'checked' : ''}>
         </label>
+        <div data-voix-reglages ${r.voix ? '' : 'hidden'}>
+          <p class="champ-label" style="margin-top:.8rem">Voix</p>
+          <div class="rangee rangee-serree">
+            <button class="chip-cat ${r.voixMasculine ? 'on' : ''}" data-voix-h type="button">Masculine</button>
+            <button class="chip-cat ${r.voixMasculine ? '' : 'on'}" data-voix-f type="button">Féminine</button>
+          </div>
+          <div data-voix-debit></div>
+          <p class="etat-mono" style="font-size:.72rem">Le genre dépend des voix installées
+            sur l'appareil. Si le choix ne change rien, installe les voix françaises depuis
+            les réglages du système.</p>
+        </div>
 
         <p class="champ-label" style="margin-top:1rem">Décompte</p>
         <div data-decompte></div>
@@ -307,7 +323,22 @@ export function ouvrirReglagesBips(beeper) {
     curseur('Volume', r.startVolume, BIPS_BORNES.volMin, BIPS_BORNES.volMax, 0.05, ' %', v => r.startVolume = v)
   );
 
-  modale.querySelector('[data-voix]').addEventListener('change', (e) => { r.voix = e.target.checked; });
+  const zoneVoix = modale.querySelector('[data-voix-reglages]');
+  modale.querySelector('[data-voix]').addEventListener('change', (e) => {
+    r.voix = e.target.checked;
+    zoneVoix.hidden = !r.voix;
+  });
+  const bH = modale.querySelector('[data-voix-h]');
+  const bF = modale.querySelector('[data-voix-f]');
+  const majGenre = () => {
+    bH.classList.toggle('on', r.voixMasculine);
+    bF.classList.toggle('on', !r.voixMasculine);
+  };
+  bH.onclick = () => { r.voixMasculine = true; majGenre(); };
+  bF.onclick = () => { r.voixMasculine = false; majGenre(); };
+  modale.querySelector('[data-voix-debit]').append(
+    curseur('Débit', r.voixDebit, 0.7, 1.15, 0.01, '', v => { r.voixDebit = v; })
+  );
 
   modale.querySelector('[data-tester]').onclick = () => {
     beeper.unlock();
@@ -319,9 +350,9 @@ export function ouvrirReglagesBips(beeper) {
       // Un vrai extrait de guidage, pas une phrase inventée pour le test :
       // c'est exactement ce qu'on entendra sur une posture (coach-guide.js).
       if (r.voix) {
-        beeper.say("Posture de l'enfant.");
-        beeper.say('À genoux, fesses sur les talons, bras tendus devant, front au sol.', true);
-        beeper.say('Inspire dans le dos, sens les côtes s’ouvrir.', true);
+        beeper.say("Posture de l'enfant.", false, r);
+        beeper.say('À genoux, fesses sur les talons, bras tendus devant, front au sol.', true, r);
+        beeper.say('Inspire dans le dos, sens les côtes s’ouvrir.', true, r);
       } else beeper.startBeep(r);
     }, 900);
   };
