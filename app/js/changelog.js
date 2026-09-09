@@ -528,4 +528,9 @@ export const CHANGELOG = [
                 "Voix plus naturelle : la meilleure voix française disponible est choisie automatiquement, et le débit a été ralenti",
                 "Les consignes et le tempo de respiration sont écrits pour les 62 mouvements de mobilité, d'étirement, de proprioception, de prévention et de yoga"
             ] },
+  { date: "9 septembre 2026", versions: "v2.63", items: [
+                "L'exercice suivant démarre TOUT SEUL : plus besoin de toucher l'écran entre deux postures, du début à la fin de la séance",
+                "Le décompte se compte à la voix — « trois, deux, un » — au lieu du coup de sifflet, puis « fin de l'exercice »",
+                "Les points techniques ne sont plus répétés en boucle : ils sont donnés pendant le repos qui précède et au premier cycle de respiration, ensuite la voix rythme seulement le souffle — « inspire », « expire »"
+            ] },
 ];

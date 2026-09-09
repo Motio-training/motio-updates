@@ -217,7 +217,7 @@ export class Engine {
           this.tabLastPhaseIdx = phaseIdx;
           this.tabLastRemainSec = Infinity;
         }
-        if (remainSec >= 1 && remainSec <= 3 && remainSec < this.tabLastRemainSec) beeper.shortBeep();
+        if (remainSec >= 1 && remainSec <= 3 && remainSec < this.tabLastRemainSec) beeper.shortBeep(null, remainSec);
         this.tabLastRemainSec = remainSec;
         this.guide?.(working, idx + 1, this.series, remainSec,
           working ? this.workSec : this.restSec);
@@ -238,7 +238,7 @@ export class Engine {
           this.circLastIdx = idx;
           this.circLastRemainSec = Infinity;
         }
-        if (remainSec >= 1 && remainSec <= 3 && remainSec < this.circLastRemainSec) beeper.shortBeep();
+        if (remainSec >= 1 && remainSec <= 3 && remainSec < this.circLastRemainSec) beeper.shortBeep(null, remainSec);
         this.circLastRemainSec = remainSec;
         // Une station de circuit ne se répète pas sur place : un seul « tour »,
         // et c'est le circuit qui enchaîne.

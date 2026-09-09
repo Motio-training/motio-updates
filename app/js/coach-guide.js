@@ -24,14 +24,20 @@
    les deux plateformes doivent dire exactement la même chose au même moment.
    ========================================================================== */
 
-import { say, phraseDisponible } from './beeper.js';
+import { say, phraseDisponible, definirGuidageActif } from './beeper.js';
 import { musNorm } from './muscle-lexicon.js';
 
 /** Intervalle entre deux temps de respiration, en secondes. */
 const PAS_SEC = 5;
-/** En deçà, on se tait : le décompte 3·2·1 arrive, et deux sons qui se
- *  chevauchent ne s'entendent ni l'un ni l'autre. */
-const SILENCE_FIN_SEC = 4;
+/**
+ * En deçà, on se tait : le décompte « trois, deux, un » arrive, et deux
+ * phrases qui se chevauchent ne s'entendent ni l'une ni l'autre.
+ *
+ * Six et non trois : une consigne de cinq mots met deux à trois secondes à
+ * être dite. Laisser partir la dernière à trois secondes de la fin revenait à
+ * la faire couper par le décompte.
+ */
+const SILENCE_FIN_SEC = 6;
 
 /** État posé par l'écran de séance — le moteur, lui, ne connaît que le temps. */
 export const etat = { exercice: '', suivant: '', actif: false };
@@ -47,7 +53,14 @@ let derniereCle = '';
  * d'exercice, c'est-à-dire juste après l'annonce.
  */
 let consigneDonneePour = '';
-export function reinitialiser() { derniereCle = ''; }
+
+/** Appelé par l'écran de séance juste après avoir posé `etat`. En profite pour
+ *  dire au beeper si le guidage parle : c'est ce qui lui permet de compter
+ *  « trois, deux, un » au lieu de siffler. */
+export function reinitialiser() {
+  derniereCle = '';
+  definirGuidageActif(etat.actif);
+}
 
 const ORDINAUX = { 2: 'Deuxième', 3: 'Troisième', 4: 'Quatrième', 5: 'Cinquième' };
 
@@ -77,12 +90,13 @@ export function seconde(effort, tour, tours, restant, duree) {
           consigneDonneePour = etat.exercice;
         }
       } else say(`${ORDINAUX[tour] || tour + 'e'} fois.`);
-      if (g.cycle.length) say(g.cycle[0], true);
+      if (g.cycle.length) say(texteCycle(g, 0, tour), true);
       return;
     }
     if (restant <= SILENCE_FIN_SEC) return;
     if (ecoule % PAS_SEC !== 0) return;
-    if (g.cycle.length) say(g.cycle[(ecoule / PAS_SEC) % g.cycle.length]);
+    if (!g.cycle.length) return;
+    say(texteCycle(g, ecoule / PAS_SEC, tour));
     return;
   }
 
@@ -94,12 +108,44 @@ export function seconde(effort, tour, tours, restant, duree) {
     say(`Relâche. On repart dans ${restant} secondes.`);
     return;
   }
-  if (!etat.suivant) { say('Relâche. C’était la dernière.'); return; }
-  say(`Relâche. Ensuite : ${etat.suivant}.`);
+  // Dernier tour terminé : on le DIT. Le décompte « trois, deux, un » annonce
+  // une fin, encore faut-il savoir laquelle — celle d'un tour ou celle de
+  // l'exercice.
+  if (!etat.suivant) { say('Fin de l’exercice. C’était la dernière.'); return; }
+  say(`Fin de l’exercice. Ensuite : ${etat.suivant}.`);
   // Le repos est le seul vrai temps mort : c'est là qu'on explique la posture
   // qui arrive, pour ne pas avoir à lire l'écran en y arrivant.
   const gs = guidagePour(etat.suivant);
   if (gs.consigne && restant >= 8) { say(gs.consigne, true); consigneDonneePour = etat.suivant; }
+}
+
+/**
+ * LE TEMPS DE RESPIRATION Nº `i`, EN ENTIER OU EN COURT.
+ *
+ * En entier au PREMIER cycle du PREMIER tour seulement — ce sont les points
+ * techniques, ils se disent une fois quand on s'installe. Ensuite, et sur tous
+ * les tours suivants, la première proposition seule : répéter « inspire,
+ * creuse le dos, ouvre la poitrine, regarde devant » six fois d'affilée noie
+ * la seule chose qui change encore à ce moment-là, le temps du souffle.
+ * Demande de Nicolas, et c'est ainsi qu'un moniteur parle : il installe, puis
+ * il rythme.
+ */
+function texteCycle(g, i, tour) {
+  const phrase = g.cycle[i % g.cycle.length];
+  return (tour <= 1 && i < g.cycle.length) ? phrase : court(phrase);
+}
+
+/**
+ * La forme courte d'un temps de respiration : sa première proposition.
+ *
+ * « Inspire, creuse le dos, ouvre la poitrine » devient « Inspire », et
+ * « Monte le bassin, garde la ligne » devient « Monte le bassin ». Dérivée
+ * plutôt que saisie une deuxième fois dans la table : la règle est simple et
+ * vraie sur toutes les entrées, une colonne de plus serait une occasion de
+ * plus de les faire diverger.
+ */
+function court(phrase) {
+  return phrase.split(',')[0].trim().replace(/\.$/, '');
 }
 
 const GENERIQUE = {

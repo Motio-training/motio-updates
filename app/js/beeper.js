@@ -60,10 +60,24 @@ function tone(freq, dureeMs, volume, trill) {
   lfo?.stop(t1 + 0.02);
 }
 
-export function shortBeep(reglages) {
+/** `compte` = seconde restante (3, 2, 1). En mode voix, le décompte SE COMPTE :
+ *  « trois, deux, un » vaut mieux qu'un coup de sifflet sur une séance calme.
+ *  Le guide se tait dans les dernières secondes exprès pour leur laisser la
+ *  place (coach-guide.js). */
+export function shortBeep(reglages, compte = 0) {
   const r = reglages || reglagesBips();
+  if (r.voix && compte >= 1 && compte <= 3 && guidageActif() && phraseDisponible(r)) {
+    say(compte === 3 ? 'Trois' : compte === 2 ? 'Deux' : 'Un');
+    return;
+  }
   tone(r.freq, 110, r.volume, r.trill);
 }
+
+/* Le guide vit dans coach-guide.js, qui importe déjà ce module : l'importer en
+   retour ferait un cycle. Il pose donc lui-même l'état ici. */
+let guidage = false;
+export function definirGuidageActif(v) { guidage = v; }
+function guidageActif() { return guidage; }
 
 export function startBeep(reglages) {
   const r = reglages || reglagesBips();

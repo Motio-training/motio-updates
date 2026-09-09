@@ -923,7 +923,7 @@ export async function vueLancerSeance(params) {
            délai laisse le temps de lire la fin avant que l'écran ne change. */
         if (ex.mode === 'MAINTIEN' && exIndex < session.exercises.length - 1) {
           setTimeout(() => {
-            if (!termine && document.body.contains(el)) passerExercice();
+            if (!termine && document.body.contains(el)) passerExercice(true);
           }, 1500);
         }
       }
@@ -936,11 +936,21 @@ export async function vueLancerSeance(params) {
     return b;
   }
 
-  function passerExercice() {
+  /**
+   * @param enchaine vrai quand l'exercice précédent s'est terminé TOUT SEUL et
+   *   nous amène ici : il n'y a personne pour appuyer sur l'écran, on est au
+   *   sol. On saute donc l'écran d'échauffement et on démarre — c'est
+   *   exactement ce que l'appui aurait fait, et c'est ce qu'on attend d'un
+   *   circuit ou d'une séance de stretching.
+   */
+  function passerExercice(enchaine = false) {
     engine.chronoStop(); engine.minuteurStop(); engine.tabataStop();
     pauseBtn.hidden = true;
-    if (exIndex < session.exercises.length - 1) { exIndex++; dessinerExercice(); }
-    else ouvrirFin(true);
+    if (exIndex < session.exercises.length - 1) {
+      exIndex++;
+      dessinerExercice();
+      if (enchaine) corps.querySelector('[data-controles] button')?.click();
+    } else ouvrirFin(true);
   }
 
   /** Appui sur le titre : le menu de l'exercice en cours (ExerciseMenuDialog,
