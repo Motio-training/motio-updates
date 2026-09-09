@@ -84,64 +84,67 @@ export function startBeep(reglages) {
    le silence.
    ============================================================ */
 
-/** Ce que la voix dit au départ du prochain EFFORT et du prochain REPOS,
- *  renseignés par l'écran de séance — seul à connaître les exercices. */
-export const cues = { effort: '', repos: '' };
-
-function voixDisponible() {
-  if (typeof speechSynthesis === 'undefined') return false;
+/** Vrai quand la voix peut réellement parler : réglage actif ET synthèse
+ *  disponible. Ce que coach-guide.js interroge avant de préparer une phrase. */
+export function phraseDisponible(reglages) {
+  const r = reglages || reglagesBips();
+  if (!r.voix || typeof speechSynthesis === 'undefined') return false;
   const v = speechSynthesis.getVoices();
   // Liste vide = pas encore chargée par le navigateur ; on tente quand même,
   // la synthèse choisira sa voix par défaut.
   return !v.length || v.some(x => (x.lang || '').toLowerCase().startsWith('fr'));
 }
 
-export function say(texte) {
+/**
+ * LA MEILLEURE VOIX FRANÇAISE DISPONIBLE, plutôt que la première venue.
+ *
+ * Nicolas trouvait le résultat « robotique » : les navigateurs listent
+ * souvent plusieurs voix françaises, dont une compacte à la prosodie plate
+ * qui se trouve être la première. Les voix distantes (`localService` faux)
+ * sonnent nettement mieux, on les préfère quand elles sont là.
+ */
+function meilleureVoix() {
+  const fr = speechSynthesis.getVoices()
+    .filter(v => (v.lang || '').toLowerCase().startsWith('fr'));
+  if (!fr.length) return null;
+  return fr.find(v => !v.localService) || fr[0];
+}
+
+/**
+ * Dit `texte`. `suite` à vrai enchaîne à la suite de ce qui est en train
+ * d'être dit, au lieu de le couper : c'est ce qui permet d'annoncer une
+ * posture PUIS sa consigne comme une seule phrase parlée. Par défaut on
+ * coupe — au changement de phase, la phrase qui compte est la nouvelle.
+ */
+export function say(texte, suite = false) {
   if (!texte || typeof speechSynthesis === 'undefined') return false;
   try {
-    // On coupe ce qui était en train d'être dit : au changement de phase, la
-    // phrase qui compte est la nouvelle. Empiler laisserait la voix décrire
-    // une posture déjà quittée, avec un retard qui s'aggrave à chaque tour.
-    speechSynthesis.cancel();
+    if (!suite) speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(texte);
     u.lang = 'fr-FR';
-    u.rate = 0.94;
-    const fr = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith('fr'));
-    if (fr) u.voice = fr;
+    u.rate = 0.92;
+    const v = meilleureVoix();
+    if (v) u.voice = v;
     speechSynthesis.speak(u);
     return true;
   } catch { return false; }
 }
 
+export function stopVoix() {
+  try { speechSynthesis.cancel(); } catch { /* pas de synthèse ici */ }
+}
+
 /**
  * Changement de phase d'un enchaînement chronométré — tabata, EMOM, maintien,
- * circuit. Seul endroit où la voix remplace vraiment le sifflet : ici on a
- * quelque chose à dire, là où un minuteur de récupération n'annonce rien de
- * plus que « c'est l'heure ».
+ * circuit.
+ *
+ * En mode voix, c'est coach-guide.js qui parle : il est appelé à chaque
+ * seconde et dit bien plus qu'un changement de phase (la consigne, le tempo de
+ * respiration, le tour suivant). Siffler EN PLUS reviendrait à couvrir la
+ * première syllabe de ce qu'il annonce.
  */
 export function phaseBeep(effort, reglages) {
   const r = reglages || reglagesBips();
-  if (r.voix && voixDisponible()) {
-    const phrase = effort ? cues.effort : cues.repos;
-    if (phrase && say(phrase)) return;
-  }
+  if (r.voix && phraseDisponible(r)) return;
   startBeep(r);
-}
-
-/** Phrase d'annonce d'une posture tenue : son nom, sa durée, et une consigne
- *  de respiration quand le maintien est assez long pour qu'elle serve. */
-export function phraseEffort(nom, secondes) {
-  let t = nom || 'Position suivante';
-  if (secondes > 0) t += `, ${secondes} secondes`;
-  t += secondes >= 20 ? '. Respire lentement, relâche les épaules.' : '.';
-  return t;
-}
-
-/** Phrase de repos : ce qu'on fait maintenant, et ce qui arrive après. */
-export function phraseRepos(suivant, secondes) {
-  let t = 'Relâche';
-  if (secondes > 0) t += `, ${secondes} secondes`;
-  t += '.';
-  if (suivant) t += ` Ensuite : ${suivant}.`;
-  return t;
 }

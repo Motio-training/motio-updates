@@ -521,4 +521,11 @@ export const CHANGELOG = [
                 "Le gros décompte disait « RÉCUPÉRATION » pendant qu'on tenait une posture. Il dit maintenant MAINTIEN, TRAVAIL ou REPOS selon ce qu'il compte vraiment",
                 "Nouvelle voix du coach, dans Réglage du son : sur les enchaînements chronométrés, Moti annonce la posture, la respiration et ce qui arrive, au lieu de siffler. Pour la mobilité, les étirements et le yoga, où le sifflet allait à l'encontre de la séance"
             ] },
+  { date: "9 septembre 2026", versions: "v2.62", items: [
+                "Le coach guide PENDANT le mouvement, plus seulement entre deux : sur un chat-vache, il dit quand inspirer en creusant le dos et quand souffler en l'arrondissant, au rythme de la posture",
+                "Il explique comment s'installer pendant le repos qui précède : la séance entière se fait sans regarder l'écran",
+                "Entre deux séries du même mouvement, il annonce « on repart » au lieu de l'exercice suivant — il annonçait la suite un tour trop tôt",
+                "Voix plus naturelle : la meilleure voix française disponible est choisie automatiquement, et le débit a été ralenti",
+                "Les consignes et le tempo de respiration sont écrits pour les 62 mouvements de mobilité, d'étirement, de proprioception, de prévention et de yoga"
+            ] },
 ];

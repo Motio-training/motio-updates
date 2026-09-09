@@ -50,6 +50,7 @@ import { ouvrirPave } from '../numpad.js';
 import { ouvrirCatalogue } from './entrainement.js';
 import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
 import { hasVisual, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
+import * as guide from '../coach-guide.js';
 
 /** Afficher la planche en grand pendant une séance ORDINAIRE. Distinct du
  *  réglage du circuit (motio.circuit-visuels) : voir dessinerPlanche. */
@@ -194,6 +195,7 @@ export async function vueLancerSeance(params) {
 
   const totalEstimeSec = dureeSeance(modele.exercises);
   const engine = new Engine((snap) => majCadran(snap));
+  engine.guide = (...a) => guide.seconde(...a);
 
   const el = h(`
     <section class="page run">
@@ -298,22 +300,23 @@ export async function vueLancerSeance(params) {
   }
 
   /**
-   * Ce que la voix du coach dira aux prochains changements de phase.
+   * GUIDAGE VOCAL — voir coach-guide.js.
    *
-   * Préparé À L'AVANCE, exercice par exercice : le changement de phase est
-   * déclenché par le moteur et il lit la phrase telle qu'elle est à cet
-   * instant. La calculer au moment du bip aurait fait annoncer l'exercice
-   * précédent avec un tour de retard.
+   * L'écran pose ce que le guide ne peut pas savoir (le mouvement en cours,
+   * celui d'après). Le guide, lui, est appelé à chaque seconde par le moteur
+   * et décide seul de ce qu'il y a à dire : la consigne d'installation, le
+   * tempo de respiration, le tour suivant.
    */
   function preparerVoix() {
     const ex = session.exercises[exIndex];
     if (!ex) return;
-    const suivant = session.exercises[exIndex + 1]?.name || '';
-    const chronometre = ex.mode === 'MAINTIEN' || ex.mode === 'TABATA' || ex.mode === 'EMOM';
-    beeper.cues.effort = ex.mode === 'MAINTIEN'
-      ? beeper.phraseEffort(ex.name, ex.workSec)
-      : chronometre ? (ex.name || 'C’est parti') : '';
-    beeper.cues.repos = chronometre ? beeper.phraseRepos(suivant, ex.restSec) : '';
+    guide.etat.exercice = ex.name;
+    guide.etat.suivant = session.exercises[exIndex + 1]?.name || '';
+    // Le guidage n'a de sens que sur un enchaînement chronométré : sur une
+    // série de développé couché, personne n'a besoin qu'on lui dise quand
+    // souffler toutes les cinq secondes.
+    guide.etat.actif = ex.mode === 'MAINTIEN' || ex.mode === 'TABATA' || ex.mode === 'EMOM';
+    guide.reinitialiser();
   }
 
   function majCadran(snap) {

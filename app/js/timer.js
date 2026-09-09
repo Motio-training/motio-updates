@@ -17,6 +17,14 @@ const START_LEAD_MS = 150;
 export class Engine {
   constructor(onTick) {
     this.onTick = onTick;
+    /**
+     * GUIDAGE VOCAL — appelé à chaque seconde d'un enchaînement chronométré
+     * (tabata, EMOM, maintien, circuit), avec où l'on en est et rien d'autre.
+     * Le moteur ne sait pas quoi dire : c'est coach-guide.js qui décide,
+     * parce que lui seul connaît le mouvement en cours.
+     * (effort, tour, tours, restantSec, dureeSec)
+     */
+    this.guide = null;
     this._interval = null;
     this._reset();
   }
@@ -211,6 +219,8 @@ export class Engine {
         }
         if (remainSec >= 1 && remainSec <= 3 && remainSec < this.tabLastRemainSec) beeper.shortBeep();
         this.tabLastRemainSec = remainSec;
+        this.guide?.(working, idx + 1, this.series, remainSec,
+          working ? this.workSec : this.restSec);
       }
     }
     if (this.circRunning && !this.circPaused) {
@@ -230,6 +240,9 @@ export class Engine {
         }
         if (remainSec >= 1 && remainSec <= 3 && remainSec < this.circLastRemainSec) beeper.shortBeep();
         this.circLastRemainSec = remainSec;
+        // Une station de circuit ne se répète pas sur place : un seul « tour »,
+        // et c'est le circuit qui enchaîne.
+        this.guide?.(this.circPlan[idx].work, 1, 1, remainSec, this.circPlan[idx].durSec);
       }
     }
   }

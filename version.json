@@ -1,6 +1,6 @@
 {
-  "versionCode": 163,
-  "versionName": "2.61",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.61/motio.apk",
-  "notes": "La planche du mouvement s'affiche en grand pendant la seance, avec un appui sous le chrono pour la masquer. Un exercice en maintien enchaine tout seul sur le suivant. Le decompte dit MAINTIEN, TRAVAIL ou REPOS au lieu de RECUPERATION quand ce n'en est pas une, et les exercices chronometres enregistrent enfin leur serie. Nouveau : la voix du coach, dans Reglage du son. Sur les enchainements chronometres, Moti annonce la posture, la respiration et ce qui arrive, au lieu de siffler."
+  "versionCode": 164,
+  "versionName": "2.62",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.62/motio.apk",
+  "notes": "Le coach guide pendant le mouvement, plus seulement entre deux. Sur un chat-vache, il dit quand inspirer en creusant le dos et quand souffler en l'arrondissant, au rythme de la posture. Il explique comment s'installer pendant le repos qui precede, donc la seance entiere se fait sans regarder l'ecran. Entre deux series du meme mouvement il annonce desormais on repart, au lieu d'annoncer l'exercice suivant un tour trop tot. Voix plus naturelle : la meilleure voix francaise installee est choisie automatiquement et le debit a ete ralenti."
 }

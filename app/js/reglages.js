@@ -316,8 +316,13 @@ export function ouvrirReglagesBips(beeper) {
     // Avec la voix, le test doit faire entendre la VOIX au départ : c'est
     // exactement ce qui remplace le sifflet en séance.
     setTimeout(() => {
-      if (r.voix) beeper.say(beeper.phraseEffort("Posture de l'enfant", 30));
-      else beeper.startBeep(r);
+      // Un vrai extrait de guidage, pas une phrase inventée pour le test :
+      // c'est exactement ce qu'on entendra sur une posture (coach-guide.js).
+      if (r.voix) {
+        beeper.say("Posture de l'enfant.");
+        beeper.say('À genoux, fesses sur les talons, bras tendus devant, front au sol.', true);
+        beeper.say('Inspire dans le dos, sens les côtes s’ouvrir.', true);
+      } else beeper.startBeep(r);
     }, 900);
   };
   modale.querySelector('[data-annuler]').onclick = () => modale.remove();

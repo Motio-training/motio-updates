@@ -31,6 +31,7 @@ import * as beeper from '../beeper.js';
 import { ouvrirBilan } from '../bilan.js';
 import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
 import { visualFor } from '../exercise-visuals.js';
+import * as guide from '../coach-guide.js';
 
 const CLE_VISUELS = 'motio.circuit-visuels';
 
@@ -71,6 +72,7 @@ export async function vueCircuit({ moi, modele, params }) {
   let dernierSnap = null;
 
   const engine = new Engine((snap) => dessiner(snap));
+  engine.guide = (...a) => guide.seconde(...a);
   engine.mode = 'CIRCUIT';
   engine.circuitLoad(plan);
 
@@ -221,16 +223,17 @@ export async function vueCircuit({ moi, modele, params }) {
    */
   function preparerVoix(segment) {
     const depart = Math.max(0, segment);
-    const prochainEffort = plan.slice(depart).find(s => s.work);
-    const apres = plan.slice(depart + 1);
-    const iRepos = apres.findIndex(s => !s.work);
-    const suivantEffort = iRepos < 0 ? null : apres.slice(iRepos + 1).find(s => s.work);
-    beeper.cues.effort = beeper.phraseEffort(
-      session.exercises[prochainEffort?.station]?.name || '', prochainEffort?.durSec || 0
-    );
-    beeper.cues.repos = beeper.phraseRepos(
-      session.exercises[suivantEffort?.station]?.name || '', plan[depart + 1]?.durSec || 0
-    );
+    const enCours = plan[depart];
+    // Le mouvement en cours pendant un effort ; pendant un repos, celui qui
+    // arrive — c'est de lui que le guide donnera la consigne.
+    const effortCourant = enCours?.work ? enCours : plan.slice(depart).find(s => s.work);
+    // « Ensuite » = le PROCHAIN effort strictement après le segment courant.
+    // Sans ce « strictement », le repos annonçait la station d'encore après.
+    const suivantEffort = plan.slice(depart + 1).find(s => s.work);
+    guide.etat.exercice = session.exercises[effortCourant?.station]?.name || '';
+    guide.etat.suivant = session.exercises[suivantEffort?.station]?.name || '';
+    guide.etat.actif = true;
+    guide.reinitialiser();
   }
 
   /* Redessin complet uniquement quand la STATION ou la PHASE change : sinon
