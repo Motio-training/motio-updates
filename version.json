@@ -2,5 +2,11 @@
   "versionCode": 173,
   "versionName": "2.71",
   "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.71/motio.apk",
-  "notes": "Tous les reglages sont reunis derriere la roue crantee, en haut a droite : theme, son, montre Garmin, mise a jour, nouveautes, tutoriel et confidentialite. Le Profil ne garde que ce qui te concerne : identite, trophees, entrainements, analyse, Moti et compte."
+  "notes": "La voix du coach devient un telechargement a part. L'application repasse de 66 a 24 Mo, et ses mises a jour ne retelechargent plus les 42 Mo de voix a chaque fois. Va dans Reglage du son, profil Voix, et appuie sur Telecharger la voix : elle s'installe une seule fois et reste ensuite sur le telephone, sans connexion necessaire pendant une seance. Tant qu'elle n'est pas la, le coach parle avec la synthese vocale du telephone.",
+  "voix": {
+    "version": 1789046826,
+    "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789046826/voix.zip",
+    "mo": 42,
+    "clips": 3624
+  }
 }
