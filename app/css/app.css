@@ -201,6 +201,7 @@ body{
 }
 .icon-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .icon-btn:hover{background:rgba(244,243,238,.16)}
+.icon-btn[aria-current="page"]{background:rgba(169,194,94,.24);color:#A9C25E}
 body:not(.connecte) .icon-btn{display:none}
 
 .lien-txt{

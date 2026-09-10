@@ -22,7 +22,7 @@
    par le cache.
    ========================================================================== */
 
-const CACHE = 'motio-app-v71';
+const CACHE = 'motio-app-v72';
 
 const COQUILLE = [
   './',
@@ -43,7 +43,7 @@ const COQUILLE = [
   // ligne — or c'est précisément un format qu'on fait en salle, réseau ou pas.
   'js/views/circuit.js',
   'js/views/coach.js', 'js/views/messages.js', 'js/views/direct.js', 'js/views/groupes.js',
-  'js/views/defis.js', 'js/views/onboarding.js',
+  'js/views/defis.js', 'js/views/onboarding.js', 'js/views/reglages.js',
   'icons/icon-192.png', 'icons/icon-512.png',
   'fonts/outfit-variable.woff2', 'fonts/jbmono-variable.woff2'
 ];

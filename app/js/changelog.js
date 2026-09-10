@@ -538,4 +538,43 @@ export const CHANGELOG = [
                 "Sur une position simplement tenue, la voix ne répète plus « inspire, expire » : elle annonce le temps qui reste. Le rythme du souffle est gardé là où il sert, sur les mouvements comme le chat-vache",
                 "Choix de la voix, masculine ou féminine, et réglage du débit dans Réglage du son"
             ] },
+  { date: "9 septembre 2026", versions: "v2.65", items: [
+                "Réglage du son montre maintenant la LISTE des voix françaises installées sur le téléphone, au lieu du seul choix « masculine ou féminine » : touche une voix pour l'entendre et la choisir",
+                "Les voix de TOUS les moteurs de synthèse installés sont proposées, pas seulement celles du moteur système. Quand celui-ci n'a aucune voix d'homme, celle d'un autre moteur prend le relais",
+                "Nouveau curseur de hauteur, de grave à clair : le seul moyen d'obtenir une voix vraiment grave quand l'appareil n'a que des voix féminines",
+                "L'application prévient franchement quand aucune voix du genre demandé n'est installée, au lieu de faire parler deux fois la même"
+            ] },
+  { date: "10 septembre 2026", versions: "v2.66", items: [
+                "LA VOIX DU COACH EST MAINTENANT ENREGISTRÉE, et non plus lue par la synthèse du téléphone : une voix posée, qui respire et descend en fin de phrase, au lieu du timbre robotique d'Android",
+                "Deux voix au choix, une masculine et une féminine, dans Réglage du son",
+                "Les consignes d'étirement sont réécrites comme un moniteur les dit, avec des phrases entières plutôt que des mots-clés empilés",
+                "Le coach ne se répète plus : relances, changements de côté et encouragements sont tirés au sort, jamais deux fois de suite les mêmes",
+                "LE COACH PARLE AUSSI EN MUSCULATION. Dix secondes après « Exercice suivant », le temps de rejoindre la machine, il annonce le mouvement, un point technique, le nombre de séries, la charge et la récup",
+                "Un point technique par exercice, tiré au sort parmi ceux qui comptent : la faute qu'on voit le plus souvent, et la consigne qui l'évite",
+                "Encouragement à l'avant-dernière série : tu sais qu'il en reste une avant de l'attaquer",
+                "Conseil de charge selon ton RIR : au-delà de 3 répétitions en réserve, il te dit de charger. Jamais sur un RIR seulement reconduit",
+                "En mode voix, le décompte se dit : « Trois, deux, un, Top ! » à la place du sifflet. Posé sur une séance d'étirements, plus marqué en musculation",
+                "Ces conseils se coupent d'un appui dans Réglage du son, sans perdre l'annonce de l'exercice",
+                "La synthèse du téléphone ne sert plus que de secours, pour les mouvements que tu as ajoutés toi-même"
+            ] },
+  { date: "10 septembre 2026", versions: "v2.67", items: [
+                "Le « un » du décompte s'entend enfin : la voix l'escamotait une fois sur deux, il est maintenant vérifié à la fabrication",
+                "« Plus que dix secondes » annoncé pendant la récupération, le temps de se remettre en place",
+                "Plus de consignes de respiration sur un exercice de force. Sur un grimper de corde ou un tabata, le coach annonce le temps restant et se tait sur le reste"
+            ] },
+  { date: "10 septembre 2026", versions: "v2.68", items: [
+                "Réglage du son affiche désormais les phrases dites par la voix de secours plutôt que par le coach enregistré, pour comprendre d'où vient un changement de timbre en pleine séance"
+            ] },
+  { date: "10 septembre 2026", versions: "v2.69", items: [
+                "Les séries et les répétitions sont dites par le coach quel que soit le format : un EMOM de 30 séries de 5 n'est plus annoncé par la voix du téléphone",
+                "Le singulier est respecté : « 1 série », pas « 1 séries »"
+            ] },
+  { date: "10 septembre 2026", versions: "v2.70", items: [
+                "Sur un mouvement au poids du corps, le coach dit « au poids du corps » et le lestage, au lieu d'annoncer ton poids en kilos",
+                "« La dernière fois » regroupe les séries identiques : un EMOM de 30 séries tient en une ligne au lieu de trente, et le bouton de lancement redevient accessible"
+            ] },
+  { date: "10 septembre 2026", versions: "v2.71", items: [
+                "Tous les réglages sont réunis derrière la roue crantée, en haut à droite : thème, son, montre Garmin, mise à jour, nouveautés, tutoriel et confidentialité",
+                "Le Profil ne garde que ce qui te concerne : identité, trophées, entraînements, analyse, Moti et compte"
+            ] },
 ];

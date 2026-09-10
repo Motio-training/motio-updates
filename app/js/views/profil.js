@@ -6,11 +6,9 @@ import { getProfile, setUsername, sessionsOf, following, followers,
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
-import { reset as reinitialiserOnboarding } from './onboarding.js';
 import { muscleLoadOf, titreSeance } from '../muscle-lexicon.js';
 import { carteSeance } from './fil.js';
 import { drawMuscleMap, drawLegend, MuscleScale } from '../muscle-map.js';
-import { CHANGELOG } from '../changelog.js';
 import { NIVEAUX, OBJECTIFS, niveauActuel, definirNiveau, objectifActuel, definirObjectif,
          recordsEpingles, estRecordEpingle, toggleRecordEpingle,
          oneRmManuel, definirOneRmManuel } from '../reglages.js';
@@ -142,35 +140,10 @@ export async function vueProfil(params) {
           </div>
         </div>
 
-        <div class="bloc">
-          <p class="bloc-titre">Application</p>
-          <div class="menu-groupe">
-            <a class="menu-ligne" href="#/profil/maj">
-              <span class="corps"><b>Mise à jour</b><span>À jour</span></span>
-              <span class="chevron">›</span>
-            </a>
-            <a class="menu-ligne" href="#/profil/nouveautes">
-              <span class="corps"><b>Nouveautés</b><span>Ce qui a changé, version par version</span></span>
-              <span class="chevron">›</span>
-            </a>
-            <button class="menu-ligne" data-tuto type="button">
-              <span class="corps"><b>Revoir le tutoriel</b></span>
-              <span class="chevron">›</span>
-            </button>
-            <a class="menu-ligne" href="../confidentialite/index.html" target="_blank" rel="noopener">
-              <span class="corps"><b>Confidentialité</b></span>
-              <span class="chevron">›</span>
-            </a>
-            <a class="menu-ligne" href="../conditions/index.html" target="_blank" rel="noopener">
-              <span class="corps"><b>Conditions d'utilisation</b></span>
-              <span class="chevron">›</span>
-            </a>
-            <a class="menu-ligne" href="../mentions-legales/index.html" target="_blank" rel="noopener">
-              <span class="corps"><b>Mentions légales</b></span>
-              <span class="chevron">›</span>
-            </a>
-          </div>
-        </div>` : `
+        <!-- Plus de section « Application » ici : mise à jour, nouveautés,
+             tutoriel et mentions légales vivent derrière la roue crantée de
+             l'en-tête (#/reglages, views/reglages.js), comme dans
+             l'application Android depuis la v2.71. -->` : `
         <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>
 
         <div class="bloc">
@@ -299,17 +272,12 @@ export async function vueProfil(params) {
     }
   }
 
-  el.querySelector('[data-tuto]')?.addEventListener('click', () => {
-    reinitialiserOnboarding();
-    location.hash = '#/onboarding';
-  });
-
   render(el);
 }
 
 /* ============================================================ sous-écrans
-   Même arborescence que le Profil natif (Profile.kt) : Entraînement/Compte/
-   Application, chacun avec ses propres pages plutôt que tout empilé sur
+   Même arborescence que le Profil natif (Profile.kt) : Entraînement et Compte
+   ont chacun leurs propres pages plutôt que tout empilé sur
    l'écran principal. */
 
 function enTete(titre) {
@@ -969,73 +937,6 @@ export async function vueProfilCompte() {
 
   render(el);
 }
-
-/** Mise à jour (UpdatePage, TrainingScreens.kt) : la mise à jour se fait
- *  toute seule ici (service worker, réseau d'abord), mais l'écran ne le dit
- *  pas explicitement — le mécanisme diffère du natif (qui installe un APK),
- *  l'expliquer révélerait quelle version tourne. Le bouton force quand même
- *  une vérification, pour la même idée de contrôle immédiat. */
-export async function vueProfilMaj() {
-  let version = '';
-  try { version = (await fetch(`./version.txt?_=${Date.now()}`, { cache: 'no-store' }).then(r => r.text())).trim(); }
-  catch { /* pas grave, la carte affiche juste « À jour » sans numéro */ }
-
-  const el = h(`
-    <section class="page page-etroite">
-      ${enTete('Mise à jour')}
-
-      <div class="tonnage-carte" style="margin-top:1.5rem">
-        <span>${version ? `Version ${esc(version)}` : 'Motio'}</span>
-        <b style="color:var(--accent)">À jour</b>
-      </div>
-
-      <button class="btn" data-verifier type="button" style="width:100%;margin-top:1rem">Vérifier maintenant</button>
-      <p class="etat-mono" data-msg style="margin-top:.6rem"></p>
-
-      <a class="btn btn-ghost" href="#/profil/nouveautes" style="display:block;text-align:center;margin-top:1.5rem">Nouveautés</a>
-    </section>`);
-
-  el.querySelector('[data-verifier]').onclick = async () => {
-    const msg = el.querySelector('[data-msg]');
-    msg.textContent = 'Vérification…';
-    try {
-      const reg = await navigator.serviceWorker?.getRegistration();
-      await reg?.update();
-      msg.textContent = 'À jour — la page se recharge…';
-      setTimeout(() => location.reload(), 700);
-    } catch {
-      msg.textContent = 'Déjà à jour.';
-    }
-  };
-
-  render(el);
-}
-
-/** Nouveautés (ChangelogDialog, Changelog.kt) : le plus récent en premier. */
-export async function vueProfilNouveautes() {
-  const el = h(`
-    <section class="page">
-      ${enTete('Nouveautés')}
-      <div class="menu-groupe" data-liste style="margin-top:1.5rem;background:none"></div>
-    </section>`);
-
-  const zone = el.querySelector('[data-liste]');
-  [...CHANGELOG].reverse().forEach(entree => {
-    zone.appendChild(h(`
-      <div class="bloc" style="margin-top:1.4rem;padding-top:0;border-top:none">
-        <p class="bloc-titre" style="margin-bottom:.3rem">${esc(entree.versions)} · ${esc(entree.date)}</p>
-        <ul class="liste" style="gap:.4rem">
-          ${entree.items.map(it => `<li class="ligne" style="padding:.6rem .8rem">${esc(it)}</li>`).join('')}
-        </ul>
-      </div>`));
-  });
-
-  render(el);
-}
-
-/** Détail d'un trophée — TrophyDialog (Profile.kt) : objectif en cours, avancement. */
-function ouvrirTrophee(tr) {
-  const modale = h(`
     <div class="modale" role="dialog" aria-label="${esc(tr.title)}">
       <div class="modale-boite">
         <div class="modale-tete">

@@ -1,10 +1,9 @@
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
 import { currentSession, onAuthChange, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty } from './ui.js';
-import { appliquerTheme, ouvrirTheme, ouvrirReglagesBips } from './reglages.js';
+import { appliquerTheme } from './reglages.js';
 import { etatBrut as seanceEnCours } from './run-state.js';
 import { syncPrefs } from './prefs-sync.js';
-import * as beeper from './beeper.js';
 
 /* Avant tout le reste : évite un flash du mauvais thème au premier rendu. */
 appliquerTheme();
@@ -12,8 +11,8 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change', appliquerTh
 
 import { vueConnexion } from './views/connexion.js';
 import { vueFil } from './views/fil.js';
-import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte,
-         vueProfilMaj, vueProfilNouveautes } from './views/profil.js';
+import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte } from './views/profil.js';
+import { vueReglages, vueReglagesMaj, vueReglagesNouveautes } from './views/reglages.js';
 import { vueSeances, vueToutesSeances, vueSeanceEdition, vueProgrammes,
          vueProgrammeNouveau, vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
 import { vueLancerSeance } from './views/lancer.js';
@@ -37,9 +36,17 @@ route('/amis', vueAmis);
 route('/profil', vueProfil);
 route('/profil/analyse', vueProfilAnalyse);
 route('/profil/compte', vueProfilCompte);
-route('/profil/maj', vueProfilMaj);
-route('/profil/nouveautes', vueProfilNouveautes);
+/* Mise à jour et Nouveautés ont déménagé du Profil vers les Réglages : les
+   anciennes adresses restent valides (un raccourci ou un onglet gardé ne doit
+   pas tomber sur « page introuvable »), elles renvoient simplement vers les
+   nouvelles. À déclarer AVANT /profil/:id, qui les prendrait sinon pour des
+   identifiants de profil. */
+route('/profil/maj', () => { location.replace('#/reglages/maj'); });
+route('/profil/nouveautes', () => { location.replace('#/reglages/nouveautes'); });
 route('/profil/:id', vueProfil);
+route('/reglages', vueReglages);
+route('/reglages/maj', vueReglagesMaj);
+route('/reglages/nouveautes', vueReglagesNouveautes);
 route('/coach', vueCoach);
 route('/messages', vueMessages);
 route('/messages/:id', vueMessageThread);
@@ -105,6 +112,12 @@ function majChrome(connecte, path) {
   $$('.bottombar a').forEach(a => {
     a.setAttribute('aria-current', a.dataset.groupe === groupe ? 'page' : 'false');
   });
+  /* La roue crantée s'allume tant qu'on est dans les réglages — même repère
+     que l'icône verte de la barre du haut côté Android. */
+  $('#btn-reglages')?.setAttribute(
+    'aria-current',
+    path === '/reglages' || path.startsWith('/reglages/') ? 'page' : 'false'
+  );
   majOngletEntrainement();
   mesurerBarreBas();
 }
@@ -160,8 +173,6 @@ addEventListener('resize', mesurerBarreBas);
 $('#menu')?.addEventListener('click', () => {
   document.body.classList.toggle('menu-ouvert');
 });
-$('#btn-theme')?.addEventListener('click', ouvrirTheme);
-$('#btn-bips')?.addEventListener('click', () => ouvrirReglagesBips(beeper));
 $('#vue')?.addEventListener('click', () => {
   document.body.classList.remove('menu-ouvert');
 });
