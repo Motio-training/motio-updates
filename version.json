@@ -1,6 +1,6 @@
 {
-  "versionCode": 171,
-  "versionName": "2.69",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.69/motio.apk",
-  "notes": "Les series et les repetitions sont dites par le coach quel que soit le format. Un EMOM de 30 series de 5 n'est plus annonce par la voix du telephone : quand la combinaison n'est pas enregistree, le coach dit deux phrases entieres, 30 series puis 5 repetitions par serie. Le singulier est respecte : 1 serie, pas 1 series."
+  "versionCode": 172,
+  "versionName": "2.70",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.70/motio.apk",
+  "notes": "Sur un mouvement au poids du corps, le coach dit au poids du corps et le lestage eventuel, au lieu d'annoncer ton poids en kilos. La derniere fois regroupe les series identiques : un EMOM de 30 series tient en une ligne au lieu de trente, et le bouton de lancement redevient accessible."
 }
