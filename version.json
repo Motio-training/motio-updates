@@ -1,12 +1,12 @@
 {
-  "versionCode": 173,
-  "versionName": "2.71",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.71/motio.apk",
-  "notes": "La voix du coach devient un telechargement a part. L'application repasse de 66 a 24 Mo, et ses mises a jour ne retelechargent plus les 42 Mo de voix a chaque fois. Va dans Reglage du son, profil Voix, et appuie sur Telecharger la voix : elle s'installe une seule fois et reste ensuite sur le telephone, sans connexion necessaire pendant une seance. Tant qu'elle n'est pas la, le coach parle avec la synthese vocale du telephone.",
+  "versionCode": 174,
+  "versionName": "2.72",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.72/motio.apk",
+  "notes": "Minuteurs : le nombre de tours et de series se tape au pave, comme les durees. L'EMOM n'est plus bloque a 60 tours, le tabata a 50 series, ni les durees a 10 minutes. Dans une seance, le nombre de series monte a 100 au lieu de 30. Choisir Sifflet coupe la voix pour de bon, meme en pleine seance. Sur un EMOM en mode voix, plus d'annonce toutes les dix secondes : seulement le decompte trois, deux, un, top. Sur une recuperation longue, la voix jalonne le temps : plus qu'une minute, plus que trente secondes, plus que dix secondes.",
   "voix": {
-    "version": 1789046826,
-    "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789046826/voix.zip",
+    "version": 1789051977,
+    "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",
     "mo": 42,
-    "clips": 3624
+    "clips": 3628
   }
 }
