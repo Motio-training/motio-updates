@@ -1,6 +1,6 @@
 {
-  "versionCode": 172,
-  "versionName": "2.70",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.70/motio.apk",
-  "notes": "Sur un mouvement au poids du corps, le coach dit au poids du corps et le lestage eventuel, au lieu d'annoncer ton poids en kilos. La derniere fois regroupe les series identiques : un EMOM de 30 series tient en une ligne au lieu de trente, et le bouton de lancement redevient accessible."
+  "versionCode": 173,
+  "versionName": "2.71",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.71/motio.apk",
+  "notes": "Tous les reglages sont reunis derriere la roue crantee, en haut a droite : theme, son, montre Garmin, mise a jour, nouveautes, tutoriel et confidentialite. Le Profil ne garde que ce qui te concerne : identite, trophees, entrainements, analyse, Moti et compte."
 }
