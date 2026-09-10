@@ -1,6 +1,6 @@
 {
-  "versionCode": 168,
-  "versionName": "2.66",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.66/motio.apk",
-  "notes": "La voix du coach est maintenant enregistree, et non plus lue par la synthese du telephone : une voix posee, qui respire et descend en fin de phrase. Deux voix au choix, masculine ou feminine. Le coach ne se repete plus : ses relances et ses encouragements sont tires au sort. Il parle aussi en musculation : dix secondes apres Exercice suivant, il annonce le mouvement, un point technique, le nombre de series, la charge et la recup. Encouragement a l'avant-derniere serie, et conseil de charge selon ton RIR. En mode voix, le decompte se dit : trois, deux, un, top."
+  "versionCode": 169,
+  "versionName": "2.67",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.67/motio.apk",
+  "notes": "Le un du decompte s'entend enfin : la voix l'escamotait une fois sur deux, il est maintenant verifie a la fabrication. Plus que dix secondes annonce pendant la recuperation, le temps de se remettre en place. Plus de consignes de respiration sur un exercice de force : sur un grimper de corde ou un tabata, le coach annonce le temps restant et se tait sur le reste."
 }
