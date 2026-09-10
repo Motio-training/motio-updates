@@ -937,6 +937,10 @@ export async function vueProfilCompte() {
 
   render(el);
 }
+
+/** Détail d'un trophée — TrophyDialog (Profile.kt) : objectif en cours, avancement. */
+function ouvrirTrophee(tr) {
+  const modale = h(`
     <div class="modale" role="dialog" aria-label="${esc(tr.title)}">
       <div class="modale-boite">
         <div class="modale-tete">
