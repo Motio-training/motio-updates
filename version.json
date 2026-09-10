@@ -1,6 +1,6 @@
 {
-  "versionCode": 169,
-  "versionName": "2.67",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.67/motio.apk",
-  "notes": "Le un du decompte s'entend enfin : la voix l'escamotait une fois sur deux, il est maintenant verifie a la fabrication. Plus que dix secondes annonce pendant la recuperation, le temps de se remettre en place. Plus de consignes de respiration sur un exercice de force : sur un grimper de corde ou un tabata, le coach annonce le temps restant et se tait sur le reste."
+  "versionCode": 170,
+  "versionName": "2.68",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.68/motio.apk",
+  "notes": "Reglage du son affiche desormais les phrases dites par la voix de secours plutot que par le coach enregistre. Va dans Reglage du son, profil Voix, section Voix de secours, apres une seance de musculation : si les series, les repetitions ou la charge y apparaissent, envoie-moi la ligne exacte."
 }
