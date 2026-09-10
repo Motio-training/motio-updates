@@ -1,6 +1,6 @@
 {
-  "versionCode": 170,
-  "versionName": "2.68",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.68/motio.apk",
-  "notes": "Reglage du son affiche desormais les phrases dites par la voix de secours plutot que par le coach enregistre. Va dans Reglage du son, profil Voix, section Voix de secours, apres une seance de musculation : si les series, les repetitions ou la charge y apparaissent, envoie-moi la ligne exacte."
+  "versionCode": 171,
+  "versionName": "2.69",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.69/motio.apk",
+  "notes": "Les series et les repetitions sont dites par le coach quel que soit le format. Un EMOM de 30 series de 5 n'est plus annonce par la voix du telephone : quand la combinaison n'est pas enregistree, le coach dit deux phrases entieres, 30 series puis 5 repetitions par serie. Le singulier est respecte : 1 serie, pas 1 series."
 }
