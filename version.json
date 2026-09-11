@@ -1,8 +1,8 @@
 {
-  "versionCode": 174,
-  "versionName": "2.72",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.72/motio.apk",
-  "notes": "Minuteurs : le nombre de tours et de series se tape au pave, comme les durees. L'EMOM n'est plus bloque a 60 tours, le tabata a 50 series, ni les durees a 10 minutes. Dans une seance, le nombre de series monte a 100 au lieu de 30. Choisir Sifflet coupe la voix pour de bon, meme en pleine seance. Sur un EMOM en mode voix, plus d'annonce toutes les dix secondes : seulement le decompte trois, deux, un, top. Sur une recuperation longue, la voix jalonne le temps : plus qu'une minute, plus que trente secondes, plus que dix secondes.",
+  "versionCode": 175,
+  "versionName": "2.73",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.73/motio.apk",
+  "notes": "Un tabata, un EMOM ou un maintien enregistre desormais UNE SERIE PAR TOUR. Cent tours de sept pompes comptent pour cent series de sept, et non plus pour une seule : le bilan, l'historique et le tonnage disent enfin le vrai volume. Pendant la seance, l'ecran principal egrene les tours (1/100, 2/100...) au lieu de rester fige sur la premiere serie. Les seances deja faites sont corrigees automatiquement au premier lancement, carnet et fil compris. Les series identiques sont regroupees sur une ligne partout ou elles s'affichent.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",
