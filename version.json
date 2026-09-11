@@ -1,8 +1,8 @@
 {
-  "versionCode": 176,
-  "versionName": "2.74",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.74/motio.apk",
-  "notes": "Le bilan ecrit PDC, ou PDC +10 si tu t'es leste, au lieu du total calcule : la meme ecriture que les cases de saisie pendant la seance. Le tonnage, lui, compte toujours la vraie charge, soit 70 % du poids du corps sur les pompes. Les charges au poids du corps sont arrondies au dixieme de kilo. Chaque serie retient le poids du corps du jour, pour qu'une seance de pompes d'il y a trois mois ne s'affiche plus PDC +2.",
+  "versionCode": 177,
+  "versionName": "2.75",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.75/motio.apk",
+  "notes": "L'image du bilan partagee ecrit elle aussi PDC au lieu du total calcule : Pompes 100 x 7 @ PDC, et non plus @ 61,6 kg. La charge totale deplacee, elle, reste la vraie.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",
