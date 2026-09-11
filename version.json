@@ -1,8 +1,8 @@
 {
-  "versionCode": 175,
-  "versionName": "2.73",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.73/motio.apk",
-  "notes": "Un tabata, un EMOM ou un maintien enregistre desormais UNE SERIE PAR TOUR. Cent tours de sept pompes comptent pour cent series de sept, et non plus pour une seule : le bilan, l'historique et le tonnage disent enfin le vrai volume. Pendant la seance, l'ecran principal egrene les tours (1/100, 2/100...) au lieu de rester fige sur la premiere serie. Les seances deja faites sont corrigees automatiquement au premier lancement, carnet et fil compris. Les series identiques sont regroupees sur une ligne partout ou elles s'affichent.",
+  "versionCode": 176,
+  "versionName": "2.74",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.74/motio.apk",
+  "notes": "Le bilan ecrit PDC, ou PDC +10 si tu t'es leste, au lieu du total calcule : la meme ecriture que les cases de saisie pendant la seance. Le tonnage, lui, compte toujours la vraie charge, soit 70 % du poids du corps sur les pompes. Les charges au poids du corps sont arrondies au dixieme de kilo. Chaque serie retient le poids du corps du jour, pour qu'une seance de pompes d'il y a trois mois ne s'affiche plus PDC +2.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",
