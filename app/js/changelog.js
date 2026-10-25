@@ -596,4 +596,12 @@ export const CHANGELOG = [
                 "Avant la première série, « Viser un autre nombre de reps » recalcule la charge conseillée",
                 "Nouvel exercice aux poids libres : la charge est estimée d'après tes exercices proches ou travaillant le même muscle. Rien n'est proposé sur machine, où les charges dépendent trop de l'appareil"
             ] },
+  { date: "25 octobre 2026", versions: "v2.79", items: [
+                "Carte « Aujourd'hui » en tête d'Entraînement : la séance du jour (ou à rattraper) se lance d'un appui",
+                "Météo de la forme d'après ton ressenti de la veille et ta réponse du matin : un jour moyen ou bas, les charges conseillées baissent de 5 ou 10 %, raison affichée",
+                "Vue mensuelle du programme, et une séance se déplace sur un autre jour par appui long puis glisser",
+                "Un micro pour dicter tes demandes à Moti (Chrome, Edge, Safari)",
+                "Hors ligne : l'espace web s'ouvre sans réseau, une séance prévue se lance et s'enregistre en salle, tout part au retour du réseau",
+                "Vibration à la validation d'une série et à la fin de chaque récupération (téléphone)"
+            ] },
 ];

@@ -11,9 +11,37 @@ export const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
    message ne vaut que pour la tentative en cours. */
 export const CLE_ERREUR_AUTH = 'motio.erreur-auth';
 
+/* HORS LIGNE (hors-ligne.js). Le jeton d'accès expire au bout d'une heure ;
+   pour le renouveler, getSession() appelle le serveur et, sans réseau, retente
+   pendant près de 30 secondes avant d'abandonner en rendant… aucune session.
+   En salle, ça renvoyait sur l'écran de connexion. Tant que le client garde
+   la session dans le stockage (il ne l'efface que sur une vraie déconnexion
+   ou un jeton révoqué), elle reste bonne pour s'entraîner hors ligne : les
+   lectures passent par les copies locales, les écritures par la file, et le
+   jeton se renouvelle tout seul au retour du réseau. */
+function sessionGardee() {
+  try {
+    const cle = sb.auth.storageKey ||
+      `sb-${new URL(CONFIG.SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+    const brut = JSON.parse(localStorage.getItem(cle) || 'null');
+    const s = brut?.currentSession || brut;
+    return s?.user ? s : null;
+  } catch { return null; }
+}
+
+// Réseau qui traîne : pendant une minute, on ne réessaie pas à chaque écran.
+let lentJusqua = 0;
+
 export async function currentSession() {
-  const { data } = await sb.auth.getSession();
-  return data.session ?? null;
+  const gardee = sessionGardee();
+  if (gardee && (navigator.onLine === false || Date.now() < lentJusqua)) return gardee;
+  const lecture = sb.auth.getSession().then(({ data }) => data.session ?? null);
+  // Pas de session gardée (première connexion, retour d'OAuth) : rien à
+  // rendre à la place, on attend le client quoi qu'il arrive.
+  if (!gardee) return lecture;
+  const s = await Promise.race([lecture, new Promise(r => setTimeout(() => r(undefined), 4000))]);
+  if (s === undefined) { lentJusqua = Date.now() + 60_000; return gardee; }
+  return s ?? sessionGardee();
 }
 
 export async function currentUser() {

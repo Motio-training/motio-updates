@@ -1,4 +1,4 @@
-import { h, render, loading, empty, failure, esc, toast, dateCourte, duree } from '../ui.js';
+import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, dateBreve } from '../ui.js';
 import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
          listPrograms, saveProgram, sessionsOf, deleteSharedSession,
          getCategories, saveCategories, aAccesIA } from '../api.js';
@@ -20,7 +20,10 @@ import { ouvrirPaveDuree } from '../numpad.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
 import { vignetteExercice, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
-import { suivreModele } from '../programme-edition.js';
+import { suivreModele, annoncerSeancePrevue } from '../programme-edition.js';
+import * as forme from '../forme.js';
+import { ajouterMicro } from '../dictee.js';
+import { prechargerImages } from '../hors-ligne.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -97,8 +100,9 @@ function fmtDerniereFois(lastMs) {
   if (jours < 60) return `il y a ${Math.floor(jours / 7)} semaines`;
   return `il y a ${Math.floor(jours / 30)} mois`;
 }
-/** catColor (TrainingScreens.kt) : Push=accent, Pull=second accent, Legs=doré. */
-function catColor(cat) {
+/** catColor (TrainingScreens.kt) : Push=accent, Pull=second accent, Legs=doré.
+ *  Exportée pour la vue mois du programme (programmes.js). */
+export function catColor(cat) {
   return cat === 'Push' ? 'var(--accent)' : cat === 'Pull' ? 'var(--accent2)' : cat === 'Legs' ? 'var(--dore)' : 'var(--encre-2)';
 }
 const ICONE_HALTERE = '<path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/>';
@@ -145,7 +149,9 @@ export async function vueSeances(_params, toutes = false) {
      (ProgramModel.kt) : la première séance ni faite ni sautée, la plus proche
      dans le temps. Sert au libellé du bouton du pied de liste, qui annonce
      « Programme · S1 — Push, 02 sept. » exactement comme l'application. */
-  const progActif = programmes[0]?.data || null;
+  // Le programme le plus récemment CRÉÉ, comme ProgramStore.active côté appli
+  // (et non le dernier modifié).
+  const progActif = [...programmes].sort((a, b) => (b.data?.createdAt || 0) - (a.data?.createdAt || 0))[0]?.data || null;
   const prochaine = (progActif?.sessions || [])
     .filter(s => !(s.doneAt > 0) && !s.skipped)
     .sort((a, b) => (a.dateMs || 0) - (b.dateMs || 0))[0] || null;
@@ -170,6 +176,7 @@ export async function vueSeances(_params, toutes = false) {
       </div>
 
       ${toutes ? '<a class="lien-inline" href="#/seances" style="display:inline-block;margin-bottom:1rem">‹ Retour à Entraînement</a>' : `
+      <div data-aujourdhui></div>
       <a class="moti-card" href="#/coach">
         <img src="../assets/img/moti_avatar.jpg" alt="">
         <span class="corps"><b>Moti</b><span>Ton coach IA — motivation, conseils, où tu en es</span></span>
@@ -214,6 +221,65 @@ export async function vueSeances(_params, toutes = false) {
       toast('Séance abandonnée.');
     };
     el.querySelector('[data-reprise]').appendChild(bandeau);
+  }
+
+  /* ================================================== Aujourd'hui (v2.79)
+
+     CarteAujourdhui (Aujourdhui.kt) : la séance du jour — ou à rattraper —
+     avec son bouton Démarrer, et la météo de la forme. Compacte, pour ne pas
+     repousser les séances hors de vue. Le ressenti de la dernière séance est
+     relevé ici, dans l'historique des séances déjà chargé. */
+  rows.forEach(r => (r.data?.history || []).forEach(s => forme.noterRessenti(s.startedAt, s.mood)));
+  function dessinerAujourdhui() {
+    const zone = el.querySelector('[data-aujourdhui]');
+    if (!zone) return;
+    const m = forme.formeDuJour();
+    const auj = new Date(); auj.setHours(0, 0, 0, 0);
+    const sessions = progActif?.sessions || [];
+    const aFaire = sessions.filter(s => !(s.doneAt > 0) && !s.skipped && s.dateMs < auj.getTime() + 86400000)
+      .sort((a, b) => a.dateMs - b.dateMs)[0] || null;
+    const p = aFaire || prochaine;
+    const jourDe = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
+    const quand = !p ? '' : !aFaire ? dateBreve(p.dateMs)
+      : jourDe(p.dateMs) === auj.getTime()
+        ? `Aujourd'hui · ${new Date(p.dateMs).toTimeString().slice(0, 5)}`
+        : `À rattraper · ${dateBreve(p.dateMs)}`;
+    const carte = h(`
+      <div class="aujourdhui">
+        <div class="aujourdhui-tete"><b>AUJOURD'HUI</b><span class="forme-${m.classe}">${m.label}</span></div>
+        ${p ? `<div class="aujourdhui-seance">
+            <div><b>${aFaire ? '' : 'Prochaine : '}${esc(p.title)}</b>
+              <span>${esc(quand)} · semaine ${p.week} · ${(p.items || []).length} exos</span></div>
+            ${aFaire ? '<button class="btn" data-demarrer-prevue type="button">Démarrer</button>'
+              : `<a class="lien-inline" href="#/programmes/${progActif.id}">Programme ›</a>`}
+          </div>` : '<p class="aujourdhui-rien">Pas de séance prévue aujourd\'hui.</p>'}
+        ${m.mesures.length ? `<p class="aujourdhui-mesures">${esc(m.mesures.join('  ·  '))}</p>` : ''}
+        ${m.facteur < 1 ? `<p class="aujourdhui-allege">Charges conseillées allégées de ${Math.round((1 - m.facteur) * 100)} % : ${esc(m.raisons.join(', '))}.</p>` : ''}
+        ${m.reponse < 0 ? `<div class="aujourdhui-question"><span>Comment tu te sens ?</span>
+            <button type="button" class="chip-cat" data-forme="0">En forme</button>
+            <button type="button" class="chip-cat" data-forme="1">Moyen</button>
+            <button type="button" class="chip-cat" data-forme="2">Fatigué</button></div>` : ''}
+      </div>`);
+    carte.querySelector('[data-demarrer-prevue]')?.addEventListener('click', () => {
+      annoncerSeancePrevue(progActif.id, aFaire.id, aFaire.workoutId);
+      location.hash = `#/seances/${aFaire.workoutId}/lancer`;
+    });
+    carte.querySelectorAll('[data-forme]').forEach(b => {
+      b.onclick = () => { forme.repondre(Number(b.dataset.forme)); dessinerAujourdhui(); };
+    });
+    zone.replaceChildren(carte);
+  }
+  if (!toutes) dessinerAujourdhui();
+
+  /* Hors ligne (hors-ligne.js) : les planches des séances des deux semaines
+     à venir partent en cache dès maintenant, pour s'afficher en salle même
+     sans réseau. */
+  if (progActif) {
+    const horizon = Date.now() + 14 * 86400000;
+    const ids = new Set((progActif.sessions || [])
+      .filter(s => !(s.doneAt > 0) && !s.skipped && s.dateMs < horizon).map(s => String(s.workoutId)));
+    prechargerImages(rows.filter(r => ids.has(String(r.data?.id)))
+      .flatMap(r => (r.data.exercises || []).map(e => visualFor(e.name)?.image)));
   }
 
   /* ================================================== Générer une séance
@@ -274,6 +340,7 @@ export async function vueSeances(_params, toutes = false) {
       </div>`);
 
     modale.querySelector('[data-objectif]').addEventListener('input', (e) => { goalText = e.target.value; });
+    if (accesIA) ajouterMicro(modale.querySelector('[data-objectif]'));
 
     /* Une rangée de puces à choix unique : les trois listes ci-dessous ne
        diffèrent que par leurs valeurs et par ce qu'elles retiennent. */

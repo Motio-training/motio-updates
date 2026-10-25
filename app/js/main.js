@@ -1,9 +1,11 @@
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
 import { currentSession, onAuthChange, CLE_ERREUR_AUTH } from './supabase.js';
-import { $, $$, h, render, empty } from './ui.js';
+import { $, $$, h, render, empty, toast } from './ui.js';
 import { appliquerTheme } from './reglages.js';
 import { etatBrut as seanceEnCours } from './run-state.js';
 import { syncPrefs } from './prefs-sync.js';
+import { envoyerEnAttente } from './api.js';
+import { suivreFile, file as fileHorsLigne, estHorsLigne } from './hors-ligne.js';
 
 /* Avant tout le reste : évite un flash du mauvais thème au premier rendu. */
 appliquerTheme();
@@ -238,6 +240,50 @@ if (retourAuth.present) {
 
 start();
 
+/* ==========================================================================
+   HORS LIGNE (hors-ligne.js) — une pastille sous l'en-tête dit qu'on est
+   hors ligne et combien d'enregistrements attendent ; la file part dès que
+   le réseau revient, et au démarrage s'il en reste de la dernière fois.
+   ========================================================================== */
+function majPastilleHorsLigne() {
+  const n = fileHorsLigne().length;
+  const hors = estHorsLigne();
+  let p = document.getElementById('pastille-hl');
+  if (!hors && !n) { p?.remove(); return; }
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'pastille-hl';
+    p.className = 'pastille-hl';
+    p.setAttribute('role', 'status');
+    const actions = document.querySelector('.appbar-actions');
+    if (actions) actions.prepend(p); else document.body.appendChild(p);
+  }
+  const attente = n ? `${n} en attente` : '';
+  p.textContent = hors
+    ? `Hors ligne${attente ? ' · ' + attente : ''}`
+    : `${attente} d'envoi`;
+  p.title = hors
+    ? 'Pas de réseau : tes séances et ton programme restent disponibles, ce que tu enregistres partira au retour du réseau.'
+    : "Enregistrements faits hors ligne, envoyés dès que le serveur répond.";
+  p.classList.toggle('hors', hors);
+}
+
+async function envoyerFile() {
+  if (estHorsLigne() || !fileHorsLigne().length) return majPastilleHorsLigne();
+  majPastilleHorsLigne();
+  let n = 0;
+  try { n = await envoyerEnAttente(); } catch { /* réessayé au prochain retour du réseau */ }
+  if (n) {
+    toast(n > 1 ? `${n} enregistrements faits hors ligne envoyés` : 'Enregistrement fait hors ligne envoyé');
+  }
+  majPastilleHorsLigne();
+}
+
+suivreFile(majPastilleHorsLigne);
+addEventListener('online', envoyerFile);
+addEventListener('offline', majPastilleHorsLigne);
+envoyerFile();
+
 /* Session déjà ouverte au chargement. onAuthStateChange émet bien un
    INITIAL_SESSION, mais ne pas en dépendre coûte une ligne et syncPrefs est
    idempotente pour un même compte. */
@@ -263,7 +309,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '76';
+const VERSION = '77';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

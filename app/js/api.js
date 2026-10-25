@@ -23,14 +23,36 @@
    - le filtrage du fil n'est PAS écrit ici, c'est la RLS qui le fait.
    ========================================================================== */
 
-import { sb } from './supabase.js';
+import { sb, currentUser } from './supabase.js';
 import { CONFIG } from './config.js';
+import * as HL from './hors-ligne.js';
 
 const T = CONFIG.TABLES;
 
 function unwrap({ data, error }) {
   if (error) throw error;
   return data;
+}
+
+/* Hors ligne (hors-ligne.js) : délai au-delà duquel une écriture part en
+   file d'attente plutôt que de laisser la fin de séance tourner dans le vide. */
+const DELAI_ECRITURE_MS = 9000;
+
+/** Écrit tout de suite si le réseau répond ; sinon l'écriture part en file
+ *  et `local` (la ligne telle qu'elle sera) est rendue à sa place. Une
+ *  écriture directe réussie efface celle du même objet restée en file, qui
+ *  l'écraserait sinon au retour du réseau avec un état plus ancien. */
+async function ecritureOuFile(op, envoi, local) {
+  if (HL.estHorsLigne()) { HL.mettreEnFile(op); return local; }
+  try {
+    const r = await HL.avecDelai(envoi(), DELAI_ECRITURE_MS);
+    HL.retirer(op.type, op.userId, op.cle);
+    return r;
+  } catch (e) {
+    if (!HL.estErreurReseau(e)) throw e;
+    HL.mettreEnFile(op);
+    return local;
+  }
 }
 
 /* ---------------------------------------------------------------- profils */
@@ -50,9 +72,11 @@ export async function getProfile(userId) {
    Sert de charge par défaut sur les exercices « PDC » (voir model.js :
    estPoidsDuCorps/pdcEffectif/fmtCharge). */
 export async function getMyWeight(userId) {
-  const row = unwrap(await sb.from('private_metrics')
-    .select('weight_kg').eq('user_id', userId).maybeSingle());
-  return row?.weight_kg || 0;
+  return HL.lecture(`poids.${userId}`, async () => {
+    const row = unwrap(await sb.from('private_metrics')
+      .select('weight_kg').eq('user_id', userId).maybeSingle());
+    return row?.weight_kg || 0;
+  });
 }
 
 export async function setWeight(userId, kg) {
@@ -136,7 +160,8 @@ const CATEGORIES_INITIALES = ['Push', 'Pull', 'Legs'];
 
 /** Liste ordonnée des catégories du compte, jamais vide. */
 export async function getCategories(userId) {
-  const ligne = unwrap(await sb.from(T.profiles).select('categories').eq('id', userId).maybeSingle());
+  const ligne = await HL.lecture(`categories.${userId}`, async () =>
+    unwrap(await sb.from(T.profiles).select('categories').eq('id', userId).maybeSingle()));
   const liste = Array.isArray(ligne?.categories)
     ? ligne.categories.filter(c => typeof c === 'string' && c.trim()).map(c => c.trim())
     : [];
@@ -227,8 +252,20 @@ export async function feed({ limit = 60, before = null, scope = 'amis', moiId } 
 
 /** Historique d'une personne : le mien, ou celui d'un abonné. */
 export async function sessionsOf(userId, { limit = 200 } = {}) {
-  return unwrap(await sb.from(T.sharedSessions).select(CHAMPS_SESSION)
+  const requete = async () => unwrap(await sb.from(T.sharedSessions).select(CHAMPS_SESSION)
     .eq('user_id', userId).order('started_at', { ascending: false }).limit(limit));
+  // Seul MON historique est gardé hors ligne : la charge conseillée en a
+  // besoin en salle, celui des autres n'a rien à faire dans ce navigateur.
+  if ((await currentUser())?.id !== userId) return requete();
+  return HL.lecture(`realisations.${userId}`, requete, {
+    fusion: (rows) => {
+      const attente = HL.enAttente('realisation', userId)
+        .filter(r => !rows.some(x => x.local_id === r.local_id));
+      return attente.length
+        ? [...attente, ...rows].sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))
+        : rows;
+    }
+  });
 }
 
 /* ------------------------------------------------------------------ kudos */
@@ -347,11 +384,32 @@ export async function standings(jours, { scope = 'amis', moiId } = {}) {
  * Même distinction que WorkoutStore.carnet() côté Kotlin.
  */
 export async function listWorkouts(userId) {
-  const rows = unwrap(await sb.from(T.workouts)
+  const rows = await lignesSeances(userId);
+  return rows.filter(r => !(r.data || {}).free);
+}
+
+/** Les écritures encore en file passées sur une liste du serveur (ou sur sa
+ *  copie locale) : ce qui a été fait hors ligne reste visible. */
+function avecAttente(type, userId) {
+  return (rows) => {
+    const attente = HL.enAttente(type, userId);
+    if (!attente.length) return rows;
+    const res = [...rows];
+    for (const a of attente) {
+      const i = res.findIndex(r => String(r.local_id) === String(a.local_id));
+      if (i >= 0) res[i] = { ...res[i], ...a }; else res.unshift(a);
+    }
+    return res;
+  };
+}
+
+/** Toutes les lignes du compte, conteneur libre compris : la même copie
+ *  hors ligne sert au carnet, au conteneur et à getWorkout. */
+function lignesSeances(userId) {
+  return HL.lecture(`seances.${userId}`, async () => unwrap(await sb.from(T.workouts)
     .select('id,local_id,name,category,data,updated_at')
     .eq('user_id', userId).is('deleted_at', null)
-    .order('updated_at', { ascending: false }));
-  return rows.filter(r => !(r.data || {}).free);
+    .order('updated_at', { ascending: false })), { fusion: avecAttente('seance', userId) });
 }
 
 /**
@@ -361,18 +419,32 @@ export async function listWorkouts(userId) {
  * l'appli, et réciproquement.
  */
 export async function conteneurLibre(userId) {
-  const rows = unwrap(await sb.from(T.workouts)
-    .select('id,local_id,name,category,data,updated_at')
-    .eq('user_id', userId).is('deleted_at', null));
+  const rows = await lignesSeances(userId);
   const trouve = rows.find(r => (r.data || {}).free);
   if (trouve) return trouve.data;
   return { id: Date.now(), name: 'Entraînement libre', category: 'Libre', free: true, exercises: [], history: [] };
 }
 
 export async function getWorkout(userId, localId) {
-  return unwrap(await sb.from(T.workouts)
-    .select('id,local_id,name,category,data,updated_at')
-    .eq('user_id', userId).eq('local_id', String(localId)).maybeSingle());
+  const dansCopie = () => {
+    const rows = HL.lire(`seances.${userId}`);
+    if (!Array.isArray(rows)) return undefined;
+    return avecAttente('seance', userId)(rows).find(r => String(r.local_id) === String(localId)) || null;
+  };
+  if (HL.estHorsLigne()) {
+    const copie = dansCopie();
+    if (copie === undefined) throw new HL.HorsLigne();
+    return copie;
+  }
+  try {
+    return unwrap(await HL.avecDelai(sb.from(T.workouts)
+      .select('id,local_id,name,category,data,updated_at')
+      .eq('user_id', userId).eq('local_id', String(localId)).maybeSingle(), 7000));
+  } catch (e) {
+    const copie = HL.estErreurReseau(e) ? dansCopie() : undefined;
+    if (copie === undefined) throw e;
+    return copie;
+  }
 }
 
 /** `seance` est l'objet au format WorkoutStore : { id, name, category, exercises, history }. */
@@ -388,8 +460,13 @@ export async function saveWorkout(userId, seance) {
     // d'Android, qui manquerait alors des modifications.
     deleted_at: null
   };
-  return unwrap(await sb.from(T.workouts)
-    .upsert(row, { onConflict: 'user_id,local_id' }).select().single());
+  const r = await ecritureOuFile(
+    { type: 'seance', userId, cle: row.local_id, row },
+    async () => unwrap(await sb.from(T.workouts)
+      .upsert(row, { onConflict: 'user_id,local_id' }).select().single()),
+    { ...row, updated_at: new Date().toISOString() });
+  HL.majLigne(`seances.${userId}`, r);
+  return r;
 }
 
 /**
@@ -403,10 +480,10 @@ export async function deleteWorkout(userId, localId) {
 }
 
 export async function listPrograms(userId) {
-  return unwrap(await sb.from(T.programs)
+  return HL.lecture(`programmes.${userId}`, async () => unwrap(await sb.from(T.programs)
     .select('id,local_id,name,data,updated_at')
     .eq('user_id', userId).is('deleted_at', null)
-    .order('updated_at', { ascending: false }));
+    .order('updated_at', { ascending: false })), { fusion: avecAttente('programme', userId) });
 }
 
 export async function saveProgram(userId, programme) {
@@ -417,8 +494,13 @@ export async function saveProgram(userId, programme) {
     data: programme,
     deleted_at: null
   };
-  return unwrap(await sb.from(T.programs)
-    .upsert(row, { onConflict: 'user_id,local_id' }).select().single());
+  const r = await ecritureOuFile(
+    { type: 'programme', userId, cle: row.local_id, row },
+    async () => unwrap(await sb.from(T.programs)
+      .upsert(row, { onConflict: 'user_id,local_id' }).select().single()),
+    { ...row, updated_at: new Date().toISOString() });
+  HL.majLigne(`programmes.${userId}`, r);
+  return r;
 }
 
 export async function deleteProgram(userId, localId) {
@@ -709,7 +791,60 @@ export async function finishSession(userId, session) {
     set_count: session.exercises.reduce((t, e) => t + e.sets.length, 0),
     details
   };
-  return unwrap(await sb.from(T.sharedSessions).upsert(row, { onConflict: 'user_id,local_id' }).select().single());
+  const r = await ecritureOuFile(
+    { type: 'realisation', userId, cle: row.local_id, row },
+    async () => unwrap(await sb.from(T.sharedSessions).upsert(row, { onConflict: 'user_id,local_id' }).select().single()),
+    row);
+  // La copie de l'historique la reçoit tout de suite : la charge conseillée
+  // de la séance suivante en tient compte, réseau ou pas.
+  const hist = HL.lire(`realisations.${userId}`);
+  if (Array.isArray(hist) && !hist.some(x => x.local_id === row.local_id)) {
+    HL.ecrire(`realisations.${userId}`, [r, ...hist].slice(0, 200));
+  }
+  return r;
+}
+
+/* ==========================================================================
+   FILE D'ATTENTE HORS LIGNE (hors-ligne.js) : ce qui a été enregistré sans
+   réseau part ici, dans l'ordre où ça a été fait (le modèle avant la séance
+   réalisée, comme en ligne). Appelée au démarrage et au retour du réseau.
+
+   Une écriture refusée par le serveur (pas par le réseau) est retentée aux
+   envois suivants, puis abandonnée au bout de 5 refus pour ne pas bloquer
+   toute la file derrière elle.
+   ========================================================================== */
+
+const ENVOIS = {
+  seance: (row) => sb.from(T.workouts).upsert(row, { onConflict: 'user_id,local_id' }).select().single(),
+  programme: (row) => sb.from(T.programs).upsert(row, { onConflict: 'user_id,local_id' }).select().single(),
+  realisation: (row) => sb.from(T.sharedSessions).upsert(row, { onConflict: 'user_id,local_id' }).select().single()
+};
+
+let envoiEnCours = null;
+
+/** Envoie la file ; rend le nombre d'écritures parties. */
+export function envoyerEnAttente() {
+  if (envoiEnCours) return envoiEnCours;
+  envoiEnCours = (async () => {
+    let parties = 0;
+    const moi = (await currentUser())?.id;
+    for (const op of HL.file()) {
+      // Une autre personne s'est connectée sur ce navigateur depuis : ses
+      // écritures attendent qu'elle revienne, la RLS les refuserait.
+      if (op.userId !== moi || !ENVOIS[op.type]) continue;
+      try {
+        unwrap(await HL.avecDelai(ENVOIS[op.type](op.row), 15000));
+        HL.retirer(op.type, op.userId, op.cle);
+        parties++;
+      } catch (e) {
+        if (HL.estErreurReseau(e)) break;          // toujours hors ligne : on réessaiera
+        if (HL.compterEssai(op) >= 5) HL.retirer(op.type, op.userId, op.cle);
+        console.warn('Motio : envoi différé refusé', op.type, e);
+      }
+    }
+    return parties;
+  })().finally(() => { envoiEnCours = null; });
+  return envoiEnCours;
 }
 
 /** Retire la copie serveur d'une séance supprimée localement — kudos et
@@ -828,8 +963,8 @@ export async function coachClearThread(moiId) {
 export async function aAccesIA(userId) {
   const ACTIFS = ['offert', 'essai', 'actif'];
   try {
-    const row = unwrap(await sb.from('ai_access')
-      .select('status,expires_at').eq('user_id', userId).maybeSingle());
+    const row = await HL.lecture(`ia.${userId}`, async () => unwrap(await sb.from('ai_access')
+      .select('status,expires_at').eq('user_id', userId).maybeSingle()));
     if (!row || !ACTIFS.includes(row.status)) return false;
     return !row.expires_at || new Date(row.expires_at).getTime() > Date.now();
   } catch {

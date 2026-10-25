@@ -19,6 +19,7 @@
    ========================================================================== */
 
 import { h, render, loading, empty, failure, esc, toast, dateBreve } from '../ui.js';
+import { ajouterMicro } from '../dictee.js';
 import { currentUser } from '../supabase.js';
 import {
   listPrograms, deleteProgram, saveProgram, listWorkouts, deleteWorkout, aAccesIA,
@@ -27,13 +28,17 @@ import {
 import { GOALS, LEVELS, fmtRecup, dureeDeLaSeance, nouvelleSeance, CIRCUIT_WORK_SEC } from '../model.js';
 import { GEARS } from '../catalog.js';
 import { niveauActuel, objectifActuel, definirNiveau, definirObjectif } from '../reglages.js';
-import { genererProgrammeIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS, plusJours } from '../programme-ia.js';
+import { genererProgrammeIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS, plusJours, minuit } from '../programme-ia.js';
 import { construireProgrammeLocal } from '../generateur-local.js';
 import * as PE from '../programme-edition.js';
 import { vignetteExercice } from '../exercise-visuals.js';
-import { vueSeanceEdition } from './entrainement.js';
+import { vueSeanceEdition, catColor } from './entrainement.js';
 
 /* ================================================================ outils */
+
+const CLE_VUE = 'motio.programme-vue';   // 'semaines' | 'mois' — vue du planning retenue
+const NOMS_MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 const heureLabel = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const heureDe = (ms) => { const d = new Date(ms); return heureLabel(d.getHours() * 60 + d.getMinutes()); };
@@ -179,8 +184,118 @@ export async function vueProgramme(params) {
   try { flux = await fluxAgenda(moi.id, p.id); } catch { /* table absente ou hors ligne : pas d'agenda */ }
 
   const el = h(`<section class="page prog"></section>`);
+  let vueMois = false;
+  try { vueMois = localStorage.getItem(CLE_VUE) === 'mois'; } catch { /* stockage refusé : la liste */ }
+  let moisAffiche = null;          // année × 12 + mois, null = celui de la prochaine séance
+  let glisseVient = false;         // un glissé vient de finir : ce n'était pas un appui
   dessiner();
   render(el);
+
+  /**
+   * LE PLANNING EN MOIS (ProgramMonth, ProgramScreens.kt) : grille lundi →
+   * dimanche, séances en pastilles de la couleur de leur catégorie. Un appui
+   * ouvre la séance ; l'appui MAINTENU puis glissé la déplace sur un autre
+   * jour, à la même heure. Ni séance faite déplacée, ni dépôt dans le passé.
+   */
+  function grilleMois() {
+    const auj = minuit(Date.now());
+    if (moisAffiche === null) {
+      const ref = new Date(prochaine(p)?.dateMs || Date.now());
+      moisAffiche = ref.getFullYear() * 12 + ref.getMonth();
+    }
+    const an = Math.floor(moisAffiche / 12), m = moisAffiche % 12;
+    const d = new Date(an, m, 1);
+    while (d.getDay() !== 1) d.setDate(d.getDate() - 1);
+    const jours = [];
+    do { for (let i = 0; i < 7; i++) { jours.push(d.getTime()); d.setDate(d.getDate() + 1); } }
+    while (d.getMonth() === m && d.getFullYear() === an);
+    const parJour = new Map();
+    p.sessions.forEach(s => {
+      const k = minuit(s.dateMs);
+      if (!parJour.has(k)) parJour.set(k, []);
+      parJour.get(k).push(s);
+    });
+
+    const bloc = h(`
+      <div class="prog-mois">
+        <div class="prog-mois-tete">
+          <button type="button" class="btn btn-ghost btn-sm" data-prec aria-label="Mois précédent">‹</button>
+          <b>${NOMS_MOIS[m]} ${an}</b>
+          <button type="button" class="btn btn-ghost btn-sm" data-suiv aria-label="Mois suivant">›</button>
+        </div>
+        <div class="prog-mois-grille">${WEEK_DAY_LABELS.map(l => `<span class="prog-mois-jsem">${l}</span>`).join('')}</div>
+        <p class="etat-mono">Touche une séance pour l'ouvrir. Maintiens-la puis fais-la glisser
+          sur un autre jour pour la déplacer, à la même heure.</p>
+      </div>`);
+    bloc.querySelector('[data-prec]').onclick = () => { moisAffiche--; dessiner(); };
+    bloc.querySelector('[data-suiv]').onclick = () => { moisAffiche++; dessiner(); };
+    const grille = bloc.querySelector('.prog-mois-grille');
+    jours.forEach(j => {
+      const dj = new Date(j);
+      const cellule = h(`<div class="prog-case ${dj.getMonth() !== m ? 'hors' : ''} ${j === auj ? 'auj' : ''}" data-jour="${j}">
+          <span class="prog-case-num">${dj.getDate()}</span></div>`);
+      (parJour.get(j) || []).sort((a, b) => a.dateMs - b.dateMs).forEach(s => {
+        const pastille = h(`<button type="button" class="prog-pastille-mois ${faite(s) || s.skipped ? 'passee' : ''}"
+            style="--cat:${catColor(s.category)}">${faite(s) ? '✓ ' : ''}${esc(s.title)}</button>`);
+        pastille.onclick = () => { if (!glisseVient) ouvrirSeance(s); };
+        if (!faite(s)) activerGlisser(pastille, s);
+        cellule.appendChild(pastille);
+      });
+      grille.appendChild(cellule);
+    });
+    return bloc;
+  }
+
+  /** Appui maintenu (350 ms) puis glissé — au doigt comme à la souris. */
+  function activerGlisser(pastille, s) {
+    let minuteur = null, fantome = null, depart = null;
+    const caseSous = (x, y) => document.elementFromPoint(x, y)?.closest?.('.prog-case');
+    const placer = (x, y) => {
+      fantome.style.left = `${x}px`; fantome.style.top = `${y}px`;
+      document.querySelectorAll('.prog-case.survol').forEach(c => c.classList.remove('survol'));
+      const c = caseSous(x, y);
+      if (c && Number(c.dataset.jour) >= minuit(Date.now())) c.classList.add('survol');
+    };
+    pastille.addEventListener('pointerdown', (e) => {
+      if (e.button) return;
+      depart = { x: e.clientX, y: e.clientY };
+      pastille.setPointerCapture?.(e.pointerId);
+      minuteur = setTimeout(() => {
+        minuteur = null;
+        fantome = pastille.cloneNode(true);
+        fantome.classList.add('prog-fantome');
+        document.body.appendChild(fantome);
+        pastille.classList.add('tenue');
+        navigator.vibrate?.(15);
+        placer(depart.x, depart.y);
+      }, 350);
+    });
+    pastille.addEventListener('pointermove', (e) => {
+      if (minuteur && (Math.abs(e.clientX - depart.x) > 8 || Math.abs(e.clientY - depart.y) > 8)) {
+        clearTimeout(minuteur); minuteur = null; return;
+      }
+      if (!fantome) return;
+      e.preventDefault();
+      placer(e.clientX, e.clientY);
+    });
+    const fin = (e) => {
+      clearTimeout(minuteur); minuteur = null;
+      if (!fantome) return;
+      const cible = caseSous(e.clientX, e.clientY);
+      fantome.remove(); fantome = null;
+      pastille.classList.remove('tenue');
+      document.querySelectorAll('.prog-case.survol').forEach(c => c.classList.remove('survol'));
+      glisseVient = true; setTimeout(() => { glisseVient = false; }, 80);
+      if (e.type === 'pointercancel' || !cible) return;
+      const jour = Number(cible.dataset.jour);
+      if (jour < minuit(Date.now()) || jour === minuit(s.dateMs)) return;
+      s.dateMs = PE.deplacerAuJour(s.dateMs, jour);
+      p.sessions.sort((a, b) => a.dateMs - b.dateMs);
+      enregistrer(`« ${s.title} » déplacée au ${dateBreve(s.dateMs)}`);
+    };
+    pastille.addEventListener('pointerup', fin);
+    pastille.addEventListener('pointercancel', fin);
+  }
 
   function dessiner() {
     const total = p.sessions.length;
@@ -224,6 +339,21 @@ export async function vueProgramme(params) {
     montrerAgenda(false);
 
     const zone = el.querySelector('[data-planning]');
+    /* Deux lectures du même planning : semaine par semaine, ou le MOIS, où
+       l'on déplace une séance en la faisant glisser (ProgramMonth, v2.79). */
+    const bascule = h(`<div class="rangee rangee-serree prog-vues">
+        <button type="button" class="chip-cat ${vueMois ? '' : 'on'}" data-vue="semaines">Semaines</button>
+        <button type="button" class="chip-cat ${vueMois ? 'on' : ''}" data-vue="mois">Mois</button>
+      </div>`);
+    bascule.querySelectorAll('[data-vue]').forEach(b => {
+      b.onclick = () => {
+        vueMois = b.dataset.vue === 'mois';
+        try { localStorage.setItem(CLE_VUE, vueMois ? 'mois' : 'semaines'); } catch { /* pas grave */ }
+        dessiner();
+      };
+    });
+    zone.appendChild(bascule);
+    if (vueMois) { zone.appendChild(grilleMois()); return; }
     for (let w = 1; w <= p.weeks; w++) {
       const ss = p.sessions.filter(s => s.week === w).sort((a, b) => a.dateMs - b.dateMs);
       if (!ss.length) continue;
@@ -466,6 +596,7 @@ export async function vueProgrammeNouveau() {
       });
 
     el.querySelector('[data-objectif-texte]')?.addEventListener('input', (e) => { etat.goalText = e.target.value; });
+    ajouterMicro(el.querySelector('[data-objectif-texte]'));
     el.querySelector('[data-niveau]').onchange = (e) => { etat.level = e.target.value; };
     el.querySelector('[data-semaines]').onchange = (e) => { etat.weeks = Number(e.target.value); };
     el.querySelector('[data-par-semaine]').onchange = (e) => {
@@ -653,6 +784,7 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
     });
 
     // ---- Moti ----
+    ajouterMicro(page.querySelector('[data-demande]'));
     page.querySelector('[data-appliquer]')?.addEventListener('click', async () => {
       const demande = page.querySelector('[data-demande]').value.trim();
       if (!demande) return toast('Dis à Moti ce que tu veux changer.');

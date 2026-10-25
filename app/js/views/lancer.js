@@ -760,6 +760,7 @@ export async function vueLancerSeance(params) {
 
       const marge = rirPourNouvelleSerie(ex);
       ex.sets.push({ weight: poids, reps, tensionMs, rir: marge.rir, rirAuto: marge.rirAuto });
+      beeper.vibrerSerie();
       redessinerSeries();
       dessinerSousligne(false);
       /* La zone de saisie ne se referme plus : elle bascule sur la série tout

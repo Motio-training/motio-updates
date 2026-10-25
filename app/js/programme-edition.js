@@ -222,6 +222,9 @@ function aLaMinute(jourMs, minute) {
 }
 function minuteDe(ms) { const d = new Date(ms); return d.getHours() * 60 + d.getMinutes(); }
 
+/** La même heure, un autre jour : glisser une séance dans la vue mois (moveToDay). */
+export function deplacerAuJour(dateMs, jourMs) { return aLaMinute(jourMs, minuteDe(dateMs)); }
+
 /** Déplace un modèle sur un autre jour de la MÊME semaine calendaire ; une
  *  séance qui tomberait dans le passé part à la semaine suivante. */
 export function changerJour(p, wid, dow) {
@@ -401,7 +404,7 @@ export function exercicesDeLaSemaine(w, prevue) {
     if (plan) {
       ex.plannedSets = plan.sets;
       ex.targetReps = plan.reps;
-      ex.recupSec = plan.recupSec;
+      if (plan.recupSec > 0) ex.recupSec = plan.recupSec;
       // Maintien : le nombre de tours suit le plan de la semaine, comme
       // plannedSets pour les autres modes.
       if (ex.mode === 'MAINTIEN') {

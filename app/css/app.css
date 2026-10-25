@@ -2123,3 +2123,87 @@ body:not(.connecte) #vue:has(.onb){
 .prog-valider{flex-wrap:wrap}
 .prog-valider .btn-lg{flex:2 1 14rem}
 .prog-valider .btn-ghost{flex:1 1 7rem}
+
+/* Planning en mois (programmes.js, grilleMois) : 7 colonnes, les séances en
+   pastilles de la couleur de leur catégorie, glissables vers un autre jour. */
+.prog-vues{margin:1.2rem 0 .6rem}
+.prog-mois-tete{display:flex;align-items:center;justify-content:space-between;margin:.4rem 0 .5rem}
+.prog-mois-tete b{font-family:var(--f-display);font-size:1.05rem}
+.prog-mois-grille{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;margin-bottom:.6rem}
+.prog-mois-jsem{text-align:center;font-size:.7rem;font-weight:700;color:var(--encre-2);padding:.2rem 0}
+.prog-case{
+  min-height:4.2rem;padding:3px;border-radius:6px;background:var(--carte);
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+}
+.prog-case.hors{opacity:.45}
+.prog-case.auj{outline:2px solid var(--dore);outline-offset:-2px}
+.prog-case.survol{background:var(--accent);opacity:1}
+.prog-case-num{font-size:.7rem;color:var(--encre-2)}
+.prog-case.auj .prog-case-num{color:var(--dore);font-weight:700}
+.prog-pastille-mois{
+  display:block;width:100%;border:0;border-radius:4px;padding:2px 3px;
+  background:var(--cat,var(--accent));color:var(--accent-sur);
+  font:inherit;font-size:.62rem;font-weight:700;line-height:1.2;text-align:left;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:grab;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.prog-pastille-mois.passee{opacity:.45;cursor:pointer}
+.prog-pastille-mois.tenue{opacity:.3}
+.prog-fantome{
+  position:fixed;z-index:1000;pointer-events:none;width:auto;max-width:9rem;
+  transform:translate(-50%,-120%);font-size:.8rem;padding:.35rem .6rem;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);
+}
+@media (min-width:700px){.prog-case{min-height:5.2rem}.prog-pastille-mois{font-size:.72rem}}
+
+/* Carte « Aujourd'hui » (entrainement.js, Aujourdhui.kt) : la séance du jour
+   et la météo de la forme, compacte pour ne pas repousser les séances. */
+.aujourdhui{
+  background:var(--creme-2);border-radius:var(--r-m);padding:.75rem .9rem;margin:0 0 .75rem;
+}
+.aujourdhui-tete{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem}
+.aujourdhui-tete b{color:var(--dore);font-size:.7rem;letter-spacing:.08em}
+.aujourdhui-tete span{font-size:.78rem;font-weight:700}
+.forme-bonne{color:var(--accent)}
+.forme-moyenne{color:var(--dore)}
+.forme-basse{color:var(--accent2)}
+.aujourdhui-seance{display:flex;align-items:center;gap:.7rem}
+.aujourdhui-seance>div{flex:1;min-width:0;display:flex;flex-direction:column}
+.aujourdhui-seance b{font-family:var(--f-display);font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aujourdhui-seance span{font-size:.76rem;color:var(--encre-2)}
+.aujourdhui-rien,.aujourdhui-mesures{margin:.35rem 0 0;font-size:.8rem;color:var(--encre-2)}
+.aujourdhui-allege{margin:.3rem 0 0;font-size:.8rem;color:var(--accent2)}
+.aujourdhui-question{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}
+.aujourdhui-question span{font-size:.8rem;color:var(--encre-2);margin-right:auto}
+.aujourdhui-question .chip-cat{font-size:.74rem;padding:.25rem .6rem}
+
+/* ---- Dictée (dictee.js) : micro au bout des champs où l'on parle à Moti ---- */
+.dictee{position:relative;display:block}
+.dictee-ligne{flex:1;min-width:0;display:flex}
+.dictee-ligne input{flex:1;min-width:0;padding-right:2.7rem}
+.dictee-zone textarea{padding-right:2.7rem}
+.micro{
+  position:absolute;right:.4rem;bottom:.45rem;width:2.1rem;height:2.1rem;
+  display:grid;place-items:center;border:0;border-radius:50%;
+  background:transparent;color:var(--accent);cursor:pointer;
+  transition:background .15s ease,color .15s ease;
+}
+.moti-boite .dictee-zone .micro{bottom:1rem}
+.dictee-ligne .micro{top:50%;bottom:auto;transform:translateY(-50%)}
+.micro:hover{background:var(--accent-halo)}
+.micro:disabled{color:var(--encre-2);opacity:.5;cursor:not-allowed;background:transparent}
+.micro.ecoute{background:var(--accent);color:var(--carte);animation:micro-pouls 1.2s ease-in-out infinite}
+@keyframes micro-pouls{0%,100%{box-shadow:0 0 0 0 var(--accent-halo)}50%{box-shadow:0 0 0 7px var(--accent-halo)}}
+@media (prefers-reduced-motion:reduce){.micro.ecoute{animation:none}}
+
+/* ---- Hors ligne (main.js, hors-ligne.js) : pastille dans l'en-tête, à
+   gauche de la roue crantée — dans la page, elle masquait le haut de
+   l'écran de séance. ---- */
+.pastille-hl{
+  display:inline-flex;align-items:center;max-width:52vw;
+  padding:.28rem .75rem;border-radius:var(--r-pill);
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);
+  color:#F4F3EE;font-size:.74rem;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.pastille-hl.hors::before{content:'';display:inline-block;width:.5rem;height:.5rem;margin-right:.45rem;border-radius:50%;background:#D9A24A;vertical-align:.05rem}

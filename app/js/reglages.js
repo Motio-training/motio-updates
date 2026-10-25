@@ -46,7 +46,11 @@ const BIPS_DEFAUT = {
   voixMasculine: true,
   voixNom: '',
   voixDebit: 0.88,
-  voixHauteur: 0.9
+  voixHauteur: 0.9,
+  /* Vibrations courtes (Haptique.kt) : un clic à chaque série validée, deux
+     impulsions en fin de repos. Navigateurs Android seulement — Safari sur
+     iPhone n'expose pas la vibration aux pages web. */
+  vibrations: true
 };
 
 /* ------------------------------------------ réglages qui suivent le compte
@@ -273,6 +277,16 @@ export function ouvrirReglagesBips(beeper) {
           </span>
           <input type="checkbox" data-voix ${r.voix ? 'checked' : ''}>
         </label>
+
+        <label class="circuit-bascule" style="margin-top:1rem">
+          <span>
+            <b>Vibrations</b>
+            <em>Un clic à chaque série validée, deux impulsions en fin de repos — pour
+              sentir la séance casque sur les oreilles. Sur Android seulement : Safari
+              (iPhone) ne laisse pas une page faire vibrer le téléphone.</em>
+          </span>
+          <input type="checkbox" data-vibrations ${r.vibrations ? 'checked' : ''}>
+        </label>
         <div data-voix-reglages ${r.voix ? '' : 'hidden'}>
           <p class="champ-label" style="margin-top:.8rem">Voix</p>
           <div class="rangee rangee-serree">
@@ -328,6 +342,10 @@ export function ouvrirReglagesBips(beeper) {
     curseur('Volume', r.startVolume, BIPS_BORNES.volMin, BIPS_BORNES.volMax, 0.05, ' %', v => r.startVolume = v)
   );
 
+  modale.querySelector('[data-vibrations]').addEventListener('change', (e) => {
+    r.vibrations = e.target.checked;
+    if (r.vibrations) navigator.vibrate?.([0, 90, 110, 90]);
+  });
   const zoneVoix = modale.querySelector('[data-voix-reglages]');
   modale.querySelector('[data-voix]').addEventListener('change', (e) => {
     r.voix = e.target.checked;

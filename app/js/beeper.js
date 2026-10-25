@@ -81,7 +81,19 @@ function guidageActif() { return guidage; }
 
 export function startBeep(reglages) {
   const r = reglages || reglagesBips();
+  vibrerFinRepos(r);
   tone(r.startFreq, 340, r.startVolume, r.startTrill);
+}
+
+/* VIBRATIONS (Haptique.kt) — deux sensations seulement : un clic à chaque
+   série validée, deux impulsions franches en fin de repos. Sans effet sur
+   iPhone, où Safari n'expose pas navigator.vibrate. */
+export function vibrerSerie(reglages) {
+  const r = reglages || reglagesBips();
+  if (r.vibrations) navigator.vibrate?.(35);
+}
+function vibrerFinRepos(r) {
+  if (r.vibrations) navigator.vibrate?.([0, 90, 110, 90]);
 }
 
 /* ============================================================
@@ -197,6 +209,10 @@ export function stopVoix() {
  */
 export function phaseBeep(effort, reglages) {
   const r = reglages || reglagesBips();
-  if (r.voix && phraseDisponible(r)) return;
+  if (r.voix && phraseDisponible(r)) {
+    // Le guide parle, mais la reprise de l'effort se sent quand même.
+    if (effort) vibrerFinRepos(r);
+    return;
+  }
   startBeep(r);
 }

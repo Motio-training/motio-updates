@@ -1,8 +1,8 @@
 {
-  "versionCode": 180,
-  "versionName": "2.78",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.78/motio.apk",
-  "notes": "La charge conseillee suit le nombre de repetitions vise, et un exercice nouveau aux poids libres est estime d apres tes exercices proches. Une fois l exercice choisi, Voir le mouvement affiche la planche en grand si tu veux.",
+  "versionCode": 181,
+  "versionName": "2.79",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.79/motio.apk",
+  "notes": "Carte Aujourd hui avec la meteo de la forme, Health Connect, vue mensuelle et glisser-deposer des seances, widget d ecran d accueil, dictee a Moti au micro, vibrations en seance.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",

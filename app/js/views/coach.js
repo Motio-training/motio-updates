@@ -16,6 +16,7 @@
    ========================================================================== */
 
 import { h, render, esc, toast } from '../ui.js';
+import { ajouterMicro } from '../dictee.js';
 import { sb, currentUser } from '../supabase.js';
 import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
 import { nouvelleSeance, MODE_LABELS, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
@@ -131,6 +132,7 @@ export async function vueCoach() {
   const fil = el.querySelector('[data-fil]');
   const form = el.querySelector('[data-form]');
   const champ = el.querySelector('[data-texte]');
+  ajouterMicro(champ);
   const btnRecommencer = el.querySelector('[data-recommencer]');
 
   /** Bulle « séance proposée » dorée (CoachBubble, CoachScreen.kt ~209-227) :
