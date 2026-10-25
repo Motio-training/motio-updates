@@ -586,4 +586,8 @@ export const CHANGELOG = [
                 "Planning semaine par semaine : une séance prévue se lance avec les séries et répétitions de sa semaine, et se coche toute seule à la fin",
                 "Ajout à Google Agenda en un clic ; l'agenda suit tout seul les modifications"
             ] },
+  { date: "25 octobre 2026", versions: "v2.77", items: [
+                "Après la suppression d'un programme, l'appli affiche celui qui reste au lieu de proposer d'en créer un",
+                "La fenêtre de suppression dit ce qui se passe vraiment pour les séances du carnet"
+            ] },
 ];

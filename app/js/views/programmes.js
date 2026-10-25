@@ -635,7 +635,7 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
             <b>${esc(dateBreve(prem))}</b>
             <button class="btn btn-ghost" data-decaler="1" type="button">›</button>
           </div>` : ''}
-        <p class="etat-mono">${prem ? `${p.sessions.length} séances datées, du ${esc(dateBreve(prem))} au ${esc(dateBreve(dern))}.` : 'Aucune séance datée.'}</p>
+        <p class="etat-mono">${prem ? `${p.sessions.length} séances datées, du ${esc(dateBreve(prem))} au ${esc(dateBreve(dern))}` : 'Aucune séance datée.'}</p>
         <details class="prog-planning"><summary>Voir le planning semaine par semaine</summary><div data-planning></div></details>
 
         ${pb ? `<p class="prog-alerte" style="margin-top:1rem">${esc(pb)}</p>` : ''}
