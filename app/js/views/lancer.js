@@ -51,6 +51,7 @@ import { ouvrirCatalogue } from './entrainement.js';
 import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
 import { hasVisual, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
 import * as guide from '../coach-guide.js';
+import { chargeConseillee, historiqueDesExercices } from '../charge.js';
 import { seancePrevuePour, seancePrevueDe, oublierSeancePrevue, exercicesDeLaSemaine,
          marquerSeancePrevueFaite } from '../programme-edition.js';
 
@@ -176,8 +177,13 @@ export async function vueLancerSeance(params) {
      réseau ici n'empêche pas de s'entraîner, la bannière de record manque
      juste pour cette séance. */
   const meilleursAvant = new Map();
+  /* Historique de CHAQUE exercice, toutes séances confondues : la charge
+     conseillée (charge.js) en a besoin, y compris pour un exercice jamais
+     fait dans cette séance-ci, ou jamais fait du tout. */
+  let historiqueExos = new Map();
   try {
     const passees = await sessionsOf(moi.id, { limit: 200 });
+    historiqueExos = historiqueDesExercices(passees);
     for (const s of passees) {
       for (const ex of (Array.isArray(s.details) ? s.details : [])) {
         for (const st of (ex.s || [])) {
@@ -488,7 +494,10 @@ export async function vueLancerSeance(params) {
     /* L'OBJECTIF DU JOUR pilote la charge conseillée : ex.targetReps, pas
        les répétitions de la dernière fois. */
     const cibleDuJour = ex.targetReps > 0 ? ex.targetReps : (dernier?.reps || 8);
-    const suggestion = dernier ? suggestionCharge(ex.name, dernier, cibleDuJour) : null;
+    /* Toutes séances confondues, et même sans aucun historique sur cet
+       exercice (transfert depuis les exercices proches) — charge.js. */
+    const suggestion = estPoidsDuCorps(ex.name, poidsCorps) ? null
+      : chargeConseillee(ex.name, historiqueExos, cibleDuJour);
     const poidsRef = corps.querySelector('[data-poids-ref]');
     const repsRef = corps.querySelector('[data-reps-ref]');
 
@@ -500,7 +509,7 @@ export async function vueLancerSeance(params) {
     if (estPoidsDuCorps(ex.name, poidsCorps)) {
       const pdc = pdcEffectif(ex.name, poidsCorps);
       if (!poidsVal) poidsVal = pdc + Math.max(0, (dernier ? dernier.weight : pdc) - pdc);
-    } else if (!poidsVal && dernier) {
+    } else if (!poidsVal && (suggestion || dernier)) {
       poidsVal = (suggestion?.poids ?? dernier.weight) || 0;
     }
 
@@ -524,24 +533,50 @@ export async function vueLancerSeance(params) {
 
   function dessinerDerniereFois(ex) {
     const zone = corps.querySelector('[data-derniere]');
-    const sets = warmup ? dernieresSeries(ex.name) : null;
-    if (!sets || !sets.length) { zone.hidden = true; return; }
+    if (!warmup) { zone.hidden = true; return; }
+    const sets = dernieresSeries(ex.name) || [];
+    const dernier = sets.length ? sets[sets.length - 1] : null;
+    const pdc = estPoidsDuCorps(ex.name, poidsCorps);
+    const cible = ex.targetReps > 0 ? ex.targetReps : (dernier?.reps || 8);
+    const suggestion = pdc ? null : chargeConseillee(ex.name, historiqueExos, cible);
+    /* Exercice jamais fait dans cette séance : pas de « dernière fois », mais
+       la charge conseillée et d'où elle vient restent utiles à lire. */
+    if (!dernier && !suggestion) { zone.hidden = true; return; }
     zone.hidden = false;
+    zone.querySelector('.run-derniere-label').hidden = !dernier;
     const liste = zone.querySelector('[data-derniere-liste]');
     liste.replaceChildren();
     sets.forEach((s, i) => liste.appendChild(h(
       `<li>${i + 1}. ${esc(fmtCharge(ex.name, poidsCorps, s.weight))} × ${s.reps}${s.rir >= 0 ? ' · RIR ' + s.rir : ''}</li>`)));
-    const dernier = sets[sets.length - 1];
-    const pdc = estPoidsDuCorps(ex.name, poidsCorps);
-    const cible = ex.targetReps > 0 ? ex.targetReps : (dernier?.reps || 8);
-    const suggestion = pdc ? null : suggestionCharge(ex.name, dernier, cible);
     /* La raison dit toujours d'où vient le chiffre (dernière série, RIR, et
        la conversion vers l'objectif du jour quand il diffère). Sur un
        exercice au poids du corps, la charge EST déjà la suggestion
        (pdcEffectif) : rien à ajouter. */
-    zone.querySelector('[data-conseil]').textContent = suggestion
-      ? `→ ${esc(kg(suggestion.poids))} conseillés : ${suggestion.raison}`
-      : `→ ${esc(fmtCharge(ex.name, poidsCorps, dernier.weight))} conseillés · comme la dernière fois`;
+    const conseil = zone.querySelector('[data-conseil]');
+    conseil.textContent = suggestion
+      ? `→ ${kg(suggestion.poids)} conseillés pour ${cible} reps : ${suggestion.raison}`
+      : `→ ${fmtCharge(ex.name, poidsCorps, dernier.weight)} conseillés · comme la dernière fois`;
+    /* L'OBJECTIF SE CHANGE ICI, avant de charger la barre : 15 reps visées
+       après des séries de 5 donnent une autre charge conseillée (signalé par
+       Nicolas, 120 kg proposés pour 15 reps). Il vaut pour cette séance, et
+       la charge pré-remplie au départ de la série le suit. */
+    zone.querySelectorAll('.run-viser').forEach(b => b.remove());
+    if (!pdc) {
+      const viser = h(`<button type="button" class="lien-inline run-viser">Viser un autre nombre de reps</button>`);
+      viser.onclick = () => ouvrirPave({
+        kind: 'reps',
+        onValider: (v) => {
+          const n = parseInt(v, 10);
+          if (!(Number.isInteger(n) && n > 0)) return;
+          ex.targetReps = n;
+          poidsVal = 0; repsVal = 0;
+          sauver();
+          dessinerDerniereFois(ex);
+          dessinerSousligne();
+        }
+      });
+      conseil.after(viser);
+    }
   }
 
   /** Entraînement libre encore vide : l'écran d'échauffement, avec pour seule
@@ -695,7 +730,12 @@ export async function vueLancerSeance(params) {
         onValider: (v) => {
           if (!v) return;
           const n = parseInt(v, 10);
-          if (Number.isInteger(n) && n > 0) { repsVal = n; majCellules(); appliquerEdition(); }
+          if (!(Number.isInteger(n) && n > 0)) return;
+          // Ici la série est déjà lancée : les reps tapées décrivent ce qui se
+          // fait, la charge ne bouge pas. L'objectif se change AVANT, depuis
+          // l'écran d'échauffement (« Viser un autre nombre de reps »).
+          repsVal = n;
+          majCellules(); appliquerEdition();
         }
       });
     };
@@ -1225,46 +1265,6 @@ function messageRecord(nom, poids, reps, meilleursAvant) {
   if (battRM) return `Record : meilleur 1RM estimé sur cet exercice.`;
   if (Math.abs(poids - avant.poids) < 0.001 && reps > avant.repsAuPoidsMax) return `Record : ${reps} répétitions à ${trimNum(poids)} kg.`;
   return '';
-}
-/**
- * suggestionCharge (LoadCoach.suggestedWeight, Coaching.kt).
- *
- * TOUT PASSE PAR LE 1RM : une charge n'a de sens que rapportée à un nombre de
- * répétitions. On estime un 1RM à partir de la dernière série (RIR compris,
- * c'est là que vit l'autorégulation), puis on redescend vers la charge de
- * travail correspondant au nombre de répétitions VISÉ ce jour-là. Sans ce
- * détour, 140 kg × 3 étaient reproposés tels quels pour un objectif à 12
- * répétitions (signalé par Nicolas). La hausse est bornée à +10 % d'une
- * séance à l'autre.
- *
- * Pas d'estimation de départ sans historique : StrengthDefaults dépend de
- * réglages locaux natifs absents du web (poids de corps, niveau).
- */
-export function suggestionCharge(nomExercice, dernier, cibleReps) {
-  if (!dernier || !(dernier.weight > 0) || !(dernier.reps > 0)) return null;
-  const step = devineMateriel(nomExercice) === 'BARRE' ? 2.5 : 1.0;
-  const round = v => Math.round(v / step) * step;
-  const cible = Math.min(30, Math.max(1, cibleReps || dernier.reps || 8));
-
-  /* Epley SANS le plafond de 12 répétitions d'estime1RM (model.js). Ce
-     plafond a sa raison d'être pour afficher un record — au-delà de 12 la
-     formule surestime — mais ici il cassait deux choses : une série de 15
-     donnait un 1RM de 0 (donc 0 kg conseillé), et un RIR annoncé sur une
-     série déjà longue ne comptait pas du tout, puisque reps + RIR retombait
-     sur le même plafond. La hausse restant bornée à +10 %, l'imprécision de
-     la formule au-delà de 12 n'a pas d'effet visible. */
-  const epley = (poids, reps) => poids * (1 + Math.min(30, Math.max(1, reps)) / 30);
-
-  const marge = Math.min(5, Math.max(0, dernier.rir ?? 0));
-  const brut = epley(dernier.weight, dernier.reps);
-  const avecMarge = epley(dernier.weight, dernier.reps + marge);
-  const e1rm = Math.min(Math.max(brut, avecMarge), brut * 1.10);
-
-  let raison = `d'après ta dernière série (${kg(dernier.weight)} × ${dernier.reps}`;
-  raison += (dernier.rir ?? -1) >= 0 ? `, RIR ${dernier.rir})` : ')';
-  if (dernier.reps !== cible) raison += `, ramenée à ${cible} répétitions`;
-
-  return { poids: round(e1rm / (1 + cible / 30)), raison };
 }
 
 function fmtClock(totalSec) {

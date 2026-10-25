@@ -1121,18 +1121,15 @@ export async function vueSeanceEdition(params, integre = null) {
     // touché : on garde en mémoire l'exercice déplié.
     champs.hidden = deplie !== i;
 
-    /* La planche EN GRAND au-dessus des réglages : c'est là qu'on écrit la
-       séance, donc là qu'on vérifie qu'on a pris le bon mouvement (le
-       catalogue n'en montre qu'une vignette, qui sert à choisir). Un appui
-       l'ouvre en plein écran. */
+    /* Rappel du mouvement : une vignette et un bouton sur la carte, la planche
+       ne s'ouvre en grand que si on le demande (ExerciseDialog, même forme
+       côté appli). Essayée en grand d'office (v2.76), elle repoussait les
+       réglages hors de l'écran. */
     const v = visualFor(ex.name);
     if (v) {
-      const planche = h(`<button type="button" class="exo-planche-reglage" aria-label="Agrandir le mouvement">
-          <img class="exo-planche" src="${v.image}" alt="Mouvement de l'exercice ${esc(ex.name)}" loading="lazy">
-        </button>`);
-      planche.onclick = () => ouvrirPlanche(ex.name);
-      champs.before(planche);
-      planche.hidden = champs.hidden;
+      const voir = h(`<button type="button" class="exo-voir"><img class="exo-vignette" src="${v.image}" alt="" width="34" height="34" loading="lazy"><span>Voir le mouvement</span></button>`);
+      voir.onclick = () => ouvrirPlanche(ex.name);
+      c.querySelector('.exo-edit-meta').after(voir);
     }
 
     /* Station de circuit : seules la durée d'effort et le repos ont un sens.
@@ -1147,7 +1144,6 @@ export async function vueSeanceEdition(params, integre = null) {
       c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler cette station' : 'Masquer';
       c.querySelector('[data-deplier]').onclick = () => {
         champs.hidden = !champs.hidden;
-        const pl = c.querySelector('.exo-planche-reglage'); if (pl) pl.hidden = champs.hidden;
         deplie = champs.hidden ? -1 : i;
         c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler cette station' : 'Masquer';
       };
@@ -1202,7 +1198,6 @@ export async function vueSeanceEdition(params, integre = null) {
     c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
     c.querySelector('[data-deplier]').onclick = (e) => {
       champs.hidden = !champs.hidden;
-      const pl = c.querySelector('.exo-planche-reglage'); if (pl) pl.hidden = champs.hidden;
       deplie = champs.hidden ? -1 : i;
       e.target.textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
     };
@@ -1339,13 +1334,7 @@ export async function vueSeanceEdition(params, integre = null) {
       // corriger les deux champs à chaque ajout.
       if (seance.circuit) { ex.workSec = CIRCUIT_WORK_SEC; ex.restSec = CIRCUIT_REST_SEC; }
       seance.exercises.push(ex);
-      /* L'exercice ajouté s'ouvre sur ses réglages, planche en grand : c'est
-         l'étape « séries, répétitions, mode » de l'appli (ExerciseDialog), on
-         y arrive directement au lieu de chercher le lien « Régler ce mode ». */
-      deplie = seance.exercises.length - 1;
-      redessiner().then(() => {
-        zone.querySelectorAll('.exo-edit')[deplie]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
+      redessiner();
     });
   };
 

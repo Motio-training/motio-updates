@@ -590,4 +590,10 @@ export const CHANGELOG = [
                 "Après la suppression d'un programme, l'appli affiche celui qui reste au lieu de proposer d'en créer un",
                 "La fenêtre de suppression dit ce qui se passe vraiment pour les séances du carnet"
             ] },
+  { date: "25 octobre 2026", versions: "v2.78", items: [
+                "Une fois l'exercice ajouté à une séance, « Voir le mouvement » affiche la planche en grand si tu veux, au lieu de l'imposer",
+                "La charge conseillée suit le nombre de répétitions visé : 4 × 15 après des séries de 5 ne propose plus la charge des 5, mais celle tirée de ton 1RM, avec une répétition de marge",
+                "Avant la première série, « Viser un autre nombre de reps » recalcule la charge conseillée",
+                "Nouvel exercice aux poids libres : la charge est estimée d'après tes exercices proches ou travaillant le même muscle. Rien n'est proposé sur machine, où les charges dépendent trop de l'appareil"
+            ] },
 ];

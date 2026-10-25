@@ -1,8 +1,8 @@
 {
-  "versionCode": 179,
-  "versionName": "2.77",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.77/motio.apk",
-  "notes": "Programme modifiable entierement, a la main ou en le demandant a Moti. Ajout a Google Agenda en un appui. Apres la suppression d un programme, l appli affiche celui qui reste.",
+  "versionCode": 180,
+  "versionName": "2.78",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.78/motio.apk",
+  "notes": "La charge conseillee suit le nombre de repetitions vise, et un exercice nouveau aux poids libres est estime d apres tes exercices proches. Une fois l exercice choisi, Voir le mouvement affiche la planche en grand si tu veux.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",

@@ -846,14 +846,13 @@ a.ligne-titre:hover{color:var(--accent)}
   background:#fff;border-radius:var(--r-m);
 }
 .exo-planche-legende{margin:.55rem 0 0;text-align:center}
-/* Planche dans les réglages d'un exercice de la séance en cours d'écriture :
-   assez grande pour lire le mouvement, sans pousser les champs hors de l'écran.
-   Le bouton ne sert qu'à l'agrandir. */
-.exo-planche-reglage{
-  display:block;width:100%;margin:.75rem 0 0;padding:0;border:0;background:none;cursor:zoom-in;
+/* « Voir le mouvement » sur la carte d'un exercice de la séance en cours
+   d'écriture : vignette + lien, la planche ne s'ouvre en grand qu'à la demande. */
+.exo-voir{
+  display:inline-flex;align-items:center;gap:.55rem;margin:.55rem 0 0;padding:0;
+  border:0;background:none;cursor:pointer;font:inherit;font-size:.86rem;font-weight:700;color:var(--accent);
 }
-.exo-planche-reglage .exo-planche{max-height:15rem}
-.exo-planche-reglage[hidden]{display:none}
+.exo-voir .exo-vignette{border-radius:8px}
 
 .exo{
   margin-bottom:.6rem;padding-bottom:.6rem;

@@ -299,8 +299,10 @@ function fuzzyHit(words, variant) {
   return variant.every(v => words.some(w => lev(w, v, tol(v)) <= tol(v)));
 }
 
-/** Les muscles travaillés par un exercice, ou null si personne ne le reconnaît. */
-export async function musclesOf(rawName) {
+/** Le lexique seul, sans le repli sur le catalogue (qui se charge en
+ *  asynchrone) : sert au calcul de charge (charge.js), qui doit répondre
+ *  tout de suite pendant la séance. */
+export function musclesDuLexique(rawName) {
   if (!rawName || !rawName.trim()) return null;
   const n = musNorm(rawName);
   const words = n.trim().split(' ').filter(Boolean);
@@ -315,7 +317,15 @@ export async function musclesOf(rawName) {
       if (score > bestScore) { bestScore = score; best = entry; }
     }
   }
-  if (best) return best.zones;
+  return best ? best.zones : null;
+}
+
+/** Les muscles travaillés par un exercice, ou null si personne ne le reconnaît. */
+export async function musclesOf(rawName) {
+  if (!rawName || !rawName.trim()) return null;
+  const n = musNorm(rawName);
+  const duLexique = musclesDuLexique(rawName);
+  if (duLexique) return duLexique;
 
   const cat = await catalogGroups();
   const g = cat[n];
