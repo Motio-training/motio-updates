@@ -604,4 +604,7 @@ export const CHANGELOG = [
                 "Hors ligne : l'espace web s'ouvre sans réseau, une séance prévue se lance et s'enregistre en salle, tout part au retour du réseau",
                 "Vibration à la validation d'une série et à la fin de chaque récupération (téléphone)"
             ] },
+  { date: "25 octobre 2026", versions: "v2.80", items: [
+                "Les 30 planches d'exercices qui étaient sur fond noir passent sur fond blanc, comme toutes les autres : le catalogue est enfin homogène"
+            ] },
 ];

@@ -1,8 +1,8 @@
 {
-  "versionCode": 181,
-  "versionName": "2.79",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.79/motio.apk",
-  "notes": "Carte Aujourd hui avec la meteo de la forme, Health Connect, vue mensuelle et glisser-deposer des seances, widget d ecran d accueil, dictee a Moti au micro, vibrations en seance.",
+  "versionCode": 182,
+  "versionName": "2.80",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.80/motio.apk",
+  "notes": "Les 30 planches d exercices qui etaient sur fond noir passent sur fond blanc, comme toutes les autres.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",
