@@ -1,8 +1,8 @@
 {
-  "versionCode": 177,
-  "versionName": "2.75",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.75/motio.apk",
-  "notes": "L'image du bilan partagee ecrit elle aussi PDC au lieu du total calcule : Pompes 100 x 7 @ PDC, et non plus @ 61,6 kg. La charge totale deplacee, elle, reste la vraie.",
+  "versionCode": 178,
+  "versionName": "2.76",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.76/motio.apk",
+  "notes": "Programme modifiable entierement, a la main ou en le demandant a Moti en une phrase. Ajout a Google Agenda en un appui, l agenda suit les modifications. Dans le catalogue, toucher l image choisit l exercice, et le mouvement s affiche en grand dans les reglages.",
   "voix": {
     "version": 1789051977,
     "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",

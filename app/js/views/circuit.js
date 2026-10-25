@@ -25,6 +25,7 @@
 
 import { h, render, esc, loading, failure } from '../ui.js';
 import { saveWorkout, finishSession, demarrerDirect, battementDirect, arreterDirect } from '../api.js';
+import { marquerSeancePrevueFaite } from '../programme-edition.js';
 import { circuitPlan, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
@@ -308,6 +309,8 @@ export async function vueCircuit({ moi, modele, params }) {
     } catch (err) {
       return render(failure(err, "La séance n'a pas pu être enregistrée"));
     }
+    // Lancée depuis le planning d'un programme : elle y est cochée.
+    await marquerSeancePrevueFaite(moi.id, modele.id).catch(() => {});
     await ouvrirBilan({
       moi, modele, session, libre: false,
       onFermer: () => { location.hash = '#/seances'; }

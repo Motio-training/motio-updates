@@ -51,6 +51,8 @@ import { ouvrirCatalogue } from './entrainement.js';
 import { lireEtat, ecrireEtat, effacerEtat } from '../run-state.js';
 import { hasVisual, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
 import * as guide from '../coach-guide.js';
+import { seancePrevuePour, seancePrevueDe, oublierSeancePrevue, exercicesDeLaSemaine,
+         marquerSeancePrevueFaite } from '../programme-edition.js';
 
 /** Afficher la planche en grand pendant une séance ORDINAIRE. Distinct du
  *  réglage du circuit (motio.circuit-visuels) : voir dessinerPlanche. */
@@ -150,6 +152,21 @@ export async function vueLancerSeance(params) {
      séries faites, exercice courant, chrono global, décompte en cours. */
   const repris = lireEtat(moi.id, params.id);
   if (repris?.session) Object.assign(session, repris.session);
+
+  /* Séance lancée depuis le planning d'un programme : séries et répétitions
+     de CETTE semaine, pas celles du modèle (sessionFor, ProgramGenerator.kt).
+     Le modèle lui-même n'est pas touché — c'est lui qu'on enregistre à la
+     fin, avec son historique. Une séance reprise a déjà ses valeurs. */
+  if (!libre && !repris?.session) {
+    const marque = seancePrevuePour(params.id, true);
+    if (!marque) oublierSeancePrevue();
+    else {
+      try {
+        const prevue = await seancePrevueDe(moi.id, marque);
+        if (prevue) session.exercises = exercicesDeLaSemaine(modele, prevue);
+      } catch { /* hors ligne : la séance se fait aux valeurs du modèle */ }
+    }
+  }
 
   /* Records d'avant cette séance, par nom d'exercice (newRecords/recordsFor,
      Stats.kt) : figés une fois pour toutes au lancement, comme le natif qui
@@ -1137,6 +1154,8 @@ export async function vueLancerSeance(params) {
     } catch (err) {
       return render(failure(err, "La séance n'a pas pu être enregistrée"));
     }
+    // Lancée depuis le planning d'un programme : elle y est cochée.
+    if (!libre) await marquerSeancePrevueFaite(moi.id, modele.id).catch(() => {});
 
     /* Le bilan (charge totale, carte musculaire, détail modifiable par
        exercice) est partagé avec l'historique par séance — voir bilan.js. */

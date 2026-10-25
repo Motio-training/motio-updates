@@ -577,4 +577,13 @@ export const CHANGELOG = [
                 "Tous les réglages sont réunis derrière la roue crantée, en haut à droite : thème, son, montre Garmin, mise à jour, nouveautés, tutoriel et confidentialité",
                 "Le Profil ne garde que ce qui te concerne : identité, trophées, entraînements, analyse, Moti et compte"
             ] },
+  { date: "25 octobre 2026", versions: "v2.76", items: [
+                "Dans le catalogue, toucher le dessin du mouvement choisit l'exercice, comme toucher son nom",
+                "L'exercice ajouté s'ouvre sur ses réglages, avec le mouvement en grand",
+                "Les programmes se créent aussi sur ordinateur : objectif type ou objectif précis décrit à Moti",
+                "Un programme se modifie entièrement, avant comme après l'avoir validé : exercices de chaque séance, jour, nom, heure, séances ajoutées ou retirées",
+                "Demande à Moti en une phrase de modifier ton programme, puis affine à la main",
+                "Planning semaine par semaine : une séance prévue se lance avec les séries et répétitions de sa semaine, et se coche toute seule à la fin",
+                "Ajout à Google Agenda en un clic ; l'agenda suit tout seul les modifications"
+            ] },
 ];

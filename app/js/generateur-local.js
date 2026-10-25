@@ -17,8 +17,9 @@
 import {
   GROUPES, CATEGORIES_CATALOGUE, devineMateriel, MAINTIEN_DEFAUT_SEC
 } from './catalog.js';
-import { nouvelleSeance, nouvelExercice } from './model.js';
+import { nouvelleSeance, nouvelExercice, GOALS } from './model.js';
 import { toursPour } from './coach-guide.js';
+import { WEEK_DAYS, premierJourApres, plusJours } from './programme-ia.js';
 
 function norm(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -234,6 +235,31 @@ function construireSlots(bp, slots, exclus, gears) {
   return out;
 }
 
+/** exerciseFor (ProgramGenerator.kt) : l'exercice du carnet correspondant à
+ *  un emplacement retenu. Mobilité, étirement, yoga : en MAINTIEN. */
+function exercicePour(s, t) {
+  const ex = nouvelExercice(s.name);
+  if (s.holdSec > 0) {
+    // Un exercice unilatéral réclame un nombre PAIR de tours : un par côté.
+    // Un étirement du psoas fait vingt secondes à droite et rien à gauche,
+    // c'est un étirement raté.
+    const tours = toursPour(s.name, t.sets);
+    ex.mode = 'MAINTIEN';
+    ex.plannedSets = tours;
+    ex.targetReps = 0;
+    ex.recupSec = 20;
+    ex.workSec = s.holdSec;
+    ex.restSec = 20;
+    ex.tabataSeries = tours;
+  } else {
+    ex.mode = 'MINUTEUR';
+    ex.plannedSets = t.sets;
+    ex.targetReps = t.repLow;
+    ex.recupSec = t.recupSec;
+  }
+  return ex;
+}
+
 /**
  * generateSingle (ProgramGenerator.kt) : UNE séance, sans programme ni
  * planning daté. PAS enregistrée — comme la création manuelle, elle n'existe
@@ -246,28 +272,95 @@ export function genererSeanceLocale({ goal, level, category, gears = [], exclude
   if (!choisis.length) throw new Error('Aucun exercice ne correspond au matériel choisi.');
 
   const w = nouvelleSeance(category, category);
-  choisis.forEach(s => {
-    const t = palier(sc, s);
-    const ex = nouvelExercice(s.name);
-    if (s.holdSec > 0) {
-      // Un exercice unilatéral réclame un nombre PAIR de tours : un par côté.
-      // Un étirement du psoas fait vingt secondes à droite et rien à gauche,
-      // c'est un étirement raté.
-      const tours = toursPour(s.name, t.sets);
-      ex.mode = 'MAINTIEN';
-      ex.plannedSets = tours;
-      ex.targetReps = 0;
-      ex.recupSec = 20;
-      ex.workSec = s.holdSec;
-      ex.restSec = 20;
-      ex.tabataSeries = tours;
-    } else {
-      ex.mode = 'MINUTEUR';
-      ex.plannedSets = t.sets;
-      ex.targetReps = t.repLow;
-      ex.recupSec = t.recupSec;
-    }
-    w.exercises.push(ex);
-  });
+  choisis.forEach(s => w.exercises.push(exercicePour(s, palier(sc, s))));
   return w;
+}
+
+/* ---------- Programme complet (buildDraft, ProgramGenerator.kt) ---------- */
+
+/** split : le découpage de la semaine selon le nombre de séances. */
+const DECOUPAGES = {
+  2: [['Full body A', 'Full body', 0], ['Full body B', 'Full body', 1]],
+  3: [['Push', 'Push', 0], ['Pull', 'Pull', 0], ['Legs', 'Legs', 0]],
+  4: [['Push', 'Push', 0], ['Pull', 'Pull', 0], ['Legs', 'Legs', 0], ['Full body', 'Full body', 1]],
+  5: [['Push A', 'Push', 0], ['Pull A', 'Pull', 0], ['Legs', 'Legs', 0], ['Push B', 'Push', 1], ['Pull B', 'Pull', 1]],
+  6: [['Push A', 'Push', 0], ['Pull A', 'Pull', 0], ['Legs A', 'Legs', 0],
+      ['Push B', 'Push', 1], ['Pull B', 'Pull', 1], ['Legs B', 'Legs', 1]]
+};
+function decoupage(n) {
+  return (DECOUPAGES[n] || DECOUPAGES[6]).map(([title, category, variant]) => ({ title, category, variant }));
+}
+
+/** repsForWeek : double progression, une répétition de plus par semaine à
+ *  l'intérieur de la fourchette du palier, puis retour en bas de fourchette. */
+function repsSemaine(t, semaine) {
+  const cycle = Math.max(1, t.repHigh - t.repLow + 1);
+  return t.repLow + ((semaine - 1) % cycle);
+}
+
+/** isDeloadWeek : une semaine sur cinq, sauf débutant ou programme court. */
+function estDecharge(level, semaine, total) {
+  return level !== 'DEBUTANT' && total >= 6 && semaine % 5 === 0;
+}
+
+/**
+ * buildDraft (ProgramGenerator.kt) : un programme COMPLET sans IA — modèles
+ * de séance et planning daté semaine par semaine, avec progression et
+ * décharges. Rien n'est enregistré : il part dans l'écran d'aperçu, où tout
+ * reste modifiable (programme-edition.js).
+ */
+export function construireProgrammeLocal({ goal, level, daysPerWeek, weeks, weekdays, minuteOfDay, startMs, gears = [] }) {
+  const sc = PALIERS[goal] || PALIERS.FORME;
+  const slots = nombreDExercices(goal, level);
+  const bps = decoupage(daysPerWeek);
+  const now = Date.now();
+  const libelle = (GOALS.find(g => g.id === goal) || {}).label || 'Programme';
+  const program = {
+    id: now, name: `${libelle} — ${weeks} semaines`, goal, level, weeks, daysPerWeek,
+    createdAt: now, workoutIds: [], sessions: [], notes: ''
+  };
+
+  const workouts = [];
+  const slotsParType = [];
+  bps.forEach((bp, bi) => {
+    const choisis = construireSlots(bp, slots, [], gears);
+    slotsParType.push(choisis);
+    const w = nouvelleSeance(bp.title, bp.category);
+    w.id = now + bi;
+    choisis.forEach(s => w.exercises.push(exercicePour(s, palier(sc, s))));
+    workouts.push(w);
+    program.workoutIds.push(w.id);
+  });
+  if (workouts.every(w => !w.exercises.length)) throw new Error('Aucun exercice ne correspond au matériel choisi.');
+
+  const jours = [...weekdays].sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
+  let seq = 0;
+  for (let semaine = 1; semaine <= weeks; semaine++) {
+    const decharge = estDecharge(level, semaine, weeks);
+    bps.forEach((bp, bi) => {
+      const dow = jours[bi] ?? jours[jours.length - 1] ?? 1;
+      const date = plusJours(premierJourApres(startMs, dow, minuteOfDay), 7 * (semaine - 1));
+      const items = slotsParType[bi].map(s => {
+        const t = palier(sc, s);
+        return {
+          name: s.name,
+          sets: decharge ? Math.max(2, Math.round(t.sets * 0.6)) : t.sets,
+          // Une position tenue n'a pas de répétition à annoncer : c'est sa
+          // durée de maintien qui s'affiche (holdSec).
+          reps: s.holdSec > 0 ? 0 : decharge ? t.repLow : repsSemaine(t, semaine),
+          recupSec: s.holdSec > 0 ? 20 : t.recupSec,
+          holdSec: s.holdSec,
+          hint: decharge ? 'Semaine de décharge — charges allégées'
+            : 'Poids conseillé pendant la séance, selon ton RIR'
+        };
+      });
+      program.sessions.push({
+        id: now + (++seq) * 1000, week: semaine, dateMs: date,
+        workoutId: program.workoutIds[bi], title: bp.title, category: bp.category,
+        deload: decharge, items, doneAt: 0, skipped: false, eventId: 0
+      });
+    });
+  }
+  program.sessions.sort((a, b) => a.dateMs - b.dateMs);
+  return { program, workouts };
 }

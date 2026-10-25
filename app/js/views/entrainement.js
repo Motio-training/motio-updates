@@ -19,7 +19,8 @@ import { genererSeanceLocale } from '../generateur-local.js';
 import { ouvrirPaveDuree } from '../numpad.js';
 import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
-import { vignetteExercice, ouvrirPlanche } from '../exercise-visuals.js';
+import { vignetteExercice, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
+import { suivreModele } from '../programme-edition.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -641,7 +642,7 @@ export async function vueSeances(_params, toutes = false) {
       </div>`);
     pied.querySelector('[data-tout]')?.addEventListener('click', () => { location.hash = '#/seances/toutes'; });
     pied.querySelector('[data-programme]')?.addEventListener('click', () => {
-      location.hash = progActif ? '#/programmes' : '#/programmes/nouveau';
+      location.hash = progActif ? `#/programmes/${progActif.id}` : '#/programmes/nouveau';
     });
     pied.querySelector('[data-generer-seance]')?.addEventListener('click', () => ouvrirGenerationSeance());
     pied.querySelector('[data-importer]')?.addEventListener('click', () => ouvrirImport());
@@ -803,9 +804,16 @@ export async function vueImporterSeance(params) {
 
 /* ============================================================= éditeur */
 
-export async function vueSeanceEdition(params) {
+/**
+ * `integre` : séance d'un programme en cours de modification (programmes.js).
+ * Rien n'est alors écrit dans le carnet — la séance modifiée est rendue à
+ * l'écran du programme ({ seance, onValider, onAnnuler }), qui l'enregistrera
+ * avec tout le reste ou l'abandonnera. Pas de « Démarrer » dans ce cas : on
+ * construit un programme, on ne s'entraîne pas.
+ */
+export async function vueSeanceEdition(params, integre = null) {
   const moi = await currentUser();
-  const neuve = params.id === 'nouvelle';
+  const neuve = !integre && params.id === 'nouvelle';
 
   /* Catégories DU COMPTE (profiles.categories), partagées avec l'application —
      plus la liste figée Push/Pull/Legs d'avant. */
@@ -819,7 +827,10 @@ export async function vueSeanceEdition(params) {
      la ressorte pas une deuxième fois). Les notes du coach s'affichent en tête
      de l'éditeur : c'est le raisonnement derrière la séance, il disparaîtrait
      sinon avec la fenêtre de génération. */
-  if (neuve) {
+  if (integre) {
+    seance = JSON.parse(JSON.stringify(integre.seance));
+    try { autres = await listWorkouts(moi.id); } catch { /* pas bloquant */ }
+  } else if (neuve) {
     if (brouillonIA) {
       seance = brouillonIA.workout;
       brouillonIA = null;
@@ -838,6 +849,9 @@ export async function vueSeanceEdition(params) {
     } catch (e) { return render(failure(e, "La séance n'a pas pu être chargée")); }
   }
   if (!seance.section) seance.section = '';
+  /* La séance telle qu'elle était en arrivant : si elle appartient à un
+     programme, son planning doit suivre ce qui change ici (suivreModele). */
+  const avant = JSON.parse(JSON.stringify(seance));
   /* Le mot du coach, qu'il vienne de la génération qui précède ou d'une
      séance déjà enregistrée : il est porté par la séance elle-même. */
   const notesIA = (seance.notes || '').trim();
@@ -851,7 +865,7 @@ export async function vueSeanceEdition(params) {
 
   const el = h(`
     <section class="page">
-      <h1 style="text-transform:uppercase">${neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
+      <h1 style="text-transform:uppercase">${integre ? 'Séance du programme' : neuve ? 'Nouvelle séance' : 'Modifier la séance'}</h1>
 
       ${notesIA ? `<div class="notes-ia">
         <p class="notes-ia-tag">Pourquoi cette séance</p>
@@ -905,11 +919,14 @@ export async function vueSeanceEdition(params) {
 
       <div data-muscles-zone style="margin-top:1.5rem"></div>
 
-      <div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
+      ${integre ? `<div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
+        <button class="btn btn-ghost" data-annuler-integre type="button" style="flex:1">Annuler</button>
+        <button class="btn" data-valider-integre type="button" style="flex:1">Valider</button>
+      </div>` : `<div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
         <a class="btn btn-ghost" href="#/seances" style="flex:1;text-align:center">Annuler</a>
         <button class="btn btn-ghost" data-enregistrer style="flex:1">Enregistrer</button>
         <button class="btn" data-demarrer style="flex:1">Démarrer</button>
-      </div>
+      </div>`}
     </section>`);
 
   let newSection = false;
@@ -1104,6 +1121,20 @@ export async function vueSeanceEdition(params) {
     // touché : on garde en mémoire l'exercice déplié.
     champs.hidden = deplie !== i;
 
+    /* La planche EN GRAND au-dessus des réglages : c'est là qu'on écrit la
+       séance, donc là qu'on vérifie qu'on a pris le bon mouvement (le
+       catalogue n'en montre qu'une vignette, qui sert à choisir). Un appui
+       l'ouvre en plein écran. */
+    const v = visualFor(ex.name);
+    if (v) {
+      const planche = h(`<button type="button" class="exo-planche-reglage" aria-label="Agrandir le mouvement">
+          <img class="exo-planche" src="${v.image}" alt="Mouvement de l'exercice ${esc(ex.name)}" loading="lazy">
+        </button>`);
+      planche.onclick = () => ouvrirPlanche(ex.name);
+      champs.before(planche);
+      planche.hidden = champs.hidden;
+    }
+
     /* Station de circuit : seules la durée d'effort et le repos ont un sens.
        Mode de chronométrage, séries et répétitions sont décidés par le
        circuit lui-même — les demander ici ne produirait que des réglages
@@ -1116,6 +1147,7 @@ export async function vueSeanceEdition(params) {
       c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler cette station' : 'Masquer';
       c.querySelector('[data-deplier]').onclick = () => {
         champs.hidden = !champs.hidden;
+        const pl = c.querySelector('.exo-planche-reglage'); if (pl) pl.hidden = champs.hidden;
         deplie = champs.hidden ? -1 : i;
         c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler cette station' : 'Masquer';
       };
@@ -1170,6 +1202,7 @@ export async function vueSeanceEdition(params) {
     c.querySelector('[data-deplier]').textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
     c.querySelector('[data-deplier]').onclick = (e) => {
       champs.hidden = !champs.hidden;
+      const pl = c.querySelector('.exo-planche-reglage'); if (pl) pl.hidden = champs.hidden;
       deplie = champs.hidden ? -1 : i;
       e.target.textContent = champs.hidden ? 'Régler ce mode' : 'Masquer';
     };
@@ -1306,16 +1339,42 @@ export async function vueSeanceEdition(params) {
       // corriger les deux champs à chaque ajout.
       if (seance.circuit) { ex.workSec = CIRCUIT_WORK_SEC; ex.restSec = CIRCUIT_REST_SEC; }
       seance.exercises.push(ex);
-      redessiner();
+      /* L'exercice ajouté s'ouvre sur ses réglages, planche en grand : c'est
+         l'étape « séries, répétitions, mode » de l'appli (ExerciseDialog), on
+         y arrive directement au lieu de chercher le lien « Régler ce mode ». */
+      deplie = seance.exercises.length - 1;
+      redessiner().then(() => {
+        zone.querySelectorAll('.exo-edit')[deplie]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
     });
   };
 
-  async function sauvegarder() {
+  function valide() {
     seance.name = el.querySelector('[data-nom]').value.trim();
     if (!seance.name) { toast('Donne un nom à la séance.'); return false; }
     if (!seance.exercises.length) { toast('Ajoute au moins un exercice.'); return false; }
-    await saveWorkout(moi.id, seance);
     return true;
+  }
+
+  async function sauvegarder() {
+    if (!valide()) return false;
+    await saveWorkout(moi.id, seance);
+    /* Séance d'un programme modifiée depuis le carnet : le planning suit
+       (exercice remplacé, série ajoutée…). Best-effort : la séance elle-même
+       est déjà enregistrée. */
+    if (!neuve) {
+      try { await suivreModele(moi.id, await listPrograms(moi.id), avant, seance); }
+      catch { /* le planning se recalera à la prochaine modification */ }
+    }
+    return true;
+  }
+
+  if (integre) {
+    el.querySelector('[data-annuler-integre]').onclick = () => integre.onAnnuler();
+    el.querySelector('[data-valider-integre]').onclick = () => { if (valide()) integre.onValider(seance); };
+    redessiner();
+    render(el);
+    return;
   }
 
   el.querySelector('[data-demarrer]').onclick = async (e) => {
@@ -1397,14 +1456,14 @@ export function ouvrirCatalogue(choisir) {
   function bouton(nom) {
     const b = h(`<button class="puce" type="button">${esc(nom)}</button>`);
     // Vignette du mouvement, comme dans l'appli : on reconnaît l'exercice
-    // d'un coup d'œil. Un appui SUR LA VIGNETTE ouvre la planche au lieu de
-    // choisir l'exercice — on regarde le mouvement avant de le mettre dans
-    // sa séance, pas après.
+    // d'un coup d'œil. Elle fait partie du bouton, un appui dessus CHOISIT
+    // l'exercice — elle ouvrait la planche avant, et taper l'image pour
+    // choisir n'ajoutait rien. Le mouvement se regarde en grand juste après,
+    // dans les réglages de l'exercice ajouté (carteExercice).
     const vg = vignetteExercice(nom, 38);
     if (vg) {
       b.prepend(vg);
       b.classList.add('puce-vignettee');
-      vg.addEventListener('click', (e) => { e.stopPropagation(); ouvrirPlanche(nom); });
     }
     b.onclick = () => { choisir(nom); modale.remove(); };
     return b;
@@ -1438,237 +1497,6 @@ export function ouvrirCatalogue(choisir) {
 
   listerTout();
   document.body.appendChild(modale);
-}
-
-/* ========================================================== programmes */
-
-export async function vueProgrammes() {
-  render(loading('Chargement des programmes'));
-  const moi = await currentUser();
-
-  let programmes;
-  try { programmes = await listPrograms(moi.id); }
-  catch (e) { return render(failure(e, "Les programmes n'ont pas pu être chargés")); }
-
-  if (!programmes.length) {
-    return render(empty(
-      'Aucun programme',
-      'Un programme répartit tes séances sur les semaines et fait monter les charges tout seul.',
-      { href: '#/programmes/nouveau', label: 'Générer un programme' }
-    ));
-  }
-
-  const el = h(`
-    <section class="page">
-      <p class="eyebrow">Entraînement</p>
-      <h1>Programmes</h1>
-      <a class="btn" href="#/programmes/nouveau">Générer un programme</a>
-      <ul class="liste" data-liste></ul>
-    </section>`);
-
-  const ul = el.querySelector('[data-liste]');
-  for (const p of programmes) {
-    const d = p.data || {};
-    const faites = (d.sessions || []).filter(s => s.doneAt > 0).length;
-    const total = (d.sessions || []).length;
-    ul.appendChild(h(`
-      <li class="ligne">
-        <div class="ligne-tete">
-          <span class="ligne-titre">${esc(p.name)}</span>
-          <span class="ligne-meta">${esc(dateCourte(p.updated_at))}</span>
-        </div>
-        <p class="ligne-stats">
-          <span>${d.weeks || '?'} semaines</span>
-          <span>${d.daysPerWeek || '?'} séances / semaine</span>
-          <span>${faites} / ${total} faites</span>
-        </p>
-        ${(d.notes || '').trim() ? `<details class="notes-ia notes-ia-repli">
-          <summary>Pourquoi ce programme</summary>
-          <p>${esc(d.notes.trim()).replace(/\n/g, '<br>')}</p>
-        </details>` : ''}
-      </li>`));
-  }
-  render(el);
-}
-
-/** AiProgramWizard (ProgramScreens.kt ~378-530) : objectif en texte libre,
- *  pas les 4 gabarits fixes de GOALS — la fonction Edge generate-program
- *  attend goal_text, pas un Goal enum (Goal.PERSONNALISE n'existe QUE comme
- *  résultat de cette génération, jamais comme choix manuel). L'algorithme
- *  maison à règles fixes (ProgramGenerator.kt, sans IA) n'est pas porté ici
- *  — c'est bien AiProgramGenerator/generate-program que ce point du chantier
- *  visait. */
-export async function vueProgrammeNouveau() {
-  render(loading('Chargement'));
-  const moi = await currentUser();
-
-  const el = h(`<section class="page page-etroite"></section>`);
-  render(el);
-
-  let etat = {
-    goalText: '', level: niveauActuel(), daysPerWeek: 3, weeks: 8,
-    gears: [], weekdays: defaultDaysFor(3), heure: '18:00',
-    date: new Date().toISOString().slice(0, 10)
-  };
-
-  dessinerFormulaire();
-
-  function dessinerFormulaire() {
-    el.replaceChildren(h(`
-      <div>
-        <p class="eyebrow">Entraînement</p>
-        <h1>Générer un programme</h1>
-        <p class="lede">Décris ton objectif avec tes mots — Moti construit une
-          périodisation par blocs adaptée, avec les exercices de ton catalogue.</p>
-
-        <label class="champ"><span>Objectif précis</span>
-          <textarea data-objectif rows="4" maxlength="600"
-            placeholder="Ex. : progresser au développé couché pour atteindre 100 kg d'ici 8 semaines, 3 séances par semaine, je suis intermédiaire.">${esc(etat.goalText)}</textarea></label>
-
-        <div class="rangee">
-          <label class="champ"><span>Niveau</span>
-            <select data-niveau>${LEVELS.map(l => `<option value="${l.id}" ${l.id === etat.level ? 'selected' : ''}>${esc(l.label)}</option>`).join('')}</select></label>
-          <label class="champ champ-mini"><span>Semaines</span>
-            <select data-semaines>${[4, 6, 8, 12].map(n => `<option value="${n}" ${n === etat.weeks ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-        </div>
-        <div class="rangee">
-          <label class="champ champ-mini"><span>Séances / semaine</span>
-            <select data-jours-semaine>${[2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n === etat.daysPerWeek ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-          <label class="champ champ-mini"><span>Heure des séances</span>
-            <input type="time" data-heure value="${esc(etat.heure)}"></label>
-          <label class="champ champ-mini"><span>1ʳᵉ séance à partir du</span>
-            <input type="date" data-date value="${esc(etat.date)}"></label>
-        </div>
-
-        <p class="champ-label">Jours d'entraînement</p>
-        <div class="rangee rangee-serree" data-jours style="margin-bottom:1rem"></div>
-
-        <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
-        <div class="rangee rangee-serree" data-materiel style="margin-bottom:1.25rem"></div>
-
-        <button class="btn btn-lg" data-generer type="button" style="width:100%">Générer le programme</button>
-      </div>`));
-
-    el.querySelector('[data-objectif]').addEventListener('input', (e) => { etat.goalText = e.target.value; });
-    el.querySelector('[data-niveau]').addEventListener('change', (e) => { etat.level = e.target.value; });
-    el.querySelector('[data-semaines]').addEventListener('change', (e) => { etat.weeks = Number(e.target.value); });
-    el.querySelector('[data-heure]').addEventListener('input', (e) => { etat.heure = e.target.value; });
-    el.querySelector('[data-date]').addEventListener('input', (e) => { etat.date = e.target.value; });
-    el.querySelector('[data-jours-semaine]').addEventListener('change', (e) => {
-      etat.daysPerWeek = Number(e.target.value);
-      etat.weekdays = defaultDaysFor(etat.daysPerWeek);
-      dessinerJours();
-    });
-
-    const zoneJours = el.querySelector('[data-jours]');
-    function dessinerJours() {
-      zoneJours.replaceChildren();
-      WEEK_DAYS.forEach((dow, i) => {
-        const actif = etat.weekdays.includes(dow);
-        const b = h(`<button type="button" class="chip-cat ${actif ? 'on' : ''}">${WEEK_DAY_LABELS[i]}</button>`);
-        b.onclick = () => {
-          etat.weekdays = actif ? etat.weekdays.filter(d => d !== dow) : [...etat.weekdays, dow];
-          dessinerJours();
-        };
-        zoneJours.appendChild(b);
-      });
-    }
-    dessinerJours();
-
-    const zoneMateriel = el.querySelector('[data-materiel]');
-    Object.entries(GEARS).forEach(([id, g]) => {
-      const actif = etat.gears.includes(id);
-      const b = h(`<button type="button" class="chip-cat ${actif ? 'on' : ''}">${esc(g.label)}</button>`);
-      b.onclick = () => {
-        etat.gears = actif ? etat.gears.filter(x => x !== id) : [...etat.gears, id];
-        dessinerFormulaire();
-      };
-      zoneMateriel.appendChild(b);
-    });
-
-    el.querySelector('[data-generer]').onclick = async (e) => {
-      const objectif = etat.goalText.trim();
-      if (!objectif) return toast('Décris ton objectif en quelques mots.');
-      if (!etat.weekdays.length) return toast('Choisis au moins un jour d\'entraînement.');
-      e.target.disabled = true; e.target.textContent = 'Génération en cours… (20-30 s)';
-      try {
-        const [h, m] = etat.heure.split(':').map(Number);
-        const startMs = new Date(`${etat.date}T00:00:00`).getTime();
-        const { draft, notes } = await genererProgrammeIA({
-          goalText: objectif, level: etat.level, daysPerWeek: etat.daysPerWeek, weeks: etat.weeks,
-          gears: etat.gears, weekdays: etat.weekdays, minuteOfDay: h * 60 + m, startMs
-        });
-        dessinerApercu(draft, notes);
-      } catch (err) {
-        toast(err.message || 'La génération a échoué.');
-        e.target.disabled = false; e.target.textContent = 'Générer le programme';
-      }
-    };
-  }
-
-  /** Écran d'aperçu/validation (ProgramScreens.kt) : rien n'est enregistré
-   *  tant que « Valider » n'a pas été pressé — même principe que le natif. */
-  function dessinerApercu(draft, notes) {
-    const { program, workouts } = draft;
-    el.replaceChildren(h(`
-      <div>
-        <p class="eyebrow">Entraînement</p>
-        <h1>${esc(program.name)}</h1>
-        ${notes ? `<div class="notes-ia">
-          <p class="notes-ia-tag">Pourquoi ce programme</p>
-          <p>${esc(notes).replace(/\n/g, '<br>')}</p>
-        </div>` : ''}
-        <p class="ligne-stats" style="margin:0 0 1rem">
-          <span>${program.weeks} semaines</span>
-          <span>${program.daysPerWeek} séances / semaine</span>
-          <span>${program.sessions.length} séances planifiées</span>
-        </p>
-        <div class="bloc">
-          <p class="bloc-titre">Modèles de séance</p>
-          <div data-modeles></div>
-        </div>
-        <div class="bloc">
-          <p class="bloc-titre">Planning (5 premières séances)</p>
-          <ul class="liste" data-planning></ul>
-        </div>
-        <div class="barre-action" style="display:flex;gap:.6rem;margin-top:1.25rem">
-          <button class="btn btn-ghost" data-recommencer style="flex:1">Recommencer</button>
-          <button class="btn btn-lg" data-valider style="flex:1">Valider le programme</button>
-        </div>
-      </div>`));
-
-    const zoneModeles = el.querySelector('[data-modeles]');
-    workouts.forEach(w => {
-      zoneModeles.appendChild(h(`
-        <div style="margin-bottom:.8rem">
-          <p style="font-weight:700;margin:0 0 .3rem">${esc(w.name)} <span class="ligne-meta">· ${esc(w.category)}</span></p>
-          <p class="ligne-meta" style="margin:0">${w.exercises.map(x => esc(x.name)).join(' · ')}</p>
-        </div>`));
-    });
-
-    const ulPlanning = el.querySelector('[data-planning]');
-    program.sessions.slice(0, 5).forEach(s => {
-      ulPlanning.appendChild(h(`
-        <li class="ligne">
-          <div class="ligne-tete">
-            <span class="ligne-titre">S${s.week} — ${esc(s.title)}${s.deload ? ' · décharge' : ''}</span>
-            <span class="ligne-meta">${esc(new Date(s.dateMs).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }))}</span>
-          </div>
-          <p class="ligne-corps">${s.items.map(it => `${esc(it.name)} ${it.sets}×${it.reps}`).join(', ')}</p>
-        </li>`));
-    });
-
-    el.querySelector('[data-recommencer]').onclick = () => dessinerFormulaire();
-    el.querySelector('[data-valider]').onclick = async (ev) => {
-      ev.target.disabled = true;
-      try {
-        for (const w of workouts) await saveWorkout(moi.id, w);
-        await saveProgram(moi.id, program);
-        toast('Programme enregistré ✓');
-        location.hash = '#/programmes';
-      } catch (err) { toast(err.message); ev.target.disabled = false; }
-    };
-  }
 }
 
 /* ========================================================== historique */

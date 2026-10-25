@@ -428,6 +428,40 @@ export async function deleteProgram(userId, localId) {
 }
 
 /* ==========================================================================
+   Abonnement d'agenda à un programme (Google Agenda, Apple, Outlook). Le web
+   ne peut pas écrire dans l'agenda d'un téléphone comme l'appli Android
+   (CalendarSync.kt) : il donne à l'agenda une ADRESSE SECRÈTE que celui-ci
+   relit tout seul (fonction Edge program-feed, table calendar_feeds). Le
+   jeton est le secret ; « retirer » ne supprime pas la ligne mais pose
+   revoked_at, et le flux répond alors un agenda vide qui efface les séances.
+   ========================================================================== */
+
+export async function fluxAgenda(userId, programLocalId) {
+  return unwrap(await sb.from('calendar_feeds')
+    .select('token,revoked_at')
+    .eq('user_id', userId).eq('program_local_id', String(programLocalId)).maybeSingle());
+}
+
+/** Active (ou réactive) l'abonnement et rend son jeton. */
+export async function activerFluxAgenda(userId, programLocalId) {
+  const ligne = unwrap(await sb.from('calendar_feeds')
+    .upsert({ user_id: userId, program_local_id: String(programLocalId), revoked_at: null },
+      { onConflict: 'user_id,program_local_id' })
+    .select('token').single());
+  return ligne.token;
+}
+
+export async function retirerFluxAgenda(userId, programLocalId) {
+  return unwrap(await sb.from('calendar_feeds')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('user_id', userId).eq('program_local_id', String(programLocalId)));
+}
+
+export function urlFluxAgenda(token) {
+  return `${CONFIG.SUPABASE_URL}/functions/v1/program-feed?t=${token}`;
+}
+
+/* ==========================================================================
    Messages 1-à-1 — même table que l'app (`messages`), pas de temps réel côté
    serveur ici non plus : l'écran de fil relance un léger sondage tant qu'il
    reste ouvert, comme ChatScreens.kt. Réactions emoji omises (le web reste

@@ -46,11 +46,11 @@ export function defaultDaysFor(n) {
   }
 }
 
-function minuit(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+export function minuit(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
 
 /** firstDayOfWeekAfter (ProgramModel.kt) : première occurrence du jour de
  *  semaine `dow` à partir de `fromMs` (incluse), à l'heure minuteOfDay. */
-function premierJourApres(fromMs, dow, minuteOfDay) {
+export function premierJourApres(fromMs, dow, minuteOfDay) {
   const d = new Date(minuit(fromMs));
   let garde = 0;
   while (d.getDay() !== dow && garde < 7) { d.setDate(d.getDate() + 1); garde++; }
@@ -60,7 +60,7 @@ function premierJourApres(fromMs, dow, minuteOfDay) {
 
 /** plusDays (ProgramModel.kt) : addition calendaire (setDate), pas une
  *  simple addition de millisecondes — reste correct au changement d'heure. */
-function plusJours(ms, jours) {
+export function plusJours(ms, jours) {
   const d = new Date(ms);
   d.setDate(d.getDate() + jours);
   return d.getTime();
@@ -70,7 +70,7 @@ function plusJours(ms, jours) {
  *  disponible, {group, exercises[]} — mêmes règles que le filtre du
  *  générateur maison, pour que l'IA ne propose jamais un exercice
  *  infaisable avec le matériel indiqué. */
-function catalogueFiltre(gears) {
+export function catalogueFiltre(gears) {
   return GROUPES
     .map(g => ({
       group: g.nom,
@@ -81,9 +81,17 @@ function catalogueFiltre(gears) {
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
+/** Jours tels que Moti les écrit (contrat de generate-program, champ `day`). */
+export const JOURS_IA = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
 /** parse (AiProgramGenerator.kt) : réponse JSON de la fonction Edge ->
- *  { program, workouts }, prêt pour saveProgram/saveWorkout. */
-function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDay, startMs }) {
+ *  { program, workouts }, prêt pour saveProgram/saveWorkout.
+ *
+ *  `modifie` : réponse à une demande de MODIFICATION d'un programme existant
+ *  (programme-edition.js). Le jour de chaque séance vient alors de Moti
+ *  (champ `day`) et la durée du programme de ses phases — il a pu ajouter une
+ *  séance ou allonger le programme à la demande. */
+export function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDay, startMs, modifie = false }) {
   const name = (root.name || '').trim() || 'Programme personnalisé';
 
   const sessionsArr = Array.isArray(root.sessions) ? root.sessions : [];
@@ -98,9 +106,11 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
         holdRestSec: clamp(Math.round(e?.hold_rest_sec ?? 20), 0, 600)
       }))
       .filter(e => e.name);
+    const iJour = JOURS_IA.indexOf(String(s.day || '').trim().toLowerCase());
     return {
       title, category: (s.category || '').trim() || title,
       notes: (s.notes || '').trim(),
+      day: iJour >= 0 ? WEEK_DAYS[iJour] : null,
       // Séance en circuit : les exercices deviennent des stations qui
       // s'enchaînent seules, sans charge ni répétitions (circuit.js).
       circuit: !!s.circuit,
@@ -129,11 +139,13 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
   const CRENEAU_DEFAUT = { sets: 3, reps: 8, recupSec: 90 };
   const creneauPour = (phase, iSeance, iEx) => phase.parSeance[iSeance]?.[iEx] || CRENEAU_DEFAUT;
   const phaseDe = (semaine) => phases.find(p => semaine >= p.debut && semaine <= p.fin) || phases[phases.length - 1];
+  const semaines = modifie ? clamp(Math.max(...phases.map(p => p.fin)), 1, 52) : weeks;
 
   const now = Date.now();
   const notes = (root.notes || '').trim();
   const program = {
-    id: now, name, goal: 'PERSONNALISE', level, weeks, daysPerWeek, createdAt: now,
+    id: now, name, goal: 'PERSONNALISE', level, weeks: semaines,
+    daysPerWeek: modifie ? sessionDefs.length : daysPerWeek, createdAt: now,
     workoutIds: [], sessions: [], notes
   };
 
@@ -183,11 +195,26 @@ function construireDraft(root, { level, daysPerWeek, weeks, weekdays, minuteOfDa
   });
 
   const jours = [...weekdays].sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
+  /* Jour de chaque séance. À la création : les jours cochés, dans l'ordre. En
+     modification : celui que Moti a donné, et à défaut le premier jour encore
+     libre de la semaine. */
+  let dows;
+  if (modifie) {
+    const pris = new Set(sessionDefs.map(d => d.day).filter(d => d !== null));
+    dows = sessionDefs.map(def => {
+      if (def.day !== null) return def.day;
+      const libre = WEEK_DAYS.find(d => !pris.has(d)) ?? 1;
+      pris.add(libre);
+      return libre;
+    });
+  } else {
+    dows = sessionDefs.map((_, bi) => jours[bi] ?? jours[jours.length - 1] ?? 1);
+  }
   let seq = 0;
-  for (let semaine = 1; semaine <= weeks; semaine++) {
+  for (let semaine = 1; semaine <= semaines; semaine++) {
     const phase = phaseDe(semaine);
     sessionDefs.forEach((def, bi) => {
-      const dow = jours[bi] ?? jours[jours.length - 1] ?? 1;
+      const dow = dows[bi];
       const premier = premierJourApres(startMs, dow, minuteOfDay);
       const date = plusJours(premier, 7 * (semaine - 1));
       const items = def.exercices.map((d, ei) => {

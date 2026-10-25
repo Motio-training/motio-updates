@@ -13,8 +13,9 @@ import { vueConnexion } from './views/connexion.js';
 import { vueFil } from './views/fil.js';
 import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte } from './views/profil.js';
 import { vueReglages, vueReglagesMaj, vueReglagesNouveautes } from './views/reglages.js';
-import { vueSeances, vueToutesSeances, vueSeanceEdition, vueProgrammes,
-         vueProgrammeNouveau, vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
+import { vueSeances, vueToutesSeances, vueSeanceEdition,
+         vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
+import { vueProgrammes, vueProgrammeNouveau, vueProgramme, vueProgrammeModifier } from './views/programmes.js';
 import { vueLancerSeance } from './views/lancer.js';
 import { vueCoach } from './views/coach.js';
 import { vueMessages, vueMessageThread } from './views/messages.js';
@@ -65,6 +66,8 @@ route('/seances/:id/lancer', vueLancerSeance);
 route('/seances/:id/historique', vueHistoriqueSeance);
 route('/programmes', vueProgrammes);
 route('/programmes/nouveau', vueProgrammeNouveau);
+route('/programmes/:id', vueProgramme);
+route('/programmes/:id/modifier', vueProgrammeModifier);
 route('/historique', vueHistorique);
 
 setNotFound(() => render(empty(
@@ -260,7 +263,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '71';
+const VERSION = '74';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher
