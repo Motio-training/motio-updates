@@ -33,7 +33,14 @@
     <a href="#comparatif">Comparatif</a>
     <a href="#faq">FAQ</a>
   </nav>
-  <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener">Télécharger</a>
+  <!-- Deux portes d'entrée : essayer tout de suite dans le navigateur, ou
+       installer l'application. Sur iOS, site.js masque « Espace web » — le
+       bouton de téléchargement y devient déjà « Ouvrir l'espace web », et
+       deux boutons vers la même page n'apprendraient rien. -->
+  <div class="topbar-actions">
+    <a class="btn btn-sm btn-ghost" id="btnEspaceWeb" href="app/">Espace web</a>
+    <a class="btn btn-sm" href="https://github.com/Motio-training/motio-updates/releases/latest/download/motio.apk" rel="noopener">Télécharger</a>
+  </div>
 </header>
 
 <main id="top">

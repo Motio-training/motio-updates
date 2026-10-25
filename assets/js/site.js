@@ -645,6 +645,11 @@
       a.href = 'app/';
       a.textContent = "Ouvrir l'espace web →";
     });
+    // Le bouton « Télécharger » de la barre haute vient d'être réécrit en
+    // « Ouvrir l'espace web » : le bouton Espace web qui le précède ferait
+    // doublon. On le retire plutôt que de laisser deux fois la même porte.
+    var btnWeb = document.getElementById('btnEspaceWeb');
+    if (btnWeb) btnWeb.remove();
   }
 
   /* ---------- 10. « Comment installer » : Android ou iPhone ----------

@@ -93,6 +93,21 @@ img{max-width:100%}
 .topnav a.gold,.foot-col a.gold{color:var(--accent-2)}
 .topnav a.gold:hover,.foot-col a.gold:hover{color:var(--text)}
 
+/* Les boutons de la barre ne se laissent pas comprimer : c'est la navigation,
+   qui défile déjà horizontalement, qui cède la place sur un écran étroit. */
+.topbar-actions{display:flex;align-items:center;gap:.5rem;flex:0 0 auto}
+.topbar-actions .btn{flex:0 0 auto}
+/* Sous 560px, le logo complet, les deux boutons et le menu ne tiennent plus
+   sur une ligne. Le menu passe dessous, et le logo se réduit à la marque
+   seule : avec le mot, la barre réclamait une troisième ligne et occupait
+   un sixième de l'écran alors qu'elle est collante. */
+@media (max-width:560px){
+  .topbar{flex-wrap:wrap;row-gap:.55rem}
+  .brand .word{display:none}
+  .topnav{order:3;flex-basis:100%;mask-image:none;-webkit-mask-image:none}
+  .topbar-actions{margin-left:auto}
+}
+
 /* ---------- boutons ---------- */
 .btn{
   display:inline-flex;align-items:center;gap:.6rem;
