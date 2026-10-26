@@ -1,12 +1,6 @@
 {
-  "versionCode": 182,
-  "versionName": "2.80",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.80/motio.apk",
-  "notes": "Les 30 planches d exercices qui etaient sur fond noir passent sur fond blanc, comme toutes les autres.",
-  "voix": {
-    "version": 1789051977,
-    "url": "https://github.com/Motio-training/motio-updates/releases/download/voix-1789051977/voix.zip",
-    "mo": 42,
-    "clips": 3628
-  }
+  "versionCode": 183,
+  "versionName": "2.81",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.81/motio.apk",
+  "notes": "Nouveau programme : un champ « Des precisions pour Moti ? » sous l'objectif, pour dire ce que tu veux avant la generation plutot que de corriger apres. Laisse vide, rien ne change : le programme sort tout de suite du generateur de Motio. Rempli, c'est Moti qui l'ecrit, en tenant compte de l'objectif choisi et de tes precisions."
 }
