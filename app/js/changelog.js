@@ -643,4 +643,9 @@ export const CHANGELOG = [
                 "À la fin il te montre ce qu'il a retenu : tu peux le corriger avant qu'il écrive une seule ligne",
                 "L'ancienne façon reste là, pour qui sait exactement ce qu'il veut"
             ] },
+  { date: "26 octobre 2026", versions: "v2.87", items: [
+                "Correction : sur un gros programme, l'application annonçait « pas de connexion au serveur » alors que le serveur avait fini son travail. Elle cessait d'écouter au bout de 90 secondes, et le programme construit partait à la poubelle",
+                "Elle attend maintenant le temps qu'il faut, et l'écran d'attente annonce la vraie durée : une à deux minutes pour douze semaines",
+                "Moti écrit des explications plus courtes et plus denses : autant de temps de génération gagné"
+            ] },
 ];

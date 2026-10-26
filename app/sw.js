@@ -22,7 +22,7 @@
    client Supabase servi par esm.sh passent par le cache — voir plus bas.
    ========================================================================== */
 
-const CACHE = 'motio-app-v84';
+const CACHE = 'motio-app-v85';
 
 const COQUILLE = [
   './',

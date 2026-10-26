@@ -98,8 +98,11 @@ function ecranAttenteMoti(titre, etapes) {
       <h1>${esc(titre)}</h1>
       <div class="attente-barre"><span></span></div>
       <p class="attente-etape" data-etape>${esc(etapes[0] || '')}</p>
-      <p class="etat-mono">Compte trente secondes à une minute. Reste sur cette page :
-        elle se remplit toute seule dès que c’est prêt.</p>
+      <!-- Mesuré : 129 secondes pour douze semaines à cinq séances. Annoncer
+           trente secondes, c'est inquiéter à la quarantième. -->
+      <p class="etat-mono">Compte une à deux minutes — un programme de douze semaines,
+        c’est long à écrire. Reste sur cette page : elle se remplit toute seule dès que
+        c’est prêt.</p>
     </section>`);
   let i = 0;
   const zone = el.querySelector('[data-etape]');
