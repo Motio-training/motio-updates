@@ -23,10 +23,11 @@
    gainage, équilibre, posture de yoga), qui sortent en mode MAINTIEN.
    ========================================================================== */
 
-import { sb } from './supabase.js';
+import { sb, currentUser } from './supabase.js';
 import { GROUPES, devineMateriel } from './catalog.js';
 import { nouvelleSeance, nouvelExercice, CIRCUIT_WORK_SEC } from './model.js';
 import { toursPour, toursCircuitPour } from './coach-guide.js';
+import { instantaneAthlete } from './athlete.js';
 
 /** Jours de la semaine dans l'ordre français (lundi d'abord), avec la
  *  numérotation de Date.getDay() (0 = dimanche) — pas besoin de conversion
@@ -251,10 +252,21 @@ export async function genererProgrammeIA({ goalText, level, daysPerWeek, weeks, 
   const catalog = catalogueFiltre(gears);
   if (!catalog.length) throw new Error('Aucun exercice ne correspond au matériel choisi.');
 
+  // CE QUI REND LE PROGRAMME NON GÉNÉRIQUE. Sans cet instantané, la fonction
+  // ne connaît que l'objectif et le niveau déclaré : elle écrit des séries et
+  // des répétitions justes, mais elle DEVINE les charges et ignore ce qui est
+  // réellement pratiqué. Jamais bloquant : mieux vaut une génération un peu
+  // moins informée qu'une génération qui échoue.
+  let athlete = '';
+  try {
+    const moi = await currentUser();
+    if (moi) athlete = await instantaneAthlete(moi);
+  } catch { /* on génère quand même */ }
+
   const { data, error } = await sb.functions.invoke('generate-program', {
     body: {
       goal_text: goalText, level, days_per_week: daysPerWeek, weeks,
-      gears, catalog
+      gears, catalog, athlete_context: athlete
     }
   });
   if (error) throw await motifLisible(error);

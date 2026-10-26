@@ -18,12 +18,12 @@
 import { h, render, esc, toast } from '../ui.js';
 import { ajouterMicro } from '../dictee.js';
 import { sb, currentUser } from '../supabase.js';
-import { getProfile, sessionsOf, coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
+import { coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
 import { nouvelleSeance, MODE_LABELS, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
 import { toursPour } from '../coach-guide.js';
 import { motifLisible } from '../programme-ia.js';
 import { saveWorkout } from '../api.js';
-import { tousOneRmManuels } from '../reglages.js';
+import { instantaneAthlete } from '../athlete.js';
 
 const FENETRE = 12;
 
@@ -36,47 +36,11 @@ function depuisLigne(r) {
   };
 }
 
-function relDate(ms) {
-  const jour = 86400000;
-  const diff = Math.floor(Date.now() / jour) - Math.floor(ms / jour);
-  if (diff === 0) return "aujourd'hui";
-  if (diff === 1) return 'hier';
-  return new Date(ms).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-}
 
-async function construireContexte(moi) {
-  const lignes = [];
-  const now = new Date();
-  lignes.push(`Date et heure actuelles : ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`);
-  try {
-    const p = await getProfile(moi.id);
-    lignes.push(`Prénom/pseudo : ${p?.display_name || p?.username || 'cet utilisateur'}`);
-  } catch { /* pas bloquant */ }
-  try {
-    const seances = await sessionsOf(moi.id, { limit: 5 });
-    if (seances.length) {
-      lignes.push('Dernières séances réalisées :');
-      seances.forEach(s => {
-        const durMin = Math.round((s.duration_ms || 0) / 60000);
-        lignes.push(`- ${s.workout_name || 'Séance'}, ${relDate(new Date(s.started_at).getTime())}, ${durMin} min`);
-      });
-    } else {
-      lignes.push('Aucune séance enregistrée pour l’instant.');
-    }
-  } catch { /* pas bloquant */ }
-
-  /* 1RM réellement testés (saisis dans Analyse et records) : la donnée la plus
-     fiable dont dispose le coach pour calibrer des charges — à distinguer
-     explicitement des 1RM estimés par formule, qui sous-estiment un vrai maxi. */
-  const rms = Object.entries(tousOneRmManuels()).filter(([, v]) => v > 0);
-  if (rms.length) {
-    lignes.push('1RM réellement testés (valeurs saisies par l’utilisateur, plus fiables que toute estimation) :');
-    rms.forEach(([exercice, v]) => lignes.push(`- ${exercice} : ${v} kg`));
-  }
-
-  lignes.push('(Connecté depuis l’espace web : le programme actif et les records estimés ne sont visibles que dans l’application.)');
-  return lignes.join('\n');
-}
+/* L'instantané est passé dans son propre module (athlete.js) : la génération
+   de programme en a besoin aussi, et il s'y est enrichi au passage — charges
+   réelles par exercice, fréquence constatée, 1RM estimés, programme en cours.
+   Le chat en profite donc sans rien faire. */
 
 export async function vueCoach() {
   const moi = await currentUser();
@@ -325,7 +289,7 @@ export async function vueCoach() {
         id: messageUtilisateur.id, role: 'user', body: texte, whenMs: messageUtilisateur.whenMs
       });
 
-      const contexte = await construireContexte(moi);
+      const contexte = await instantaneAthlete(moi);
       const history = messages.slice(-FENETRE).map(m => ({
         role: m.role === 'coach' ? 'assistant' : 'user', content: m.text
       }));

@@ -616,4 +616,10 @@ export const CHANGELOG = [
                 "Entraînement : la carte du jour défile maintenant avec la page. « Entraînement libre » est le seul à rester collé en haut quand tu descends",
                 "Nouveau programme : la vignette « Objectif précis » disparaît, le champ de précisions sous l'objectif la remplace"
             ] },
+  { date: "26 octobre 2026", versions: "v2.83", items: [
+                "Moti lit ton carnet avant d'écrire un programme : tes charges réelles exercice par exercice, tes 1RM, ta fréquence des 4 dernières semaines et ce que tu pratiques déjà",
+                "Fini les charges sorties d'une table générique : il part de ce que tu soulèves aujourd'hui et explique sur quels chiffres il s'est appuyé",
+                "Si tu demandes plus de séances que tu n'en tiens réellement, il le construit quand même mais te le dit",
+                "Le chat profite du même carnet enrichi"
+            ] },
 ];
