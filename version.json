@@ -1,6 +1,6 @@
 {
-  "versionCode": 187,
-  "versionName": "2.85",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.85/motio.apk",
-  "notes": "L'ecran du programme defile en entier : la carte, les deux boutons et l'explication de Moti ne restent plus figes en haut pendant qu'on cherche une seance trois semaines plus loin."
+  "versionCode": 188,
+  "versionName": "2.86",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.86/motio.apk",
+  "notes": "LE BILAN AVEC MOTI : au lieu de decrire ton objectif dans un champ, c'est lui qui pose les questions, une a la fois, comme un coach au premier rendez-vous. Objectif, echeance, temps reel, materiel, douleurs, ce que tu aimes faire : il rebondit sur tes reponses. Il lit ton carnet avant et ne demande jamais ce qu'il y voit deja. A la fin il te montre ce qu'il a retenu, tu peux le corriger, puis il ecrit le programme."
 }

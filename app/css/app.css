@@ -2264,3 +2264,34 @@ body:not(.connecte) #vue:has(.onb){
 /* Case à cocher sur sa ligne, avec son libellé à droite (horaire libre). */
 .case-ligne{display:flex;align-items:center;gap:.55rem;margin:.1rem 0 .3rem;cursor:pointer;font-size:.9rem}
 .case-ligne input{width:1.05rem;height:1.05rem;flex:none;accent-color:var(--accent)}
+
+/* ---- Le bilan avec Moti (programmes.js) : l'entretien avant le programme.
+   Une conversation, pas un formulaire — d'où les bulles plutôt que des
+   champs alignés. ---- */
+.bilan h1{margin-bottom:.4rem}
+.bilan-avancement{height:4px;border-radius:2px;background:var(--trait);overflow:hidden;margin:.2rem 0 1rem}
+.bilan-avancement span{display:block;height:100%;border-radius:2px;background:var(--accent);
+  transition:width .35s ease}
+.bilan-fil{display:flex;flex-direction:column;gap:.7rem;margin-bottom:1.1rem}
+.bulle-moti{display:flex;gap:.6rem;align-items:flex-start}
+.bulle-moti img{width:26px;height:26px;border-radius:50%;flex:none;object-fit:cover;margin-top:.15rem}
+.bulle-moti p{flex:1;margin:0;background:var(--creme-2);border-radius:var(--r-md);
+  padding:.65rem .8rem;color:var(--encre);font-size:.95rem;line-height:1.45}
+.bulle-moi{display:flex;justify-content:flex-end}
+.bulle-moi p{margin:0;max-width:85%;background:var(--carte);border-radius:var(--r-md);
+  padding:.55rem .8rem;color:var(--encre-2);font-size:.9rem;line-height:1.45}
+.bilan-attente{margin:.2rem 0 0}
+.bilan-recap{margin:.5rem 0 0;color:var(--encre);font-size:.92rem;line-height:1.55}
+.bilan-reglages{margin:.7rem 0 0;line-height:1.6}
+.bilan-pourquoi{margin:0 0 .5rem}
+.bilan-suggestions{margin-bottom:.7rem}
+.bilan-liens{display:flex;gap:1.2rem;justify-content:space-between;margin-top:.7rem}
+.lien-or{color:var(--dore);font-weight:700}
+
+/* Le choix entre bilan et reglages : le bilan porte son etiquette. */
+.choix-reco{margin-left:.5rem;color:var(--dore);font-size:.72rem;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase}
+
+/* Libellé réservé aux lecteurs d'écran. */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}

@@ -34,6 +34,7 @@ import {
 } from '../programme-ia.js';
 import { construireProgrammeLocal } from '../generateur-local.js';
 import * as PE from '../programme-edition.js';
+import * as BL from '../programme-bilan.js';
 import { vignetteExercice } from '../exercise-visuals.js';
 import { vueSeanceEdition, catColor } from './entrainement.js';
 
@@ -621,7 +622,51 @@ export async function vueProgramme(params) {
 
 /* ============================================================== création */
 
+/**
+ * LE CHOIX, avant de créer quoi que ce soit : l'entretien avec Moti, ou les
+ * réglages à remplir soi-même.
+ *
+ * Le bilan est mis en avant parce que décrire son objectif dans un champ
+ * suppose de savoir quoi écrire, puis de savoir juger ce qui sort. Celui qui
+ * n'est pas du métier ne sait ni l'un ni l'autre, et relance jusqu'à garder un
+ * programme sans savoir s'il lui convient. Répondre à des questions, tout le
+ * monde sait le faire.
+ */
 export async function vueProgrammeNouveau() {
+  render(loading('Chargement'));
+  const moi = await currentUser();
+  let avecIA = false;
+  try { avecIA = await aAccesIA(moi.id); } catch { /* sans réseau : pas d'IA */ }
+
+  render(h(`
+    <section class="page page-etroite">
+      <p class="eyebrow"><a href="#/programmes">Programmes</a></p>
+      <h1>Ton programme</h1>
+      <p class="lede">Deux façons de l'obtenir.</p>
+
+      <div class="moti-boite choix-bilan">
+        <p class="moti-tag"><img src="../assets/img/moti_avatar.jpg" alt=""> Faire mon bilan avec Moti
+          <span class="choix-reco">Recommandé</span></p>
+        <p class="moti-aide">Il te pose ses questions, une à la fois, comme un coach au premier
+          rendez-vous : ton objectif, le temps que tu as vraiment, ton matériel, tes douleurs,
+          ce que tu aimes faire. Il lit ton carnet avant et ne demande jamais ce qu'il y voit
+          déjà. Puis il écrit le programme.</p>
+        ${avecIA
+          ? '<a class="btn btn-lg" href="#/programmes/bilan" style="width:100%">Commencer le bilan</a>'
+          : `<p class="prog-alerte">Le bilan fait partie de l'abonnement Motio. Les réglages
+              ci-dessous restent disponibles.</p>`}
+      </div>
+
+      <p class="bloc-titre" style="margin-top:1.75rem">Ou choisis toi-même</p>
+      <p class="etat-mono" style="margin:-.3rem 0 1rem">Objectif, niveau, jours, matériel : tu
+        remplis les réglages et le programme sort tout de suite. Le split suit le nombre de
+        séances, le volume suit ton niveau, et les exercices sont pris dans ton catalogue.
+        Sans attendre, et sans abonnement.</p>
+      <a class="btn btn-ghost" href="#/programmes/reglages" style="width:100%">Remplir les réglages</a>
+    </section>`));
+}
+
+export async function vueProgrammeReglages() {
   render(loading('Chargement'));
   const moi = await currentUser();
   let avecIA = false;
@@ -885,6 +930,181 @@ export async function vueProgrammeNouveau() {
         toast(err.message || 'La génération a échoué.');
       }
     };
+  }
+}
+
+/* ============================================================== bilan */
+
+/**
+ * L'ENTRETIEN AVEC MOTI, avant d'écrire quoi que ce soit.
+ *
+ * Il pose ses questions une à une et rebondit sur les réponses ; quand il en
+ * sait assez, il montre ce qu'il a retenu et construit le programme. Voir
+ * programme-bilan.js pour ce qui se passe derrière, et pourquoi l'entretien
+ * produit un cahier des charges plutôt qu'un programme.
+ */
+export async function vueProgrammeBilan() {
+  render(loading('Moti prépare ton bilan'));
+  const moi = await currentUser();
+
+  let tours = [];                 // { deMoti, texte }
+  let question = null;
+  let bilan = null;
+  let enCours = false;
+  let erreur = '';
+  let brouillon = '';
+
+  const page = h('<section class="page page-etroite bilan"></section>');
+  render(page);
+  avancer([]);
+
+  async function avancer(historique) {
+    enCours = true; erreur = '';
+    dessiner();
+    try {
+      const r = await BL.tourSuivant(historique);
+      if (r.type === 'brief') {
+        bilan = r; question = null; tours = historique;
+      } else {
+        question = r;
+        // La question entre dans l'historique : c'est elle que Moti relira au
+        // tour suivant pour savoir où il en est.
+        tours = [...historique, { deMoti: true, texte: r.texte }];
+      }
+    } catch (e) {
+      erreur = e.message || "Moti n'a pas pu continuer le bilan.";
+      tours = historique;
+    }
+    enCours = false;
+    dessiner();
+  }
+
+  function repondre(texte) {
+    const t = String(texte || '').trim();
+    if (!t || enCours) return;
+    brouillon = '';
+    bilan = null;
+    avancer([...tours, { deMoti: false, texte: t }]);
+  }
+
+  async function construire() {
+    const attente = ecranAttenteMoti('Moti écrit ton programme', ETAPES_PROGRAMME);
+    render(attente.el);
+    try {
+      const { draft } = await BL.genererDepuisBilan(bilan);
+      attente.arreter();
+      ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), {});
+    } catch (e) {
+      attente.arreter();
+      erreur = e.message || 'La génération a échoué.';
+      render(page);
+      dessiner();
+    }
+  }
+
+  function dessiner() {
+    page.replaceChildren(h(`
+      <div>
+        <p class="eyebrow"><a href="#/programmes/nouveau">Créer un programme</a></p>
+        <h1>Bilan avec Moti</h1>
+        ${question && question.avancement > 0
+          ? `<div class="bilan-avancement"><span style="width:${question.avancement}%"></span></div>`
+          : ''}
+        <div class="bilan-fil" data-fil></div>
+        ${erreur ? `<p class="prog-alerte">${esc(erreur)}</p>
+          <button class="btn btn-ghost" data-reessayer type="button" style="width:100%">Réessayer</button>` : ''}
+        <div data-repondre></div>
+      </div>`));
+
+    const fil = page.querySelector('[data-fil]');
+    tours.forEach(t => {
+      fil.appendChild(h(t.deMoti
+        ? `<div class="bulle-moti"><img src="../assets/img/moti_avatar.jpg" alt="">
+             <p>${esc(t.texte)}</p></div>`
+        : `<div class="bulle-moi"><p>${esc(t.texte)}</p></div>`));
+    });
+    if (enCours) {
+      fil.appendChild(h(`<p class="etat-mono bilan-attente">${bilan
+        ? 'Moti rassemble ce que tu lui as dit…' : 'Moti réfléchit…'}</p>`));
+    }
+
+    // ---- Ce qu'il a retenu ----
+    if (bilan) {
+      fil.appendChild(h(`
+        <div class="moti-boite">
+          <p class="moti-tag"><img src="../assets/img/moti_avatar.jpg" alt=""> Ce que j'ai retenu</p>
+          ${bilan.recapitulatif ? `<p class="bilan-recap">${esc(bilan.recapitulatif).replace(/\n/g, '<br>')}</p>` : ''}
+          <p class="etat-mono bilan-reglages">${esc([
+            bilan.semaines > 0 ? `${bilan.semaines} semaines` : 'Durée à sa main',
+            `${bilan.joursParSemaine} séances / semaine`,
+            libelleNiveau(bilan.niveau) || bilan.niveau.toLowerCase()
+          ].join(' · '))}<br>${bilan.dateObjectif
+            ? `Échéance : ${esc(bilan.dateObjectif)}<br>` : ''}Jours :
+            ${esc(bilan.jours.map(j => PE.libelleJour(j)).join(', '))}<br>Matériel :
+            ${esc(bilan.materiel.map(m => (GEARS[m] || {}).label || m).join(', '))}</p>
+        </div>
+        <p class="etat-mono">Si quelque chose est faux ou incomplet, dis-le-lui : il corrigera
+          avant d'écrire.</p>`));
+    }
+
+    page.querySelector('[data-reessayer]')?.addEventListener('click', () => avancer(tours));
+
+    // ---- Répondre ----
+    const zone = page.querySelector('[data-repondre]');
+    if (enCours) return;
+
+    if (question?.pourquoi) {
+      zone.appendChild(h(`<p class="etat-mono bilan-pourquoi">${esc(question.pourquoi)}</p>`));
+    }
+    if (question?.suggestions?.length) {
+      const props = h('<div class="rangee rangee-serree bilan-suggestions"></div>');
+      question.suggestions.forEach(s => {
+        const b = h(`<button type="button" class="chip-cat">${esc(s)}</button>`);
+        b.onclick = () => repondre(s);
+        props.appendChild(b);
+      });
+      zone.appendChild(props);
+    }
+
+    const saisie = h(`
+      <label class="champ" style="max-width:none"><span class="sr-only">Ta réponse</span>
+        <textarea data-reponse rows="2" maxlength="600"
+          placeholder="${bilan ? 'Ajouter ou corriger quelque chose…' : 'Ta réponse…'}">${esc(brouillon)}</textarea></label>`);
+    zone.appendChild(saisie);
+    const champ = saisie.querySelector('[data-reponse]');
+    champ.addEventListener('input', (e) => { brouillon = e.target.value; });
+    // Entrée envoie, Maj+Entrée va à la ligne : on répond souvent d'un mot.
+    champ.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); repondre(champ.value); }
+    });
+    ajouterMicro(champ);
+
+    if (bilan) {
+      const corriger = h('<button class="btn btn-ghost" type="button" style="width:100%">Envoyer la correction</button>');
+      corriger.onclick = () => repondre(champ.value);
+      const lancer = h('<button class="btn btn-lg" type="button" style="width:100%;margin-top:.6rem">Construis mon programme</button>');
+      lancer.onclick = construire;
+      zone.append(corriger, lancer);
+      return;
+    }
+
+    const envoyer = h('<button class="btn btn-lg" type="button" style="width:100%">Répondre</button>');
+    envoyer.onclick = () => repondre(champ.value);
+    zone.appendChild(envoyer);
+
+    const liens = h('<div class="bilan-liens"></div>');
+    const passer = h('<button class="lien-inline" type="button">Passer</button>');
+    passer.onclick = () => repondre('Je ne sais pas, passe cette question.');
+    liens.appendChild(passer);
+    // On peut couper court à tout moment : Moti conclut avec ce qu'il a, et
+    // dit dans son cahier des charges ce qui manque.
+    if (tours.length >= 2) {
+      const assez = h('<button class="lien-inline lien-or" type="button">J\'en ai assez dit</button>');
+      assez.onclick = () => repondre('Vas-y, construis le programme avec ce que tu sais déjà.');
+      liens.appendChild(assez);
+    }
+    zone.appendChild(liens);
+    champ.focus();
   }
 }
 

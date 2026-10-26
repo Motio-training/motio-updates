@@ -635,4 +635,12 @@ export const CHANGELOG = [
   { date: "26 octobre 2026", versions: "v2.85", items: [
                 "L'écran du programme défile en entier : la carte, les deux boutons et l'explication de Moti ne restent plus figés en haut pendant qu'on cherche une séance trois semaines plus loin"
             ] },
+  { date: "26 octobre 2026", versions: "v2.86", items: [
+                "LE BILAN AVEC MOTI : au lieu de décrire ton objectif dans un champ et d'espérer que le programme tombe juste, c'est lui qui pose les questions, une à la fois, comme un coach au premier rendez-vous",
+                "Objectif, échéance, temps dont tu disposes vraiment, matériel, douleurs, ce que tu aimes et ce que tu détestes faire : il rebondit sur tes réponses au lieu de dérouler une liste",
+                "Il lit ton carnet avant de commencer et ne demande jamais ce qu'il y voit déjà — ni ton niveau, ni tes charges, ni ta fréquence",
+                "Réponses rapides d'un appui, « Passer » si une question ne te parle pas, « J'en ai assez dit » pour couper court quand tu veux",
+                "À la fin il te montre ce qu'il a retenu : tu peux le corriger avant qu'il écrive une seule ligne",
+                "L'ancienne façon reste là, pour qui sait exactement ce qu'il veut"
+            ] },
 ];

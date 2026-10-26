@@ -17,7 +17,10 @@ import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte } from './views/p
 import { vueReglages, vueReglagesMaj, vueReglagesNouveautes } from './views/reglages.js';
 import { vueSeances, vueToutesSeances, vueSeanceEdition,
          vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
-import { vueProgrammes, vueProgrammeNouveau, vueProgramme, vueProgrammeModifier } from './views/programmes.js';
+import {
+  vueProgrammes, vueProgrammeNouveau, vueProgrammeReglages, vueProgrammeBilan,
+  vueProgramme, vueProgrammeModifier
+} from './views/programmes.js';
 import { vueLancerSeance } from './views/lancer.js';
 import { vueCoach } from './views/coach.js';
 import { vueMessages, vueMessageThread } from './views/messages.js';
@@ -68,6 +71,8 @@ route('/seances/:id/lancer', vueLancerSeance);
 route('/seances/:id/historique', vueHistoriqueSeance);
 route('/programmes', vueProgrammes);
 route('/programmes/nouveau', vueProgrammeNouveau);
+route('/programmes/reglages', vueProgrammeReglages);
+route('/programmes/bilan', vueProgrammeBilan);
 route('/programmes/:id', vueProgramme);
 route('/programmes/:id/modifier', vueProgrammeModifier);
 route('/historique', vueHistorique);
