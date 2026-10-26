@@ -632,4 +632,7 @@ export const CHANGELOG = [
                 "Un écran d'attente pendant que Moti travaille, au lieu d'un écran qui semble figé",
                 "Un appui sur le nom d'un exercice ouvre le catalogue pour le remplacer, sans perdre ses réglages"
             ] },
+  { date: "26 octobre 2026", versions: "v2.85", items: [
+                "L'écran du programme défile en entier : la carte, les deux boutons et l'explication de Moti ne restent plus figés en haut pendant qu'on cherche une séance trois semaines plus loin"
+            ] },
 ];

@@ -1,6 +1,6 @@
 {
-  "versionCode": 186,
-  "versionName": "2.84",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.84/motio.apk",
-  "notes": "Moti construit de vrais cycles d'entrainement : chaque bloc a son nom, sa raison d'etre, et change reellement d'un bloc a l'autre (exercices, format, methodes d'intensification). Superserie, degressive, rest-pause, AMRAP, EMOM : la methode s'affiche pendant la seance. Fini les 3 series partout. Tu peux laisser Moti decider du nombre de semaines, ou lui donner une date objectif. Horaire facultatif, et un ecran d'attente pendant qu'il travaille."
+  "versionCode": 187,
+  "versionName": "2.85",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.85/motio.apk",
+  "notes": "L'ecran du programme defile en entier : la carte, les deux boutons et l'explication de Moti ne restent plus figes en haut pendant qu'on cherche une seance trois semaines plus loin."
 }
