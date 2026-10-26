@@ -28,7 +28,10 @@ import {
 import { GOALS, LEVELS, fmtRecup, dureeDeLaSeance, nouvelleSeance, CIRCUIT_WORK_SEC } from '../model.js';
 import { GEARS } from '../catalog.js';
 import { niveauActuel, objectifActuel, definirNiveau, definirObjectif } from '../reglages.js';
-import { genererProgrammeIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS, plusJours, minuit } from '../programme-ia.js';
+import {
+  genererProgrammeIA, defaultDaysFor, WEEK_DAYS, WEEK_DAY_LABELS, plusJours, minuit,
+  MINUTE_LIBRE, heureTexte
+} from '../programme-ia.js';
 import { construireProgrammeLocal } from '../generateur-local.js';
 import * as PE from '../programme-edition.js';
 import { vignetteExercice } from '../exercise-visuals.js';
@@ -42,8 +45,89 @@ const NOMS_MOIS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
 
 const heureLabel = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const heureDe = (ms) => { const d = new Date(ms); return heureLabel(d.getHours() * 60 + d.getMinutes()); };
+
+/** « à 18:30 », ou « dans la journée » quand le programme n'impose pas
+ *  d'heure — celle du planning n'est alors qu'une convention interne, midi
+ *  (Program.sansHeure, ProgramModel.kt). */
+function heureDeLaSeance(p, s) {
+  const d = new Date(s.dateMs);
+  const txt = heureTexte(!!p.sansHeure, d.getHours() * 60 + d.getMinutes());
+  return p.sansHeure ? txt : `à ${txt}`;
+}
 const faite = (s) => (s.doneAt || 0) > 0;
 const libelleNiveau = (id) => (LEVELS.find(l => l.id === id) || {}).label || '';
+
+/* ===================================================== attente de Moti */
+
+/** Ce que Moti fait pendant qu'on attend un programme entier. */
+const ETAPES_PROGRAMME = [
+  'Il relit ton carnet : charges, records, fréquence réelle…',
+  'Il choisit les exercices que ton matériel permet…',
+  'Il découpe le programme en cycles d’entraînement…',
+  'Il règle séries, répétitions et récupérations, semaine par semaine…',
+  'Il écrit pourquoi chaque bloc est là…',
+  'Dernières vérifications…'
+];
+
+/** Ce qu'il fait quand il réécrit un programme déjà construit. */
+const ETAPES_MODIF = [
+  'Il relit ton programme en entier…',
+  'Il repère ce que ta demande change, et ce qu’elle implique…',
+  'Il réécrit les semaines à venir…',
+  'Il vérifie que les cycles se tiennent toujours…',
+  'Presque fini…'
+];
+
+/**
+ * L'ÉCRAN D'ATTENTE DE MOTI (EcranMotiTravaille, ProgramScreens.kt).
+ *
+ * Écrire un programme prend de trente secondes à une minute. Tant que ce
+ * travail n'occupait qu'un libellé de bouton, on croyait que rien ne se
+ * passait. L'écran entier l'annonce, et les étapes défilent pour qu'on voie
+ * que ça avance. La dernière reste affichée : l'attente peut dépasser la
+ * liste, et revenir à la première ferait croire que tout recommence.
+ *
+ * Renvoie l'élément à rendre et le `arreter()` à appeler quand c'est fini —
+ * sans quoi le minuteur survivrait au changement d'écran.
+ */
+function ecranAttenteMoti(titre, etapes) {
+  const el = h(`
+    <section class="page page-etroite attente-moti">
+      <img class="attente-avatar" src="../assets/img/moti_avatar.jpg" alt="">
+      <h1>${esc(titre)}</h1>
+      <div class="attente-barre"><span></span></div>
+      <p class="attente-etape" data-etape>${esc(etapes[0] || '')}</p>
+      <p class="etat-mono">Compte trente secondes à une minute. Reste sur cette page :
+        elle se remplit toute seule dès que c’est prêt.</p>
+    </section>`);
+  let i = 0;
+  const zone = el.querySelector('[data-etape]');
+  const minuteur = setInterval(() => {
+    if (i >= etapes.length - 1) return clearInterval(minuteur);
+    i++;
+    zone.textContent = etapes[i];
+  }, 4500);
+  return { el, arreter: () => clearInterval(minuteur) };
+}
+
+/**
+ * L'EN-TÊTE D'UN CYCLE (BlockHeader, ProgramScreens.kt) : son nom, les
+ * semaines qu'il couvre, et la raison pour laquelle il est là.
+ *
+ * C'est le cœur de ce qui fait voir que Moti programme et ne recopie pas : un
+ * bloc de force et un bloc de volume ne se devinent pas en lisant des séries,
+ * ils se lisent dans la phrase qui les annonce.
+ */
+function carteCycle(b) {
+  return h(`
+    <div class="bloc-cycle">
+      <div class="bloc-cycle-tete">
+        <span class="bloc-cycle-nom">${esc(b.label || 'Le programme')}</span>
+        <span class="bloc-cycle-sem">${esc(PE.libelleSemaines(b))}${b.deload ? ' · décharge' : ''}</span>
+      </div>
+      ${b.goal ? `<p class="bloc-cycle-but">${esc(b.goal)}</p>` : ''}
+    </div>`);
+}
 
 /** fmtApprox (ProgramScreens.kt) : « 1 h 05 » ou « 48 min ». */
 function approx(sec) {
@@ -303,6 +387,7 @@ export async function vueProgramme(params) {
     const fini = total > 0 && p.sessions.every(s => faite(s) || s.skipped);
     const n = prochaine(p);
     const semaine = n ? n.week : p.weeks;
+    const cycleEnCours = PE.blocDeSemaine(p, semaine);
     const actif = !!(flux?.token && !flux.revoked_at);
 
     el.replaceChildren(h(`
@@ -316,6 +401,10 @@ export async function vueProgramme(params) {
         </p>
         <div class="prog-barre"><div style="width:${total ? Math.round(faites / total * 100) : 0}%"></div></div>
         <p class="prog-etat">${fini ? `Programme terminé — ${faites} séances.` : `Semaine ${semaine} · ${faites} séances faites sur ${total}`}</p>
+        <!-- Le cycle en cours, là où l'on regarde déjà : savoir qu'on est
+             dans le bloc de force change la façon d'aborder la séance. -->
+        ${!fini && cycleEnCours && cycleEnCours.label ? `<p class="etat-mono" style="margin:-.3rem 0 .6rem">Cycle
+          en cours : ${esc(cycleEnCours.label)} (${esc(PE.libelleSemaines(cycleEnCours))})</p>` : ''}
         ${n ? `<button class="btn btn-lg prog-prochaine" data-prochaine type="button">Prochaine : ${esc(n.title)} — ${esc(dateBreve(n.dateMs))}</button>` : ''}
         <div class="prog-actions">
           <a class="btn btn-ghost" href="#/programmes/${esc(String(p.id))}/modifier">✎ Modifier</a>
@@ -357,6 +446,10 @@ export async function vueProgramme(params) {
     for (let w = 1; w <= p.weeks; w++) {
       const ss = p.sessions.filter(s => s.week === w).sort((a, b) => a.dateMs - b.dateMs);
       if (!ss.length) continue;
+      // Le cycle s'annonce à la semaine où il commence : en descendant le
+      // planning, on voit le programme changer de nature.
+      const debutCycle = (p.blocks || []).find(b => b.weekStart === w);
+      if (debutCycle) zone.appendChild(carteCycle(debutCycle));
       zone.appendChild(h(`<p class="bloc-titre prog-semaine">Semaine ${w}${ss.some(s => s.deload) ? ' <span>décharge</span>' : ''}</p>`));
       ss.forEach(s => {
         const b = h(`
@@ -386,7 +479,7 @@ export async function vueProgramme(params) {
       <div class="modale" role="dialog" aria-label="Séance prévue">
         <div class="modale-boite prog-modale">
           <div class="modale-tete"><h2>${esc(s.title)} — semaine ${s.week}</h2></div>
-          <p class="ligne-meta">${esc(dateBreve(s.dateMs))} à ${heureDe(s.dateMs)} · environ ${approx(dureePrevue(s.items))}</p>
+          <p class="ligne-meta">${esc(dateBreve(s.dateMs))}, ${esc(heureDeLaSeance(p, s))} · environ ${approx(dureePrevue(s.items))}</p>
           ${s.deload ? '<p class="prog-decharge">Semaine de décharge : volume réduit volontairement.</p>' : ''}
           <ul class="prog-items">${(s.items || []).map(it => `
             <li><b>${esc(it.name)}</b> — ${esc(doseItem(it))}${it.hint ? `<span>${esc(it.hint)}</span>` : ''}</li>`).join('')}
@@ -539,7 +632,17 @@ export async function vueProgrammeNouveau() {
     objectif: GOALS.some(g => g.id === objectif) ? objectif : 'MASSE',
     goalText: '', level: niveauActuel(), daysPerWeek: 3, weeks: 8,
     gears: [], weekdays: defaultDaysFor(3), heure: '18:00',
-    date: new Date().toISOString().slice(0, 10)
+    date: new Date().toISOString().slice(0, 10),
+    /* DURÉE NON IMPOSÉE : c'est l'objectif qui commande le nombre de semaines,
+       pas une habitude. `weeks` à 0 laisse Moti décider ; une date objectif
+       (compétition, course, test) la fixe et lui demande d'y amener, affûtage
+       compris. Les deux n'ont de sens qu'avec Moti — le générateur local, à
+       règles fixes, ne sait pas raisonner sur une échéance et retombe sur
+       8 semaines. */
+    echeance: '',
+    /* « Dans la journée » : la séance est à faire ce jour-là, l'heure n'a
+       aucune importance (Program.sansHeure, ProgramModel.kt). */
+    sansHeure: false
   };
   const el = h(`<section class="page page-etroite"></section>`);
   render(el);
@@ -549,6 +652,33 @@ export async function vueProgrammeNouveau() {
      décide du libellé ET de la branche de génération. */
   function modeIA() { return avecIA && !!etat.goalText.trim(); }
   function libelleBouton() { return modeIA() ? 'Générer avec Moti' : "Voir l'aperçu"; }
+
+  /** Semaines jusqu'à l'échéance, arrondies au-dessus : une course dans dix
+   *  jours fait deux semaines de préparation, pas une. */
+  function semainesEcheance() {
+    if (!etat.echeance) return null;
+    const cible = new Date(`${etat.echeance}T00:00:00`).getTime();
+    const depart = new Date(`${etat.date}T00:00:00`).getTime();
+    if (!Number.isFinite(cible) || !Number.isFinite(depart)) return null;
+    const jours = Math.round((cible - depart) / 86400000);
+    return Math.min(52, Math.max(1, Math.ceil(jours / 7)));
+  }
+
+  /** Ce qu'on demande à Moti : la durée jusqu'à l'échéance, celle qu'il doit
+   *  choisir lui-même (0), ou celle qui est cochée. */
+  function semainesIA() { return semainesEcheance() ?? etat.weeks; }
+
+  /** Le générateur local, lui, a toujours besoin d'un nombre. */
+  function semainesLocal() { return semainesEcheance() ?? (etat.weeks || 8); }
+
+  /** « samedi 17 janvier 2026 » : la date telle qu'on la donne à Moti, qui
+   *  doit la relire dans sa consigne — pas une date ISO (dateLongue,
+   *  ProgramScreens.kt). */
+  function echeanceLongue() {
+    if (!etat.echeance) return '';
+    return new Date(`${etat.echeance}T00:00:00`)
+      .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
 
   /**
    * La demande envoyée à Moti : l'objectif donne le cadre, les précisions le
@@ -592,7 +722,7 @@ export async function vueProgrammeNouveau() {
           <label class="champ champ-mini"><span>Niveau</span>
             <select data-niveau>${LEVELS.map(l => `<option value="${l.id}" ${l.id === etat.level ? 'selected' : ''}>${esc(l.label)}</option>`).join('')}</select></label>
           <label class="champ champ-mini"><span>Durée</span>
-            <select data-semaines>${[4, 6, 8, 12].map(n => `<option value="${n}" ${n === etat.weeks ? 'selected' : ''}>${n} semaines</option>`).join('')}</select></label>
+            <select data-semaines ${etat.echeance ? 'disabled' : ''}>${[4, 6, 8, 12].map(n => `<option value="${n}" ${n === etat.weeks ? 'selected' : ''}>${n} semaines</option>`).join('')}<option value="0" ${etat.weeks === 0 ? 'selected' : ''}>Moti décide</option></select></label>
           <label class="champ champ-mini"><span>Séances / semaine</span>
             <select data-par-semaine>${[2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n === etat.daysPerWeek ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
         </div>
@@ -601,12 +731,29 @@ export async function vueProgrammeNouveau() {
         <div class="rangee rangee-serree" data-jours></div>
         <p class="etat-mono" data-jours-etat style="margin:.4rem 0 1rem"></p>
 
+        <label class="champ" style="max-width:none"><span>Date objectif (facultatif)</span>
+          <input type="date" data-echeance value="${esc(etat.echeance)}"
+            min="${new Date().toISOString().slice(0, 10)}"></label>
+        <p class="etat-mono" style="margin:-.6rem 0 1.25rem">${etat.echeance
+          ? `${semainesEcheance()} semaines d'ici là : Moti construit la montée en charge pour que tu y arrives au mieux, affûtage compris.`
+          : etat.weeks === 0
+            ? (avecIA
+              ? 'Moti prend le nombre de semaines qu’il faut pour l’objectif, et dit pourquoi dans son explication.'
+              : 'Laisser Moti décider demande l’abonnement : sans lui, le programme est construit sur 8 semaines.')
+            : 'Une compétition, une course, un test physique : donne la date et le programme est construit pour t’y amener.'}</p>
+
         <div class="rangee">
           <label class="champ champ-mini"><span>Heure des séances</span>
-            <input type="time" data-heure value="${esc(etat.heure)}"></label>
+            <input type="time" data-heure value="${esc(etat.heure)}" ${etat.sansHeure ? 'disabled' : ''}></label>
           <label class="champ champ-mini"><span>À partir du</span>
             <input type="date" data-date value="${esc(etat.date)}"></label>
         </div>
+        <label class="case-ligne">
+          <input type="checkbox" data-sans-heure ${etat.sansHeure ? 'checked' : ''}>
+          <span>Peu importe l'heure — à faire dans la journée</span></label>
+        <p class="etat-mono" style="margin:.2rem 0 1.25rem">${etat.sansHeure
+          ? 'La séance est à faire ce jour-là, à l’heure qui t’arrange. Dans l’agenda, elle occupe la journée entière au lieu d’un créneau.'
+          : 'Décoche si tu préfères t’entraîner quand tu peux, sans heure fixe.'}</p>
 
         <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
         <div class="rangee rangee-serree" data-materiel style="margin-bottom:1.25rem"></div>
@@ -636,7 +783,18 @@ export async function vueProgrammeNouveau() {
     });
     ajouterMicro(el.querySelector('[data-objectif-texte]'));
     el.querySelector('[data-niveau]').onchange = (e) => { etat.level = e.target.value; };
-    el.querySelector('[data-semaines]').onchange = (e) => { etat.weeks = Number(e.target.value); };
+    el.querySelector('[data-semaines]').onchange = (e) => { etat.weeks = Number(e.target.value); dessiner(); };
+    el.querySelector('[data-echeance]').onchange = (e) => {
+      etat.echeance = e.target.value;
+      // Une échéance fixe la durée : le choix « Moti décide » n'aurait plus
+      // de sens à côté d'elle.
+      if (etat.echeance && etat.weeks === 0) etat.weeks = 8;
+      dessiner();
+    };
+    el.querySelector('[data-sans-heure]').onchange = (e) => {
+      etat.sansHeure = e.target.checked;
+      dessiner();
+    };
     el.querySelector('[data-par-semaine]').onchange = (e) => {
       etat.daysPerWeek = Number(e.target.value);
       etat.weekdays = defaultDaysFor(etat.daysPerWeek);
@@ -683,8 +841,11 @@ export async function vueProgrammeNouveau() {
       }
       const [hh, mm] = (etat.heure || '18:00').split(':').map(Number);
       const reglages = {
-        level: etat.level, daysPerWeek: etat.daysPerWeek, weeks: etat.weeks, gears: etat.gears,
-        weekdays: etat.weekdays, minuteOfDay: hh * 60 + mm,
+        level: etat.level, daysPerWeek: etat.daysPerWeek, gears: etat.gears,
+        weekdays: etat.weekdays,
+        // « Dans la journée » : les séances sont datées à midi, mais l'heure
+        // n'est jamais affichée (MINUTE_LIBRE, programme-ia.js).
+        minuteOfDay: etat.sansHeure ? MINUTE_LIBRE : hh * 60 + mm,
         startMs: new Date(`${etat.date}T00:00:00`).getTime()
       };
       definirNiveau(etat.level);
@@ -694,20 +855,34 @@ export async function vueProgrammeNouveau() {
       // des précisions, elles n'ont de sens que si Moti les lit.
       if (!modeIA()) {
         try {
-          const draft = construireProgrammeLocal({ goal: etat.objectif, ...reglages });
+          const draft = construireProgrammeLocal({
+            goal: etat.objectif, weeks: semainesLocal(), ...reglages
+          });
+          draft.program.sansHeure = etat.sansHeure;
           return ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), { onReglages: () => { render(el); dessiner(); } });
         } catch (err) { return toast(err.message); }
       }
       const texte = demandeComposee();
-      e.target.disabled = true;
-      e.target.textContent = 'Moti construit ton programme… (20-30 s)';
+      /* ÉCRAN D'ATTENTE. Une génération dure de trente secondes à une minute :
+         tant que seul le bouton changeait de libellé, on croyait que rien ne
+         se passait — Nicolas dit que ça donnait presque envie de recharger la
+         page. L'écran entier annonce le travail en cours, et les étapes
+         défilent pour qu'on voie que ça avance (EcranMotiTravaille,
+         ProgramScreens.kt). */
+      const attente = ecranAttenteMoti('Moti construit ton programme', ETAPES_PROGRAMME);
+      render(attente.el);
       try {
-        const { draft } = await genererProgrammeIA({ goalText: texte, ...reglages });
+        const { draft } = await genererProgrammeIA({
+          goalText: texte, weeks: semainesIA(), targetDate: echeanceLongue(),
+          sansHeure: etat.sansHeure, ...reglages
+        });
+        attente.arreter();
         ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), { onReglages: () => { render(el); dessiner(); } });
       } catch (err) {
+        attente.arreter();
+        render(el);
+        dessiner();
         toast(err.message || 'La génération a échoué.');
-        e.target.disabled = false;
-        e.target.textContent = libelleBouton();
       }
     };
   }
@@ -750,6 +925,9 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
   function dessiner() {
     const p = etat.program;
     const ws = PE.parJour(etat);
+    const cycles = PE.parBloc(etat);
+    const parSemaine = PE.seancesParSemaine(p);
+    const periodise = (p.blocks || []).length > 0;
     const neuf = !etat.original;
     const minute = PE.minuteDuJour(p);
     const intact = PE.intact(p);
@@ -764,7 +942,8 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
           <input type="text" data-nom maxlength="80" value="${esc(p.name)}"></label>
         <p class="ligne-stats" style="margin:0 0 .6rem">
           <span>${p.weeks} semaines</span>
-          <span>${ws.length} séance${ws.length > 1 ? 's' : ''} / semaine</span>
+          <span>${parSemaine} séance${parSemaine > 1 ? 's' : ''} / semaine</span>
+          ${p.blocks && p.blocks.length > 1 ? `<span>${p.blocks.length} cycles</span>` : ''}
           <span>${esc(libelleNiveau(p.level))}</span>
         </p>
         ${neuf ? `<p class="etat-mono" style="margin:0 0 1rem">Rien n'est encore enregistré. Ajuste ce que tu
@@ -789,16 +968,31 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
           <p>${esc(p.notes.trim()).replace(/\n/g, '<br>')}</p>
         </details>` : ''}
 
-        <p class="bloc-titre" style="margin-top:1.5rem">Séances de la semaine</p>
+        <!-- PROGRAMME PÉRIODISÉ : les séances sont rangées par cycle, parce
+             qu'un bloc d'accumulation et un bloc de force n'ont ni les mêmes
+             exercices ni le même format. Une séance identique d'un bloc à
+             l'autre apparaît sous chacun : c'est la même, et la modifier dans
+             un bloc la modifie partout. -->
+        <p class="bloc-titre" style="margin-top:1.5rem">${periodise ? 'Les cycles du programme' : 'Séances de la semaine'}</p>
+        ${periodise ? `<p class="etat-mono" style="margin:-.4rem 0 .6rem">Le programme avance par
+          blocs. Chaque bloc a son but, et peut avoir ses propres exercices, son propre format
+          et ses propres méthodes.</p>` : ''}
         <div data-modeles></div>
         <button class="btn btn-ghost" data-ajouter type="button" style="width:100%">＋ Ajouter une séance</button>
+        ${periodise && p.blocks.length > 1 ? `<p class="etat-mono" style="margin:.4rem 0 0">Une séance
+          ajoutée ici revient chaque semaine, dans tous les cycles.</p>` : ''}
 
         <p class="bloc-titre" style="margin-top:1.5rem">Heure des séances</p>
+        <label class="case-ligne">
+          <input type="checkbox" data-sans-heure ${p.sansHeure ? 'checked' : ''}>
+          <span>Peu importe l'heure — à faire dans la journée</span></label>
+        ${p.sansHeure ? `<p class="etat-mono" style="margin:.2rem 0 0">À faire ce jour-là, à l'heure
+          qui t'arrange.</p>` : `
         <div class="prog-pas">
           <button class="btn btn-ghost" data-heure="-15" type="button">−</button>
           <b>${heureLabel(minute)}</b>
           <button class="btn btn-ghost" data-heure="15" type="button">+</button>
-        </div>
+        </div>`}
         ${intact && prem ? `
           <p class="bloc-titre">Première séance</p>
           <div class="prog-pas">
@@ -829,7 +1023,10 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
       const demande = page.querySelector('[data-demande]').value.trim();
       if (!demande) return toast('Dis à Moti ce que tu veux changer.');
       enCours = true; messageMoti = '';
-      dessiner();
+      // Une réécriture dure aussi longtemps qu'une génération : même écran
+      // d'attente, pour la même raison.
+      const attente = ecranAttenteMoti('Moti réécrit ton programme', ETAPES_MODIF);
+      render(attente.el);
       // Moti travaille sur une COPIE : en cas d'échec, rien n'a bougé.
       const travail = PE.copierEtat(etat);
       try {
@@ -840,7 +1037,9 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
       } catch (err) {
         toast(err.message || 'Moti n\'a pas pu modifier le programme.');
       }
+      attente.arreter();
       enCours = false;
+      render(page);
       dessiner();
     });
     page.querySelector('[data-annuler-moti]')?.addEventListener('click', () => {
@@ -850,7 +1049,7 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
 
     // ---- séances ----
     const zone = page.querySelector('[data-modeles]');
-    ws.forEach(w => {
+    function carteModele(w) {
       const jour = PE.jourDe(p, w.id);
       const carte = h(`
         <div class="prog-modele">
@@ -873,7 +1072,11 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
       const ul = carte.querySelector('.prog-exos');
       if (!(w.exercises || []).length) ul.appendChild(h('<li class="prog-alerte">Aucun exercice pour l\'instant.</li>'));
       (w.exercises || []).forEach(e => {
-        const li = h(`<li><span>${esc(e.name)} — ${esc(doseExercice(w, e))}</span></li>`);
+        /* Taper l'exercice mène là où on peut le remplacer : la liste de la
+           séance, où son nom ouvre le catalogue. C'est le geste qu'on essaie
+           d'abord, et il ne menait nulle part. */
+        const li = h(`<li><button type="button" class="prog-exo-lien">${esc(e.name)} — ${esc(doseExercice(w, e))}</button></li>`);
+        li.querySelector('button').onclick = () => editerSeance(w);
         const vg = vignetteExercice(e.name, 30);
         if (vg) li.prepend(vg);
         ul.appendChild(li);
@@ -898,8 +1101,16 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
         });
         if (ok) { PE.retirerModele(etat, w.id); dessiner(); }
       };
-      zone.appendChild(carte);
-    });
+      return carte;
+    }
+    if (periodise) {
+      cycles.forEach(({ bloc, modeles }) => {
+        zone.appendChild(carteCycle(bloc));
+        modeles.forEach(w => zone.appendChild(carteModele(w)));
+      });
+    } else {
+      ws.forEach(w => zone.appendChild(carteModele(w)));
+    }
 
     page.querySelector('[data-ajouter]').onclick = async () => {
       const pris = ws.map(w => PE.jourDe(p, w.id));
@@ -918,6 +1129,10 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
     };
 
     // ---- planning ----
+    page.querySelector('[data-sans-heure]').onchange = (ev) => {
+      PE.changerSansHeure(p, ev.target.checked);
+      dessiner();
+    };
     page.querySelectorAll('[data-heure]').forEach(b => {
       b.onclick = () => { PE.changerHeure(p, (minute + Number(b.dataset.heure) + 1440) % 1440); dessiner(); };
     });
@@ -928,6 +1143,10 @@ async function ouvrirEditeur(moi, etatInitial, { onReglages = null }) {
     for (let s = 1; s <= p.weeks; s++) {
       const ss = p.sessions.filter(x => x.week === s).sort((a, b) => a.dateMs - b.dateMs);
       if (!ss.length) continue;
+      // Le cycle s'annonce à la semaine où il commence : c'est ce qui fait
+      // voir, en déroulant le planning, que le programme change de nature.
+      const debutCycle = (p.blocks || []).find(b => b.weekStart === s);
+      if (debutCycle) zonePlanning.appendChild(carteCycle(debutCycle));
       zonePlanning.appendChild(h(`<p class="prog-semaine-mini">Semaine ${s}${ss.some(x => x.deload) ? ' · décharge' : ''}</p>`));
       ss.forEach(x => zonePlanning.appendChild(h(
         `<p class="prog-ligne-mini ${faite(x) ? 'passee' : ''}">${faite(x) ? '✓ ' : ''}${esc(dateBreve(x.dateMs))} · ${esc(x.title)}</p>`)));

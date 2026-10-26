@@ -20,8 +20,8 @@ import { sb } from './supabase.js';
 import { CIRCUIT_WORK_SEC } from './model.js';
 import { getWorkout, saveWorkout, deleteWorkout, saveProgram, listPrograms } from './api.js';
 import {
-  WEEK_DAYS, JOURS_IA, minuit, premierJourApres, plusJours, catalogueFiltre,
-  construireDraft, motifLisible
+  WEEK_DAYS, JOURS_IA, MINUTE_LIBRE, minuit, premierJourApres, plusJours,
+  catalogueFiltre, construireDraft, motifLisible
 } from './programme-ia.js';
 
 export const JOURS_LONGS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -107,6 +107,57 @@ export const intact = (p) => semainesEntamees(p) === 0;
 export function parJour(etat) {
   return [...etat.workouts].sort((a, b) =>
     WEEK_DAYS.indexOf(jourDe(etat.program, a.id)) - WEEK_DAYS.indexOf(jourDe(etat.program, b.id)));
+}
+
+/**
+ * SÉANCES PAR SEMAINE — et non le nombre de modèles, qui lui est supérieur dès
+ * qu'un programme est périodisé : un 3 blocs × 4 séances compte douze modèles
+ * pour quatre séances par semaine (sessionsPerWeek, ProgramEdit.kt).
+ */
+export function seancesParSemaine(p) {
+  const parSem = new Map();
+  (p.sessions || []).forEach(s => parSem.set(s.week, (parSem.get(s.week) || 0) + 1));
+  const max = parSem.size ? Math.max(...parSem.values()) : 0;
+  return max || Math.max(1, p.daysPerWeek || 1);
+}
+
+const couvre = (b, semaine) => semaine >= b.weekStart && semaine <= b.weekEnd;
+
+/** « semaines 1 à 4 », ou « semaine 5 » pour un bloc d'une semaine
+ *  (ProgramBlock.weeksLabel, ProgramModel.kt). */
+export function libelleSemaines(b) {
+  return b.weekStart >= b.weekEnd ? `semaine ${b.weekStart}` : `semaines ${b.weekStart} à ${b.weekEnd}`;
+}
+
+/** Les cycles du programme, ou un cycle implicite unique pour un programme qui
+ *  n'est pas périodisé — l'algorithme maison, ou n'importe quel programme
+ *  d'avant la v2.84. L'absence de vrai bloc se lit à son `label` vide. */
+export function blocs(p) {
+  const b = p.blocks || [];
+  return b.length ? b : [{ label: '', goal: '', weekStart: 1, weekEnd: p.weeks, deload: false }];
+}
+
+/** Le cycle qui couvre cette semaine, ou null pour un programme non périodisé. */
+export function blocDeSemaine(p, semaine) {
+  return (p.blocks || []).find(b => couvre(b, semaine)) || null;
+}
+
+/**
+ * Les modèles rangés par cycle, chacun dans l'ordre de la semaine (byBlock,
+ * ProgramEdit.kt). Un modèle que plusieurs blocs se partagent — parce que ces
+ * blocs ne changent que le volume — apparaît sous chacun d'eux : c'est la
+ * vérité, cette séance se fait bien dans les deux.
+ */
+export function parBloc(etat) {
+  const p = etat.program;
+  return blocs(p)
+    .map(b => ({
+      bloc: b,
+      modeles: etat.workouts
+        .filter(w => p.sessions.some(s => s.workoutId === w.id && couvre(b, s.week)))
+        .sort((x, y) => WEEK_DAYS.indexOf(jourDe(p, x.id)) - WEEK_DAYS.indexOf(jourDe(p, y.id)))
+    }))
+    .filter(x => x.modeles.length);
 }
 
 /** Nombre de séries prévues, quel que soit le mode (toursPrevus, WorkoutModel.kt). */
@@ -242,6 +293,19 @@ export function changerHeure(p, minute) {
   p.sessions.filter(s => !faite(s)).forEach(s => { s.dateMs = aLaMinute(s.dateMs, minute); });
 }
 
+/**
+ * « Dans la journée » plutôt qu'à une heure fixe, et retour (setSansHeure,
+ * ProgramEdit.kt). Les séances restent datées — un planning se trie — mais à
+ * midi, et l'heure n'est plus affichée. En repassant à une heure fixe on
+ * retombe sur 18 h, l'heure proposée par défaut à la création : midi serait un
+ * reste du mode précédent, pas un choix.
+ */
+export function changerSansHeure(p, libre) {
+  if (!!p.sansHeure === !!libre) return;
+  p.sansHeure = !!libre;
+  changerHeure(p, libre ? MINUTE_LIBRE : 18 * 60);
+}
+
 /** Décale tout le programme — seulement s'il n'a pas commencé, jamais avant aujourd'hui. */
 export function decalerSemaines(p, n) {
   if (!intact(p) || !n || !p.sessions.length) return false;
@@ -270,14 +334,19 @@ export function ajouterModele(etat, w, dow) {
     const date = plusJours(premier, 7 * (semaine - 1));
     if (date < auj) continue;
     const decharge = p.sessions.some(s => s.week === semaine && s.deload);
+    /* La consigne porte le nom du cycle de cette semaine, comme celles
+       qu'écrit Moti : une séance ajoutée à la main ne doit pas être la seule
+       du planning à ne pas dire dans quel bloc elle tombe. */
+    const cycle = blocDeSemaine(p, semaine)?.label;
+    const hint = cycle ? `${cycle} — ${HINT_DEFAUT.toLowerCase()}` : '';
     p.sessions.push({
       id: nouvelIdSeance(p, ++k), week: semaine, dateMs: date, workoutId: w.id,
       title: w.name, category: w.category, deload: decharge,
-      items: (w.exercises || []).map(e => prevuDepuis(w, e, decharge, '')),
+      items: (w.exercises || []).map(e => prevuDepuis(w, e, decharge, hint)),
       doneAt: 0, skipped: false, eventId: 0
     });
   }
-  p.daysPerWeek = etat.workouts.length;
+  p.daysPerWeek = seancesParSemaine(p);
   p.sessions.sort((a, b) => a.dateMs - b.dateMs);
 }
 
@@ -287,7 +356,7 @@ export function retirerModele(etat, wid) {
   etat.workouts = etat.workouts.filter(w => w.id !== wid);
   p.workoutIds = p.workoutIds.filter(id => id !== wid);
   p.sessions = p.sessions.filter(s => s.workoutId !== wid || faite(s));
-  p.daysPerWeek = Math.max(1, etat.workouts.length);
+  p.daysPerWeek = Math.max(1, seancesParSemaine(p));
 }
 
 /** Ce qui empêche d'enregistrer, ou null. */
@@ -324,7 +393,7 @@ export async function enregistrer(moiId, etat) {
     const row = await getWorkout(moiId, id).catch(() => null);
     if (row && !((row.data || {}).history || []).length) await deleteWorkout(moiId, id).catch(() => {});
   }
-  etat.program.daysPerWeek = Math.max(1, etat.workouts.length);
+  etat.program.daysPerWeek = Math.max(1, seancesParSemaine(etat.program));
   etat.program.sessions.sort((a, b) => a.dateMs - b.dateMs);
   await saveProgram(moiId, etat.program);
   return etat.program;
@@ -425,7 +494,12 @@ export function exercicesDeLaSemaine(w, prevue) {
  */
 export function versIA(etat) {
   const p = etat.program;
-  const ws = parJour(etat);
+  /* LA DÉFINITION DE RÉFÉRENCE, C'EST LE PREMIER BLOC : les suivants s'en
+     écartent, et le contrat de la fonction veut un élément par séance, dans le
+     même ordre, d'un bloc à l'autre. Le jour de la semaine est ce qui
+     identifie une séance d'un bloc au suivant. */
+  const ws = parBloc(etat)[0]?.modeles || parJour(etat);
+  const joursRef = ws.map(w => jourDe(p, w.id));
   const sessions = ws.map(w => {
     const s = {
       title: w.name, category: w.category,
@@ -438,6 +512,26 @@ export function versIA(etat) {
     if (w.circuit) Object.assign(s, { circuit: true, rounds: w.rounds, round_rest_sec: w.roundRestSec });
     return s;
   });
+
+  /* PROGRAMME PÉRIODISÉ : une phase par cycle, avec ce que le cycle change —
+     exercices, format, méthodes. Reconstruire les phases depuis le planning,
+     comme ci-dessous, ferait perdre à Moti le nom et la raison de chaque bloc,
+     et il les réinventerait à chaque modification. */
+  if ((p.blocks || []).length) {
+    const phases = blocs(p).map(b => {
+      const duBloc = etat.workouts
+        .filter(w => p.sessions.some(s => s.workoutId === w.id && couvre(b, s.week)))
+        .sort((x, y) => WEEK_DAYS.indexOf(jourDe(p, x.id)) - WEEK_DAYS.indexOf(jourDe(p, y.id)));
+      return {
+        label: b.label || `Semaines ${b.weekStart} à ${b.weekEnd}`,
+        goal: b.goal || '',
+        week_start: b.weekStart, week_end: b.weekEnd, deload: !!b.deload,
+        sessions: joursRef.map((jour, i) =>
+          seanceDeBloc(p, b, duBloc.find(w => jourDe(p, w.id) === jour) || duBloc[i] || ws[i], ws[i]))
+      };
+    });
+    return { name: p.name, notes: p.notes || '', sessions, phases };
+  }
 
   const signature = (semaine) => ws.map(w => {
     const ss = p.sessions.find(s => s.week === semaine && s.workoutId === w.id);
@@ -466,6 +560,7 @@ export function versIA(etat) {
     while (fin + 1 <= p.weeks && JSON.stringify(signature(fin + 1)) === sig && decharge(fin + 1) === dl) fin++;
     phases.push({
       label: etiquette(debutBloc) || (debutBloc === fin ? `Semaine ${debutBloc}` : `Semaines ${debutBloc} à ${fin}`),
+      goal: '',
       week_start: debutBloc, week_end: fin, deload: dl,
       sessions: JSON.parse(sig).map(exs => ({
         exercises: exs.map(([sets, reps, recup]) => ({ sets, reps, recup_sec: recup }))
@@ -474,6 +569,69 @@ export function versIA(etat) {
     debutBloc = fin + 1;
   }
   return { name: p.name, notes: p.notes || '', sessions, phases };
+}
+
+/** Les consignes que l'application écrit elle-même : elles ne sont pas des
+ *  méthodes d'intensification et n'ont rien à faire dans la demande. */
+const CONSIGNES_AUTO = [
+  'poids conseillé pendant la séance, selon ton rir',
+  'tenir la position sans forcer',
+  'charges allégées'
+];
+
+/** La méthode d'intensification écrite dans la consigne d'un exercice prévu
+ *  (« série dégressive sur la dernière »), ou null quand la consigne est l'une
+ *  de celles que l'application compose seule. Elle vit dans le planning et
+ *  nulle part ailleurs : sans cette lecture, Moti la perdrait à chaque
+ *  modification (methodOf, ProgramEdit.kt). */
+function methodeDe(hint) {
+  const h = String(hint || '').trim();
+  if (!h || h.startsWith('Semaine de décharge') || !h.includes(' — ')) return null;
+  const corps = h.slice(h.indexOf(' — ') + 3).trim();
+  if (!corps || CONSIGNES_AUTO.includes(corps.toLowerCase()) || corps.startsWith('circuit,')) return null;
+  return corps.slice(0, 60);
+}
+
+/**
+ * Une séance telle qu'un CYCLE la fait, au format attendu par la fonction :
+ * seulement ce qui s'écarte de la définition de référence (`ref`) — un
+ * exercice remplacé, un format, un titre — plus les séries et répétitions de
+ * ce bloc, lues dans son planning (phaseSessionJson, ProgramEdit.kt).
+ */
+function seanceDeBloc(p, b, w, ref) {
+  if (!w) return { exercises: [] };
+  const o = {};
+  if (ref && w.name !== ref.name) o.title = w.name;
+  if (ref && w.notes && w.notes !== ref.notes) o.notes = w.notes;
+  if (!!w.circuit !== !!(ref && ref.circuit)) {
+    o.circuit = !!w.circuit;
+    if (w.circuit) { o.rounds = w.rounds; o.round_rest_sec = w.roundRestSec; }
+  }
+  const plan = p.sessions.find(s => s.workoutId === w.id && couvre(b, s.week));
+  const exercises = (w.exercises || []);
+  o.exercises = exercises.map((e, i) => {
+    const prevu = (plan?.items || []).find(x => x.name === e.name);
+    const refEx = ref && (ref.exercises || [])[i];
+    const ex = {
+      sets: prevu?.sets ?? seriesDe(w, e),
+      // Contrat de la fonction : 1 répétition pour une position tenue.
+      reps: Math.max(tenu(w, e) ? 1 : 0, prevu?.reps ?? e.targetReps ?? 0),
+      recup_sec: prevu?.recupSec ?? e.recupSec
+    };
+    // Le nom ne repart que si ce bloc a changé le mouvement : le contrat veut
+    // des écarts, pas une redite de la référence.
+    if (!refEx || refEx.name !== e.name) ex.name = e.name;
+    if (e.mode !== 'MINUTEUR') ex.mode = e.mode;
+    if (w.circuit || e.mode === 'TABATA' || e.mode === 'EMOM' || e.mode === 'MAINTIEN') {
+      ex.hold_sec = e.workSec > 0 ? e.workSec : CIRCUIT_WORK_SEC;
+      ex.hold_rest_sec = e.restSec;
+    }
+    if (i < exercises.length - 1 && e.groupId && e.groupId === exercises[i + 1].groupId) ex.link_next = true;
+    const m = methodeDe(prevu?.hint);
+    if (m) ex.method = m;
+    return ex;
+  });
+  return o;
 }
 
 const norm = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -524,9 +682,17 @@ export function fusionnerIA(etat, draft) {
   if ((np.name || '').trim()) p.name = np.name;
   if ((np.notes || '').trim()) p.notes = np.notes;
   p.weeks = Math.max(np.weeks, garde.reduce((m, s) => Math.max(m, s.week), 0));
+  /* Les cycles viennent de Moti, qui a pu les réécrire. Un programme allongé
+     garde un dernier bloc qui s'arrête trop tôt : on l'étire jusqu'au bout,
+     sinon les dernières semaines n'appartiendraient à aucun bloc et
+     s'afficheraient sans titre. */
+  p.blocks = (np.blocks || []).map(b => ({ ...b }));
+  if (p.blocks.length && p.blocks[p.blocks.length - 1].weekEnd < p.weeks) {
+    p.blocks[p.blocks.length - 1].weekEnd = p.weeks;
+  }
   p.workoutIds = workouts.map(w => w.id);
-  p.daysPerWeek = Math.max(1, workouts.length);
   etat.workouts = workouts;
+  p.daysPerWeek = Math.max(1, seancesParSemaine(p));
 }
 
 /**
@@ -551,9 +717,10 @@ export async function modifierProgrammeIA(etat, instruction) {
   let draft;
   try {
     draft = construireDraft(data, {
-      level: p.level, daysPerWeek: etat.workouts.length, weeks: p.weeks,
+      level: p.level, daysPerWeek: seancesParSemaine(p), weeks: p.weeks,
       weekdays: etat.workouts.map(w => jourDe(p, w.id)),
-      minuteOfDay: minuteDuJour(p), startMs: debut(p), modifie: true
+      minuteOfDay: minuteDuJour(p), startMs: debut(p), modifie: true,
+      sansHeure: !!p.sansHeure
     });
   } catch (e) {
     throw new Error(`Réponse reçue mais illisible (${e.message || 'format inattendu'}).`);

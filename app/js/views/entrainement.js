@@ -1174,7 +1174,8 @@ export async function vueSeanceEdition(params, integre = null) {
       <div class="exo-edit">
         <div class="exo-edit-tete">
           <span class="exo-edit-poignee">⠿</span>
-          <span class="exo-edit-nom">${i + 1}.  ${esc(ex.name || `Exercice ${i + 1}`)}</span>
+          <button type="button" class="exo-edit-nom" data-renommer-exo
+            aria-label="Changer d'exercice">${i + 1}.  ${esc(ex.name || `Exercice ${i + 1}`)} <span class="exo-edit-chevron">▾</span></button>
           <span class="exo-edit-suppr">✕</span>
         </div>
         <p class="exo-edit-meta">${seance.circuit
@@ -1185,6 +1186,17 @@ export async function vueSeanceEdition(params, integre = null) {
         <div class="rangee rangee-serree" data-champs></div>
         <button class="lien-inline" data-deplier type="button">Régler ce mode</button>
       </div>`);
+
+    /* REMPLACER UN EXERCICE SANS LE SUPPRIMER. Le nom n'était qu'un libellé :
+       pour changer un exercice il fallait retirer la ligne et en rajouter une,
+       donc repasser par tous ses réglages et la perdre de place dans la liste.
+       Un appui sur le nom ouvre le catalogue, et seul le nom change — séries,
+       répétitions, récupération, enchaînements et position restent. Côté
+       application, c'est ce que fait déjà la fiche de l'exercice
+       (ExerciseDialog, TrainingScreens.kt). */
+    c.querySelector('[data-renommer-exo]').onclick = () => {
+      ouvrirCatalogue((nom) => { ex.name = nom; redessiner(); });
+    };
 
     const champs = c.querySelector('[data-champs]');
     // Le panneau replié se rouvrait à chaque redessin, donc à chaque réglage

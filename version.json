@@ -1,6 +1,6 @@
 {
-  "versionCode": 185,
-  "versionName": "2.83",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.83/motio.apk",
-  "notes": "Moti lit ton carnet avant d'ecrire un programme : tes charges reelles exercice par exercice, tes 1RM, ta frequence des 4 dernieres semaines et ce que tu pratiques deja. Il part de ce que tu souleves aujourd'hui au lieu d'une table generique, et il explique sur quels chiffres il s'est appuye. Le chat profite du meme carnet enrichi."
+  "versionCode": 186,
+  "versionName": "2.84",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.84/motio.apk",
+  "notes": "Moti construit de vrais cycles d'entrainement : chaque bloc a son nom, sa raison d'etre, et change reellement d'un bloc a l'autre (exercices, format, methodes d'intensification). Superserie, degressive, rest-pause, AMRAP, EMOM : la methode s'affiche pendant la seance. Fini les 3 series partout. Tu peux laisser Moti decider du nombre de semaines, ou lui donner une date objectif. Horaire facultatif, et un ecran d'attente pendant qu'il travaille."
 }

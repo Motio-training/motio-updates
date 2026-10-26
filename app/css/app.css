@@ -917,7 +917,13 @@ a.ligne-titre:hover{color:var(--accent)}
 .exo-edit-poignee{color:var(--encre-2);font-size:1.1rem;cursor:grab;flex:none;touch-action:none;user-select:none}
 .exo-edit.dragging{position:relative;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.35);cursor:grabbing}
 .exo-edit.dragging .exo-edit-poignee{cursor:grabbing}
-.exo-edit-nom{flex:1;font-family:var(--f-display);font-weight:700;font-size:1rem;color:var(--encre)}
+/* Le nom est un BOUTON : il ouvre le catalogue pour REMPLACER l'exercice sans
+   toucher à ses réglages. Il reste dessiné comme un titre, le chevron seul
+   annonce qu'il s'ouvre. */
+.exo-edit-nom{flex:1;font-family:var(--f-display);font-weight:700;font-size:1rem;color:var(--encre);
+  background:none;border:0;padding:0;text-align:left;cursor:pointer;line-height:1.3}
+.exo-edit-chevron{color:var(--accent);font-size:.8rem}
+.exo-edit-nom:hover .exo-edit-chevron{color:var(--encre)}
 .exo-edit-suppr{color:var(--encre-2);font-size:1.05rem;cursor:pointer;flex:none;padding:.2rem}
 .exo-edit-meta{margin:.3rem 0 0;color:var(--encre-2);font-size:.8rem}
 .exo-edit-meta .etiquette{margin-left:.5rem}
@@ -2127,6 +2133,11 @@ body:not(.connecte) #vue:has(.onb){
 }
 .prog-exos{list-style:none;margin:.6rem 0 .3rem;padding:0}
 .prog-exos li{display:flex;align-items:center;gap:.55rem;padding:.2rem 0;font-size:.86rem}
+/* L'exercice est cliquable : il mène à la liste de la séance, où son nom
+   ouvre le catalogue pour le remplacer. */
+.prog-exo-lien{flex:1;background:none;border:0;padding:0;text-align:left;cursor:pointer;
+  color:inherit;font:inherit;line-height:1.4}
+.prog-exo-lien:hover{color:var(--accent)}
 .prog-modele-actions{display:flex;gap:1.1rem;align-items:center;flex-wrap:wrap}
 .prog-modele-actions .lien-danger{margin-left:auto}
 .prog-pas{display:flex;align-items:center;gap:.8rem;margin:0 0 .8rem}
@@ -2224,3 +2235,32 @@ body:not(.connecte) #vue:has(.onb){
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .pastille-hl.hors::before{content:'';display:inline-block;width:.5rem;height:.5rem;margin-right:.45rem;border-radius:50%;background:#D9A24A;vertical-align:.05rem}
+
+/* ---- Attente de Moti (programmes.js) : une génération dure de trente
+   secondes à une minute, il faut que ça se voie. Avatar, barre qui court,
+   étape en cours. ---- */
+.attente-moti{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:60vh;text-align:center;gap:.9rem}
+.attente-moti h1{margin:0;font-size:1.3rem}
+.attente-avatar{width:72px;height:72px;border-radius:50%;object-fit:cover}
+.attente-barre{width:100%;max-width:22rem;height:4px;border-radius:2px;background:var(--trait);overflow:hidden}
+.attente-barre span{display:block;width:40%;height:100%;border-radius:2px;background:var(--accent);
+  animation:attente-court 1.4s ease-in-out infinite}
+@keyframes attente-court{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+@media (prefers-reduced-motion:reduce){.attente-barre span{animation:none;width:100%}}
+.attente-etape{margin:0;color:var(--accent);font-weight:700;font-size:.95rem;line-height:1.45}
+.attente-moti .etat-mono{margin:0;max-width:24rem}
+
+/* ---- Cycles d'un programme (programmes.js) : le nom du bloc et la raison de
+   sa présence, en tête des séances comme du planning. C'est ce qui fait voir
+   que le programme est périodisé et pas recopié. ---- */
+.bloc-cycle{background:var(--creme-2);border-radius:var(--r-md);
+  padding:.75rem .9rem;margin:1rem 0 .6rem}
+.bloc-cycle-tete{display:flex;align-items:baseline;gap:.6rem}
+.bloc-cycle-nom{flex:1;font-family:var(--f-display);font-weight:700;color:var(--accent);font-size:.98rem}
+.bloc-cycle-sem{color:var(--encre-2);font-size:.78rem;white-space:nowrap}
+.bloc-cycle-but{margin:.4rem 0 0;color:var(--encre);font-size:.84rem;line-height:1.5}
+
+/* Case à cocher sur sa ligne, avec son libellé à droite (horaire libre). */
+.case-ligne{display:flex;align-items:center;gap:.55rem;margin:.1rem 0 .3rem;cursor:pointer;font-size:.9rem}
+.case-ligne input{width:1.05rem;height:1.05rem;flex:none;accent-color:var(--accent)}

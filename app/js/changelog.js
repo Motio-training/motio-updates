@@ -622,4 +622,14 @@ export const CHANGELOG = [
                 "Si tu demandes plus de séances que tu n'en tiens réellement, il le construit quand même mais te le dit",
                 "Le chat profite du même carnet enrichi"
             ] },
+  { date: "26 octobre 2026", versions: "v2.84", items: [
+                "Moti construit de vrais CYCLES d'entraînement : chaque bloc a son nom, sa raison d'être, et change réellement d'un bloc à l'autre — exercices, format, méthodes d'intensification",
+                "Supersérie, série dégressive, rest-pause, AMRAP, EMOM, tempo imposé : la méthode s'affiche sous l'exercice pendant la séance",
+                "Le planning annonce chaque cycle avec son explication, à la semaine où il commence",
+                "Fini les 3 séries partout : le volume d'un vrai programme, principal, secondaire et accessoire chacun à sa place",
+                "Tu peux laisser Moti décider du nombre de semaines, ou lui donner une date objectif — compétition, course, test — et il construit la montée en charge pour que tu y arrives au mieux, affûtage compris",
+                "Horaire facultatif : « dans la journée » quand l'heure n'a pas d'importance. L'agenda reçoit alors un événement de journée entière",
+                "Un écran d'attente pendant que Moti travaille, au lieu d'un écran qui semble figé",
+                "Un appui sur le nom d'un exercice ouvre le catalogue pour le remplacer, sans perdre ses réglages"
+            ] },
 ];
