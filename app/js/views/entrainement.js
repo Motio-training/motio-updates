@@ -175,19 +175,22 @@ export async function vueSeances(_params, toutes = false) {
         <h1 style="margin:0">${toutes ? 'TOUTES MES SÉANCES' : 'ENTRAÎNEMENT'}</h1>
       </div>
 
+      <!-- La carte Moti est remontée dans la barre du haut (index.html) : elle
+           volait une ligne entière de l'accueil pour un geste disponible
+           depuis tous les écrans. -->
       ${toutes ? '<a class="lien-inline" href="#/seances" style="display:inline-block;margin-bottom:1rem">‹ Retour à Entraînement</a>' : `
-      <div data-aujourdhui></div>
-      <a class="moti-card" href="#/coach">
-        <img src="../assets/img/moti_avatar.jpg" alt="">
-        <span class="corps"><b>Moti</b><span>Ton coach IA — motivation, conseils, où tu en es</span></span>
-        <span class="chevron">›</span>
-      </a>`}
+      <div data-aujourdhui></div>`}
 
       <div data-reprise></div>
 
+      <!-- Seul élément qui reste collé en haut pendant le défilement : partir
+           s'entraîner doit rester à portée de pouce où qu'on soit dans la
+           liste. Le conteneur porte le fond, sinon les cartes défileraient
+           en transparence derrière le bouton. -->
       ${toutes ? '' : `
-      <a class="btn btn-lg libre-bouton" href="#/seances/libre/lancer">Entraînement libre</a>
-      <p class="libre-aide">Démarre sans plan : tu ajoutes les exercices au fur et à mesure.</p>`}
+      <div class="libre-sticky">
+        <a class="btn btn-lg libre-bouton" href="#/seances/libre/lancer">Entraînement libre</a>
+      </div>`}
 
       <div data-corps></div>
     </section>`);

@@ -611,4 +611,9 @@ export const CHANGELOG = [
                 "Nouveau programme : un champ « Des précisions pour Moti ? » sous l'objectif, pour dire ce que tu veux AVANT la génération plutôt que de corriger après",
                 "Laissé vide, rien ne change : le programme sort tout de suite du générateur de Motio. Rempli, c'est Moti qui l'écrit, en tenant compte de l'objectif choisi et de tes précisions"
             ] },
+  { date: "26 octobre 2026", versions: "v2.82", items: [
+                "Moti passe dans la barre du haut, entre le logo et la roue crantée : on lui parle depuis n'importe quel écran, et l'accueil récupère sa ligne",
+                "Entraînement : la carte du jour défile maintenant avec la page. « Entraînement libre » est le seul à rester collé en haut quand tu descends",
+                "Nouveau programme : la vignette « Objectif précis » disparaît, le champ de précisions sous l'objectif la remplace"
+            ] },
 ];

@@ -545,27 +545,26 @@ export async function vueProgrammeNouveau() {
   render(el);
   dessiner();
 
-  /* Ce que le bouton va faire, d'après l'objectif et les précisions écrites :
-     c'est ce qui décide du libellé ET de la branche de génération. */
-  function modeIA() { return etat.objectif === 'IA' || (avecIA && !!etat.goalText.trim()); }
+  /* Ce que le bouton va faire, d'après les précisions écrites : c'est ce qui
+     décide du libellé ET de la branche de génération. */
+  function modeIA() { return avecIA && !!etat.goalText.trim(); }
   function libelleBouton() { return modeIA() ? 'Générer avec Moti' : "Voir l'aperçu"; }
 
   /**
-   * La demande envoyée à Moti quand un objectif type est choisi ET que des
-   * précisions ont été écrites. L'objectif donne le cadre, les précisions le
-   * détail : envoyer les précisions seules ferait perdre le type d'objectif,
-   * que l'utilisateur vient pourtant de choisir juste au-dessus.
+   * La demande envoyée à Moti : l'objectif donne le cadre, les précisions le
+   * détail. Envoyer les précisions seules ferait perdre le type d'objectif,
+   * que l'utilisateur vient pourtant de choisir juste au-dessus. Formulation
+   * identique côté natif (demandeAvecObjectif, ProgramScreens.kt) : les deux
+   * doivent produire le même texte, sinon le même programme demandé des deux
+   * côtés ne sortirait pas pareil.
    */
   function demandeComposee() {
-    const texte = etat.goalText.trim();
-    if (etat.objectif === 'IA') return texte;
     const g = GOALS.find(x => x.id === etat.objectif);
     const cadre = g ? `${g.label} (${g.desc.toLowerCase()})` : etat.objectif;
-    return `Objectif : ${cadre}.\nPrécisions de l'utilisateur : ${texte}`;
+    return `Objectif : ${cadre}.\nPrécisions de l'utilisateur : ${etat.goalText.trim()}`;
   }
 
   function dessiner() {
-    const ia = etat.objectif === 'IA';
     el.replaceChildren(h(`
       <div>
         <p class="eyebrow"><a href="#/programmes">Programmes</a></p>
@@ -580,16 +579,14 @@ export async function vueProgrammeNouveau() {
              Même règle que la génération d'une séance (ouvrirGenerationSeance)
              et que le natif (AutoSessionDialog, ProgramScreens.kt). -->
         <label class="champ" style="max-width:none">
-          <span>${ia ? 'Ton objectif, en une phrase' : 'Des précisions pour Moti ? (facultatif)'}</span>
+          <span>Des précisions pour Moti ? (facultatif)</span>
           <textarea data-objectif-texte rows="3" maxlength="600" ${avecIA ? '' : 'disabled'}
-            placeholder="${!avecIA
-              ? "Décris ce que tu veux et le coach écrit le programme — avec l'abonnement."
-              : ia
-                ? 'Ex. : record au développé couché dans 8 semaines, explosivité en saut, préparation à un semi-marathon…'
-                : 'Ex. : épaule droite fragile, pas de développé militaire ; insiste sur les jambes ; 45 min maximum par séance ; créneau du midi en salle…'}">${esc(etat.goalText)}</textarea></label>
-        ${ia ? '' : `<p class="etat-mono" style="margin:-.6rem 0 1.25rem">${avecIA
+            placeholder="${avecIA
+              ? 'Ex. : épaule droite fragile, pas de développé militaire ; insiste sur les jambes ; 45 min maximum par séance ; créneau du midi en salle…'
+              : "Décris ce que tu veux et le coach écrit le programme — avec l'abonnement."}">${esc(etat.goalText)}</textarea></label>
+        <p class="etat-mono" style="margin:-.6rem 0 1.25rem">${avecIA
           ? "Laissé vide, le programme est construit tout de suite par l’algorithme de Motio, sans attendre. Rempli, c’est Moti qui l’écrit en tenant compte de ce que tu demandes."
-          : 'Sans abonnement, le programme est construit par l’algorithme de Motio à partir des réglages ci-dessous. Avec, tu décris ce que tu veux et le coach l’écrit.'}</p>`}
+          : 'Sans abonnement, le programme est construit par l’algorithme de Motio à partir des réglages ci-dessous. Avec, tu décris ce que tu veux et le coach l’écrit.'}</p>
 
         <div class="rangee">
           <label class="champ champ-mini"><span>Niveau</span>
@@ -617,14 +614,17 @@ export async function vueProgrammeNouveau() {
         <button class="btn btn-lg" data-generer type="button" style="width:100%">${libelleBouton()}</button>
       </div>`));
 
+    // Plus de vignette « Objectif précis » : elle menait à un écran jumeau
+    // dont le seul apport était le champ libre, qui vit maintenant sous les
+    // objectifs. Un objectif très particulier se décrit dans ce champ, avec
+    // le gabarit le plus proche comme cadre.
     const zoneObj = el.querySelector('[data-objectifs]');
-    [...GOALS, { id: 'IA', label: 'Objectif précis', desc: avecIA ? 'Décris-le en une phrase, Moti construit le programme' : 'Réservé aux abonnés : Moti construit le programme' }]
-      .forEach(g => {
-        const b = h(`<button type="button" class="prog-objectif ${etat.objectif === g.id ? 'on' : ''}" ${g.id === 'IA' && !avecIA ? 'disabled' : ''}>
-            <b>${esc(g.label)}${g.id === 'IA' ? ' <span class="badge-ia">IA</span>' : ''}</b><span>${esc(g.desc)}</span></button>`);
-        b.onclick = () => { etat.objectif = g.id; dessiner(); };
-        zoneObj.appendChild(b);
-      });
+    GOALS.forEach(g => {
+      const b = h(`<button type="button" class="prog-objectif ${etat.objectif === g.id ? 'on' : ''}">
+            <b>${esc(g.label)}</b><span>${esc(g.desc)}</span></button>`);
+      b.onclick = () => { etat.objectif = g.id; dessiner(); };
+      zoneObj.appendChild(b);
+    });
 
     // Le bouton annonce ce qu'il va faire, et ça change dès la première
     // lettre tapée : on le réétiquette sur place plutôt que de redessiner,
@@ -688,8 +688,8 @@ export async function vueProgrammeNouveau() {
         startMs: new Date(`${etat.date}T00:00:00`).getTime()
       };
       definirNiveau(etat.level);
-      if (!ia) definirObjectif(etat.objectif);
-      // Un objectif type SANS précisions reste construit localement : c'est
+      definirObjectif(etat.objectif);
+      // Un objectif SANS précisions reste construit localement : c'est
       // instantané, ça marche hors ligne et sans abonnement. Dès qu'il y a
       // des précisions, elles n'ont de sens que si Moti les lit.
       if (!modeIA()) {
@@ -699,7 +699,6 @@ export async function vueProgrammeNouveau() {
         } catch (err) { return toast(err.message); }
       }
       const texte = demandeComposee();
-      if (ia && !etat.goalText.trim()) return toast('Décris ton objectif en quelques mots.');
       e.target.disabled = true;
       e.target.textContent = 'Moti construit ton programme… (20-30 s)';
       try {
