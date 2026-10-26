@@ -545,6 +545,25 @@ export async function vueProgrammeNouveau() {
   render(el);
   dessiner();
 
+  /* Ce que le bouton va faire, d'après l'objectif et les précisions écrites :
+     c'est ce qui décide du libellé ET de la branche de génération. */
+  function modeIA() { return etat.objectif === 'IA' || (avecIA && !!etat.goalText.trim()); }
+  function libelleBouton() { return modeIA() ? 'Générer avec Moti' : "Voir l'aperçu"; }
+
+  /**
+   * La demande envoyée à Moti quand un objectif type est choisi ET que des
+   * précisions ont été écrites. L'objectif donne le cadre, les précisions le
+   * détail : envoyer les précisions seules ferait perdre le type d'objectif,
+   * que l'utilisateur vient pourtant de choisir juste au-dessus.
+   */
+  function demandeComposee() {
+    const texte = etat.goalText.trim();
+    if (etat.objectif === 'IA') return texte;
+    const g = GOALS.find(x => x.id === etat.objectif);
+    const cadre = g ? `${g.label} (${g.desc.toLowerCase()})` : etat.objectif;
+    return `Objectif : ${cadre}.\nPrécisions de l'utilisateur : ${texte}`;
+  }
+
   function dessiner() {
     const ia = etat.objectif === 'IA';
     el.replaceChildren(h(`
@@ -556,9 +575,21 @@ export async function vueProgrammeNouveau() {
 
         <p class="champ-label">Objectif</p>
         <div class="prog-objectifs" data-objectifs></div>
-        ${ia ? `<label class="champ" style="max-width:none"><span>Ton objectif, en une phrase</span>
-          <textarea data-objectif-texte rows="3" maxlength="600"
-            placeholder="Ex. : record au développé couché dans 8 semaines, explosivité en saut, préparation à un semi-marathon…">${esc(etat.goalText)}</textarea></label>` : ''}
+        <!-- Le champ reste affiché sans abonnement, mais inerte : on voit ce
+             qu'il apporte au lieu de découvrir son existence en s'abonnant.
+             Même règle que la génération d'une séance (ouvrirGenerationSeance)
+             et que le natif (AutoSessionDialog, ProgramScreens.kt). -->
+        <label class="champ" style="max-width:none">
+          <span>${ia ? 'Ton objectif, en une phrase' : 'Des précisions pour Moti ? (facultatif)'}</span>
+          <textarea data-objectif-texte rows="3" maxlength="600" ${avecIA ? '' : 'disabled'}
+            placeholder="${!avecIA
+              ? "Décris ce que tu veux et le coach écrit le programme — avec l'abonnement."
+              : ia
+                ? 'Ex. : record au développé couché dans 8 semaines, explosivité en saut, préparation à un semi-marathon…'
+                : 'Ex. : épaule droite fragile, pas de développé militaire ; insiste sur les jambes ; 45 min maximum par séance ; créneau du midi en salle…'}">${esc(etat.goalText)}</textarea></label>
+        ${ia ? '' : `<p class="etat-mono" style="margin:-.6rem 0 1.25rem">${avecIA
+          ? "Laissé vide, le programme est construit tout de suite par l’algorithme de Motio, sans attendre. Rempli, c’est Moti qui l’écrit en tenant compte de ce que tu demandes."
+          : 'Sans abonnement, le programme est construit par l’algorithme de Motio à partir des réglages ci-dessous. Avec, tu décris ce que tu veux et le coach l’écrit.'}</p>`}
 
         <div class="rangee">
           <label class="champ champ-mini"><span>Niveau</span>
@@ -583,7 +614,7 @@ export async function vueProgrammeNouveau() {
         <p class="champ-label">Matériel disponible (aucun coché = tout matériel)</p>
         <div class="rangee rangee-serree" data-materiel style="margin-bottom:1.25rem"></div>
 
-        <button class="btn btn-lg" data-generer type="button" style="width:100%">${ia ? 'Générer avec Moti' : "Voir l'aperçu"}</button>
+        <button class="btn btn-lg" data-generer type="button" style="width:100%">${libelleBouton()}</button>
       </div>`));
 
     const zoneObj = el.querySelector('[data-objectifs]');
@@ -595,7 +626,14 @@ export async function vueProgrammeNouveau() {
         zoneObj.appendChild(b);
       });
 
-    el.querySelector('[data-objectif-texte]')?.addEventListener('input', (e) => { etat.goalText = e.target.value; });
+    // Le bouton annonce ce qu'il va faire, et ça change dès la première
+    // lettre tapée : on le réétiquette sur place plutôt que de redessiner,
+    // qui ferait perdre le curseur au milieu de la phrase.
+    el.querySelector('[data-objectif-texte]')?.addEventListener('input', (e) => {
+      etat.goalText = e.target.value;
+      const b = el.querySelector('[data-generer]');
+      if (b && !b.disabled) b.textContent = libelleBouton();
+    });
     ajouterMicro(el.querySelector('[data-objectif-texte]'));
     el.querySelector('[data-niveau]').onchange = (e) => { etat.level = e.target.value; };
     el.querySelector('[data-semaines]').onchange = (e) => { etat.weeks = Number(e.target.value); };
@@ -650,15 +688,18 @@ export async function vueProgrammeNouveau() {
         startMs: new Date(`${etat.date}T00:00:00`).getTime()
       };
       definirNiveau(etat.level);
-      if (!ia) {
-        definirObjectif(etat.objectif);
+      if (!ia) definirObjectif(etat.objectif);
+      // Un objectif type SANS précisions reste construit localement : c'est
+      // instantané, ça marche hors ligne et sans abonnement. Dès qu'il y a
+      // des précisions, elles n'ont de sens que si Moti les lit.
+      if (!modeIA()) {
         try {
           const draft = construireProgrammeLocal({ goal: etat.objectif, ...reglages });
           return ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), { onReglages: () => { render(el); dessiner(); } });
         } catch (err) { return toast(err.message); }
       }
-      const texte = etat.goalText.trim();
-      if (!texte) return toast('Décris ton objectif en quelques mots.');
+      const texte = demandeComposee();
+      if (ia && !etat.goalText.trim()) return toast('Décris ton objectif en quelques mots.');
       e.target.disabled = true;
       e.target.textContent = 'Moti construit ton programme… (20-30 s)';
       try {
@@ -667,7 +708,7 @@ export async function vueProgrammeNouveau() {
       } catch (err) {
         toast(err.message || 'La génération a échoué.');
         e.target.disabled = false;
-        e.target.textContent = 'Générer avec Moti';
+        e.target.textContent = libelleBouton();
       }
     };
   }

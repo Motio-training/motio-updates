@@ -607,4 +607,8 @@ export const CHANGELOG = [
   { date: "25 octobre 2026", versions: "v2.80", items: [
                 "Les 30 planches d'exercices qui étaient sur fond noir passent sur fond blanc, comme toutes les autres : le catalogue est enfin homogène"
             ] },
+  { date: "26 octobre 2026", versions: "v2.81", items: [
+                "Nouveau programme : un champ « Des précisions pour Moti ? » sous l'objectif, pour dire ce que tu veux AVANT la génération plutôt que de corriger après",
+                "Laissé vide, rien ne change : le programme sort tout de suite du générateur de Motio. Rempli, c'est Moti qui l'écrit, en tenant compte de l'objectif choisi et de tes précisions"
+            ] },
 ];
