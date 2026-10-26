@@ -135,7 +135,9 @@ export function departParDefaut(jours) {
  * l'assistant ordinaire : seul le texte d'objectif change, puisqu'il vient de
  * l'entretien au lieu du champ de description.
  */
-export function genererDepuisBilan(bilan, { minuteOfDay = 18 * 60, sansHeure = false } = {}) {
+export function genererDepuisBilan(
+  bilan, { minuteOfDay = 18 * 60, sansHeure = false, onEtape = () => {}, reprise = null } = {}
+) {
   return genererProgrammeIA({
     goalText: bilan.cahierDesCharges,
     level: bilan.niveau,
@@ -146,6 +148,8 @@ export function genererDepuisBilan(bilan, { minuteOfDay = 18 * 60, sansHeure = f
     minuteOfDay,
     startMs: departParDefaut(bilan.jours),
     targetDate: bilan.dateObjectif,
-    sansHeure
+    sansHeure,
+    onEtape,
+    reprise
   });
 }

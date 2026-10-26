@@ -28,6 +28,7 @@ import { GROUPES, devineMateriel } from './catalog.js';
 import { nouvelleSeance, nouvelExercice, CIRCUIT_WORK_SEC } from './model.js';
 import { toursPour, toursCircuitPour } from './coach-guide.js';
 import { instantaneAthlete } from './athlete.js';
+import { construire, reprendre } from './programme-build.js';
 
 /** Jours de la semaine dans l'ordre français (lundi d'abord), avec la
  *  numérotation de Date.getDay() (0 = dimanche) — pas besoin de conversion
@@ -492,32 +493,58 @@ export async function genererProgrammeIA({
   goalText, level, daysPerWeek, weeks, gears, weekdays, minuteOfDay, startMs,
   /* `weeks` à 0 : c'est Moti qui décide de la durée, d'après l'objectif.
      `targetDate` : une échéance (compétition, course, test) vers laquelle le
-     programme doit amener, affûtage compris. */
-  targetDate = '', sansHeure = false
+     programme doit amener, affûtage compris.
+     `onEtape` : ce que le serveur est en train d'écrire, pour l'écran
+     d'attente — 'seances' puis 'phases'.
+     `reprise` : reprise d'un travail déjà commencé côté serveur, après une
+     coupure ; on ne renvoie rien de la demande, le serveur l'a déjà. */
+  targetDate = '', sansHeure = false, onEtape = () => {}, reprise = null
 }) {
-  const catalog = catalogueFiltre(gears);
-  if (!catalog.length) throw new Error('Aucun exercice ne correspond au matériel choisi.');
+  let data;
 
-  // CE QUI REND LE PROGRAMME NON GÉNÉRIQUE. Sans cet instantané, la fonction
-  // ne connaît que l'objectif et le niveau déclaré : elle écrit des séries et
-  // des répétitions justes, mais elle DEVINE les charges et ignore ce qui est
-  // réellement pratiqué. Jamais bloquant : mieux vaut une génération un peu
-  // moins informée qu'une génération qui échoue.
-  let athlete = '';
-  try {
-    const moi = await currentUser();
-    if (moi) athlete = await instantaneAthlete(moi);
-  } catch { /* on génère quand même */ }
+  if (reprise) {
+    /* REPRISE après une coupure : le serveur a déjà tout ce qu'il lui faut,
+       on ne relit ni le catalogue ni le carnet — et surtout on ne refait pas
+       l'étape déjà écrite. */
+    data = await reprendre(reprise, onEtape);
+  } else {
+    const catalog = catalogueFiltre(gears);
+    if (!catalog.length) throw new Error('Aucun exercice ne correspond au matériel choisi.');
 
-  const { data, error } = await sb.functions.invoke('generate-program', {
-    body: {
+    // CE QUI REND LE PROGRAMME NON GÉNÉRIQUE. Sans cet instantané, la fonction
+    // ne connaît que l'objectif et le niveau déclaré : elle écrit des séries et
+    // des répétitions justes, mais elle DEVINE les charges et ignore ce qui est
+    // réellement pratiqué. Jamais bloquant : mieux vaut une génération un peu
+    // moins informée qu'une génération qui échoue.
+    let athlete = '';
+    try {
+      const moi = await currentUser();
+      if (moi) athlete = await instantaneAthlete(moi);
+    } catch { /* on génère quand même */ }
+
+    const corps = {
       goal_text: goalText, level, days_per_week: daysPerWeek, weeks,
       gears, catalog, athlete_context: athlete,
       ...(targetDate ? { target_date: targetDate } : {})
+    };
+
+    if (weeks === 1 && daysPerWeek === 1) {
+      /* UNE SÉANCE ISOLÉE (genererSeanceIA) reste écrite d'un seul tenant :
+         elle sort en une vingtaine de secondes, et la découper en deux appels
+         la rendrait deux fois plus lente et deux fois plus chère pour rien. Le
+         découpage n'existe que pour les programmes, qui eux frôlaient le
+         plafond de la plateforme. */
+      const r = await sb.functions.invoke('generate-program', { body: corps });
+      if (r.error) throw await motifLisible(r.error);
+      if (!r.data) throw new Error('Réponse vide du générateur.');
+      data = r.data;
+    } else {
+      /* LE TRAVAIL VIT CÔTÉ SERVEUR, dans une file, et s'écrit en deux temps —
+         les séances puis la périodisation. Une connexion qui tombe ne perd
+         plus le programme (voir programme-build.js). */
+      data = await construire(corps, onEtape);
     }
-  });
-  if (error) throw await motifLisible(error);
-  if (!data) throw new Error('Réponse vide du générateur.');
+  }
 
   let draft;
   try {

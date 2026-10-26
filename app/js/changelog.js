@@ -648,4 +648,10 @@ export const CHANGELOG = [
                 "Elle attend maintenant le temps qu'il faut, et l'écran d'attente annonce la vraie durée : une à deux minutes pour douze semaines",
                 "Moti écrit des explications plus courtes et plus denses : autant de temps de génération gagné"
             ] },
+  { date: "26 octobre 2026", versions: "v2.88", items: [
+                "Un programme s'écrit maintenant EN DEUX TEMPS : d'abord tes séances et leurs exercices, ensuite la périodisation. Chaque temps tient largement dans ce que le serveur peut tenir, là où tout écrire d'un coup frôlait la coupure",
+                "L'écran d'attente suit le vrai travail : tu vois le passage des séances aux cycles au moment où il a lieu",
+                "Surtout : le travail vit maintenant SUR LE SERVEUR et plus dans la connexion. Si elle tombe, rien n'est perdu — un bouton « Reprendre la génération » repart de l'étape en cours, sans réécrire ni repayer ce qui est déjà fait",
+                "Générer une seule séance reste instantané comme avant : le découpage ne concerne que les programmes"
+            ] },
 ];

@@ -60,15 +60,31 @@ const libelleNiveau = (id) => (LEVELS.find(l => l.id === id) || {}).label || '';
 
 /* ===================================================== attente de Moti */
 
-/** Ce que Moti fait pendant qu'on attend un programme entier. */
-const ETAPES_PROGRAMME = [
+/**
+ * Ce que Moti fait pendant qu'on attend, PREMIER TEMPS : il écrit les séances.
+ *
+ * Un programme s'écrit en deux appels au serveur (voir programme-build.js), et
+ * l'écran d'attente suit vraiment le travail au lieu de dérouler une liste
+ * décorative.
+ */
+const ETAPES_SEANCES = [
   'Il relit ton carnet : charges, records, fréquence réelle…',
   'Il choisit les exercices que ton matériel permet…',
-  'Il découpe le programme en cycles d’entraînement…',
-  'Il règle séries, répétitions et récupérations, semaine par semaine…',
+  'Il compose tes séances, mouvement par mouvement…',
+  'Il écrit à quoi sert chaque séance…'
+];
+
+/** DEUXIÈME TEMPS : la périodisation. */
+const ETAPES_PHASES = [
+  'Tes séances sont écrites. Il découpe maintenant en cycles…',
+  'Il règle séries, répétitions et récupérations, bloc par bloc…',
+  'Il choisit les variantes et les méthodes d’intensification…',
   'Il écrit pourquoi chaque bloc est là…',
   'Dernières vérifications…'
 ];
+
+/** La liste qui correspond à l'étape que le serveur annonce. */
+const etapesDe = (etape) => (etape === 'phases' ? ETAPES_PHASES : ETAPES_SEANCES);
 
 /** Ce qu'il fait quand il réécrit un programme déjà construit. */
 const ETAPES_MODIF = [
@@ -105,13 +121,25 @@ function ecranAttenteMoti(titre, etapes) {
         c’est prêt.</p>
     </section>`);
   let i = 0;
+  let liste = etapes;
   const zone = el.querySelector('[data-etape]');
   const minuteur = setInterval(() => {
-    if (i >= etapes.length - 1) return clearInterval(minuteur);
+    if (i >= liste.length - 1) return;
     i++;
-    zone.textContent = etapes[i];
+    zone.textContent = liste[i];
   }, 4500);
-  return { el, arreter: () => clearInterval(minuteur) };
+  return {
+    el,
+    /* Le serveur annonce l'étape où il en est : on bascule de liste et on
+       repart du début, pour qu'on VOIE le passage d'un temps à l'autre. */
+    changer: (nouvelles) => {
+      if (nouvelles === liste) return;
+      liste = nouvelles;
+      i = 0;
+      zone.textContent = liste[0] || '';
+    },
+    arreter: () => clearInterval(minuteur)
+  };
 }
 
 /**
@@ -692,6 +720,9 @@ export async function vueProgrammeReglages() {
        aucune importance (Program.sansHeure, ProgramModel.kt). */
     sansHeure: false
   };
+  /** Travail laissé en plan côté serveur, à reprendre après une coupure. */
+  let reprisePerdue = null;
+
   const el = h(`<section class="page page-etroite"></section>`);
   render(el);
   dessiner();
@@ -807,6 +838,11 @@ export async function vueProgrammeReglages() {
         <div class="rangee rangee-serree" data-materiel style="margin-bottom:1.25rem"></div>
 
         <button class="btn btn-lg" data-generer type="button" style="width:100%">${libelleBouton()}</button>
+        ${reprisePerdue ? `<p class="prog-alerte" style="margin-top:1rem">La génération a été
+          interrompue, mais ton programme est en cours d’écriture sur le serveur : rien n’est
+          perdu.</p>
+          <button class="btn btn-ghost" data-reprendre type="button" style="width:100%">Reprendre
+          la génération</button>` : ''}
       </div>`));
 
     // Plus de vignette « Objectif précis » : elle menait à un écran jumeau
@@ -910,29 +946,45 @@ export async function vueProgrammeReglages() {
           return ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), { onReglages: () => { render(el); dessiner(); } });
         } catch (err) { return toast(err.message); }
       }
-      const texte = demandeComposee();
-      /* ÉCRAN D'ATTENTE. Une génération dure de trente secondes à une minute :
-         tant que seul le bouton changeait de libellé, on croyait que rien ne
-         se passait — Nicolas dit que ça donnait presque envie de recharger la
-         page. L'écran entier annonce le travail en cours, et les étapes
-         défilent pour qu'on voie que ça avance (EcranMotiTravaille,
-         ProgramScreens.kt). */
-      const attente = ecranAttenteMoti('Moti construit ton programme', ETAPES_PROGRAMME);
+      lancerIA(null);
+    };
+
+    /* ÉCRAN D'ATTENTE. Une génération dure une à deux minutes : tant que seul
+       le bouton changeait de libellé, on croyait que rien ne se passait —
+       Nicolas dit que ça donnait presque envie de recharger la page. L'écran
+       entier annonce le travail en cours, et les étapes suivent vraiment ce
+       que le serveur écrit (EcranMotiTravaille, ProgramScreens.kt).
+       `jobId` : reprise d'un travail laissé en plan par une coupure. */
+    async function lancerIA(jobId) {
+      const [hh, mm] = (etat.heure || '18:00').split(':').map(Number);
+      const attente = ecranAttenteMoti('Moti construit ton programme', ETAPES_SEANCES);
       render(attente.el);
       try {
         const { draft } = await genererProgrammeIA({
-          goalText: texte, weeks: semainesIA(), targetDate: echeanceLongue(),
-          sansHeure: etat.sansHeure, ...reglages
+          goalText: demandeComposee(),
+          level: etat.level, daysPerWeek: etat.daysPerWeek, gears: etat.gears,
+          weekdays: etat.weekdays,
+          minuteOfDay: etat.sansHeure ? MINUTE_LIBRE : hh * 60 + mm,
+          startMs: new Date(`${etat.date}T00:00:00`).getTime(),
+          weeks: semainesIA(), targetDate: echeanceLongue(),
+          sansHeure: etat.sansHeure,
+          onEtape: (e) => attente.changer(etapesDe(e)),
+          reprise: jobId
         });
         attente.arreter();
         ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), { onReglages: () => { render(el); dessiner(); } });
       } catch (err) {
         attente.arreter();
+        reprisePerdue = err.jobId || null;
         render(el);
         dessiner();
         toast(err.message || 'La génération a échoué.');
       }
-    };
+    }
+
+    // LE TRAVAIL EST RESTÉ CHEZ MOTI : reprendre repart de l'étape où la
+    // coupure a eu lieu, sans repayer ni réécrire ce qui est fait.
+    el.querySelector('[data-reprendre]')?.addEventListener('click', () => lancerIA(reprisePerdue));
   }
 }
 
@@ -956,6 +1008,8 @@ export async function vueProgrammeBilan() {
   let enCours = false;
   let erreur = '';
   let brouillon = '';
+  /** Travail laissé en plan côté serveur, à reprendre après une coupure. */
+  let repriseJob = null;
 
   const page = h('<section class="page page-etroite bilan"></section>');
   render(page);
@@ -990,16 +1044,25 @@ export async function vueProgrammeBilan() {
     avancer([...tours, { deMoti: false, texte: t }]);
   }
 
-  async function construire() {
-    const attente = ecranAttenteMoti('Moti écrit ton programme', ETAPES_PROGRAMME);
+  /** Écrit le programme, ou REPREND le travail laissé en plan quand `jobId`
+   *  est donné : il vit côté serveur, une coupure ne coûte que l'étape en
+   *  cours (voir programme-build.js). */
+  async function construire(jobId = null) {
+    const attente = ecranAttenteMoti('Moti écrit ton programme', ETAPES_SEANCES);
     render(attente.el);
     try {
-      const { draft } = await BL.genererDepuisBilan(bilan);
+      const { draft } = await BL.genererDepuisBilan(bilan, {
+        onEtape: (e) => attente.changer(etapesDe(e)),
+        reprise: jobId
+      });
       attente.arreter();
       ouvrirEditeur(moi, PE.etatDepuisBrouillon(draft), {});
     } catch (e) {
       attente.arreter();
       erreur = e.message || 'La génération a échoué.';
+      // Le travail est resté chez Moti : reprendre repart de l'étape où la
+      // coupure a eu lieu, sans repayer ce qui est déjà écrit.
+      repriseJob = e.jobId || null;
       render(page);
       dessiner();
     }
@@ -1015,7 +1078,11 @@ export async function vueProgrammeBilan() {
           : ''}
         <div class="bilan-fil" data-fil></div>
         ${erreur ? `<p class="prog-alerte">${esc(erreur)}</p>
-          <button class="btn btn-ghost" data-reessayer type="button" style="width:100%">Réessayer</button>` : ''}
+          ${repriseJob
+            ? `<button class="btn btn-ghost" data-reprendre type="button" style="width:100%">Reprendre la génération</button>
+               <p class="etat-mono" style="margin:.4rem 0 0">Ton programme est en cours d’écriture
+                 sur le serveur, rien n’est perdu.</p>`
+            : '<button class="btn btn-ghost" data-reessayer type="button" style="width:100%">Réessayer</button>'}` : ''}
         <div data-repondre></div>
       </div>`));
 
@@ -1050,7 +1117,11 @@ export async function vueProgrammeBilan() {
           avant d'écrire.</p>`));
     }
 
-    page.querySelector('[data-reessayer]')?.addEventListener('click', () => avancer(tours));
+    page.querySelector('[data-reessayer]')?.addEventListener('click', () => {
+      erreur = '';
+      if (bilan) construire(); else avancer(tours);
+    });
+    page.querySelector('[data-reprendre]')?.addEventListener('click', () => construire(repriseJob));
 
     // ---- Répondre ----
     const zone = page.querySelector('[data-repondre]');

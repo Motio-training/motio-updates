@@ -1,6 +1,6 @@
 {
-  "versionCode": 189,
-  "versionName": "2.87",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.87/motio.apk",
-  "notes": "Correction : sur un gros programme, l'application annoncait << pas de connexion au serveur >> alors que le serveur avait fini. Elle cessait d'ecouter au bout de 90 secondes et le programme construit partait a la poubelle. Elle attend maintenant le temps qu'il faut, et annonce la vraie duree : une a deux minutes pour douze semaines."
+  "versionCode": 190,
+  "versionName": "2.88",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.88/motio.apk",
+  "notes": "Un programme s'ecrit maintenant en deux temps : d'abord tes seances, ensuite la periodisation. Chaque temps tient largement dans ce que le serveur peut tenir. Et surtout, le travail vit sur le serveur et plus dans la connexion : si elle tombe, rien n'est perdu, un bouton << Reprendre la generation >> repart de l'etape en cours sans repayer ce qui est deja fait."
 }
