@@ -1,6 +1,6 @@
 {
-  "versionCode": 183,
-  "versionName": "2.81",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.81/motio.apk",
-  "notes": "Nouveau programme : un champ « Des precisions pour Moti ? » sous l'objectif, pour dire ce que tu veux avant la generation plutot que de corriger apres. Laisse vide, rien ne change : le programme sort tout de suite du generateur de Motio. Rempli, c'est Moti qui l'ecrit, en tenant compte de l'objectif choisi et de tes precisions."
+  "versionCode": 184,
+  "versionName": "2.82",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.82/motio.apk",
+  "notes": "Moti passe dans la barre du haut, entre le logo et la roue crantee : on lui parle depuis n'importe quel ecran et l'accueil recupere sa ligne. La carte du jour defile maintenant avec la page, et « Entrainement libre » est le seul element qui reste colle en haut quand tu descends. A la creation d'un programme, la vignette « Objectif precis » disparait : le champ de precisions sous l'objectif la remplace."
 }
