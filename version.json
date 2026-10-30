@@ -1,6 +1,6 @@
 {
-  "versionCode": 191,
-  "versionName": "2.89",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.89/motio.apk",
-  "notes": "Nouvel onglet Nutrition : journal des repas, objectif prise de masse / seche / maintien, courbe de poids avec tendance, recherche d'aliments (Open Food Facts). Moti connait ta cible et tes apports. La meteo de la forme est retiree."
+  "versionCode": 192,
+  "versionName": "2.90",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.90/motio.apk",
+  "notes": "Nutrition sans saisie : plus de journal a remplir. Moti ecrit tes menus de la semaine d'apres ton objectif et ton programme (plus de glucides les jours de seance, en-cas avant et apres l'effort), et les inscrit dans ton agenda. Reperes prudents sur les complements."
 }
