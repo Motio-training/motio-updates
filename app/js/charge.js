@@ -21,7 +21,6 @@
 import { musNorm, musclesDuLexique } from './muscle-lexicon.js';
 import { devineMateriel } from './catalog.js';
 import { oneRmManuel, tousOneRmManuels } from './reglages.js';
-import { formeDuJour } from './forme.js';
 
 const ECART_FIABLE = 3;
 const RECENT_MS = 183 * 24 * 3600 * 1000;
@@ -178,18 +177,12 @@ export function estimerParTransfert(cible, connus) {
 /* ------------------------------------------------------- charge conseillée */
 
 /**
- * suggestedWeight (LoadCoach, Coaching.kt) : { poids, raison } ou null,
- * MÉTÉO DE LA FORME COMPRISE (forme.js) — allégée de 5 à 10 % quand la forme
- * est moyenne ou basse, et la raison le dit.
+ * suggestedWeight (LoadCoach, Coaching.kt) : { poids, raison } ou null.
  * `historique` : historiqueDesExercices(...). Les exercices au poids du corps
  * sont traités à part par l'appelant (pdcEffectif).
  */
 export function chargeConseillee(nom, historique, cibleReps) {
-  const brut = chargeBrute(nom, historique, cibleReps);
-  if (!brut) return null;
-  const forme = formeDuJour();
-  if (forme.facteur >= 1) return brut;
-  return { poids: arrondi(nom, brut.poids * forme.facteur), raison: `${brut.raison} ; ${forme.allegement}` };
+  return chargeBrute(nom, historique, cibleReps);
 }
 
 function chargeBrute(nom, historique, cibleReps) {

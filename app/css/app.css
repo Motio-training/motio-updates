@@ -2185,25 +2185,17 @@ body:not(.connecte) #vue:has(.onb){
 @media (min-width:700px){.prog-case{min-height:5.2rem}.prog-pastille-mois{font-size:.72rem}}
 
 /* Carte « Aujourd'hui » (entrainement.js, Aujourdhui.kt) : la séance du jour
-   et la météo de la forme, compacte pour ne pas repousser les séances. */
+   compacte pour ne pas repousser les séances. */
 .aujourdhui{
   background:var(--creme-2);border-radius:var(--r-m);padding:.75rem .9rem;margin:0 0 .75rem;
 }
 .aujourdhui-tete{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem}
 .aujourdhui-tete b{color:var(--dore);font-size:.7rem;letter-spacing:.08em}
-.aujourdhui-tete span{font-size:.78rem;font-weight:700}
-.forme-bonne{color:var(--accent)}
-.forme-moyenne{color:var(--dore)}
-.forme-basse{color:var(--accent2)}
 .aujourdhui-seance{display:flex;align-items:center;gap:.7rem}
 .aujourdhui-seance>div{flex:1;min-width:0;display:flex;flex-direction:column}
 .aujourdhui-seance b{font-family:var(--f-display);font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .aujourdhui-seance span{font-size:.76rem;color:var(--encre-2)}
-.aujourdhui-rien,.aujourdhui-mesures{margin:.35rem 0 0;font-size:.8rem;color:var(--encre-2)}
-.aujourdhui-allege{margin:.3rem 0 0;font-size:.8rem;color:var(--accent2)}
-.aujourdhui-question{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-top:.55rem}
-.aujourdhui-question span{font-size:.8rem;color:var(--encre-2);margin-right:auto}
-.aujourdhui-question .chip-cat{font-size:.74rem;padding:.25rem .6rem}
+.aujourdhui-rien{margin:.35rem 0 0;font-size:.8rem;color:var(--encre-2)}
 
 /* ---- Dictée (dictee.js) : micro au bout des champs où l'on parle à Moti ---- */
 .dictee{position:relative;display:block}

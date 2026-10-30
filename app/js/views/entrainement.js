@@ -21,7 +21,6 @@ import { muscleLoadOf } from '../muscle-lexicon.js';
 import { drawMuscleMap, MuscleScale } from '../muscle-map.js';
 import { vignetteExercice, ouvrirPlanche, visualFor } from '../exercise-visuals.js';
 import { suivreModele, annoncerSeancePrevue } from '../programme-edition.js';
-import * as forme from '../forme.js';
 import { ajouterMicro } from '../dictee.js';
 import { prechargerImages } from '../hors-ligne.js';
 
@@ -229,14 +228,12 @@ export async function vueSeances(_params, toutes = false) {
   /* ================================================== Aujourd'hui (v2.79)
 
      CarteAujourdhui (Aujourdhui.kt) : la séance du jour — ou à rattraper —
-     avec son bouton Démarrer, et la météo de la forme. Compacte, pour ne pas
-     repousser les séances hors de vue. Le ressenti de la dernière séance est
-     relevé ici, dans l'historique des séances déjà chargé. */
-  rows.forEach(r => (r.data?.history || []).forEach(s => forme.noterRessenti(s.startedAt, s.mood)));
+     avec son bouton Démarrer. Compacte, pour ne pas repousser les séances
+     hors de vue. (La « météo de la forme » qui s'y trouvait a été retirée :
+     peu pertinente à l'usage.) */
   function dessinerAujourdhui() {
     const zone = el.querySelector('[data-aujourdhui]');
     if (!zone) return;
-    const m = forme.formeDuJour();
     const auj = new Date(); auj.setHours(0, 0, 0, 0);
     const sessions = progActif?.sessions || [];
     const aFaire = sessions.filter(s => !(s.doneAt > 0) && !s.skipped && s.dateMs < auj.getTime() + 86400000)
@@ -249,26 +246,17 @@ export async function vueSeances(_params, toutes = false) {
         : `À rattraper · ${dateBreve(p.dateMs)}`;
     const carte = h(`
       <div class="aujourdhui">
-        <div class="aujourdhui-tete"><b>AUJOURD'HUI</b><span class="forme-${m.classe}">${m.label}</span></div>
+        <div class="aujourdhui-tete"><b>AUJOURD'HUI</b></div>
         ${p ? `<div class="aujourdhui-seance">
             <div><b>${aFaire ? '' : 'Prochaine : '}${esc(p.title)}</b>
               <span>${esc(quand)} · semaine ${p.week} · ${(p.items || []).length} exos</span></div>
             ${aFaire ? '<button class="btn" data-demarrer-prevue type="button">Démarrer</button>'
               : `<a class="lien-inline" href="#/programmes/${progActif.id}">Programme ›</a>`}
           </div>` : '<p class="aujourdhui-rien">Pas de séance prévue aujourd\'hui.</p>'}
-        ${m.mesures.length ? `<p class="aujourdhui-mesures">${esc(m.mesures.join('  ·  '))}</p>` : ''}
-        ${m.facteur < 1 ? `<p class="aujourdhui-allege">Charges conseillées allégées de ${Math.round((1 - m.facteur) * 100)} % : ${esc(m.raisons.join(', '))}.</p>` : ''}
-        ${m.reponse < 0 ? `<div class="aujourdhui-question"><span>Comment tu te sens ?</span>
-            <button type="button" class="chip-cat" data-forme="0">En forme</button>
-            <button type="button" class="chip-cat" data-forme="1">Moyen</button>
-            <button type="button" class="chip-cat" data-forme="2">Fatigué</button></div>` : ''}
       </div>`);
     carte.querySelector('[data-demarrer-prevue]')?.addEventListener('click', () => {
       annoncerSeancePrevue(progActif.id, aFaire.id, aFaire.workoutId);
       location.hash = `#/seances/${aFaire.workoutId}/lancer`;
-    });
-    carte.querySelectorAll('[data-forme]').forEach(b => {
-      b.onclick = () => { forme.repondre(Number(b.dataset.forme)); dessinerAujourdhui(); };
     });
     zone.replaceChildren(carte);
   }
