@@ -19,6 +19,7 @@
 import { getProfile, sessionsOf, listPrograms } from './api.js';
 import { historiqueDesExercices, rmConnus } from './charge.js';
 import { tousOneRmManuels } from './reglages.js';
+import { resumePourCoach } from './nutrition.js';
 
 /** « il y a 3 jours », « hier », « aujourd'hui ». */
 function relDate(ms) {
@@ -132,6 +133,13 @@ export async function instantaneAthlete(moi) {
     lignes.push("1RM réellement testés (valeurs saisies par l'utilisateur, plus fiables que toute estimation) :");
     manuels.forEach(([exercice, v]) => lignes.push(`- ${exercice} : ${kg(v)} kg`));
   }
+
+  /* Nutrition : objectif, cible et apports récents, pour que Moti conseille
+     sur les repas avec les vrais chiffres. Vide si rien n'est réglé. */
+  try {
+    const nutrition = await resumePourCoach(moi.id);
+    if (nutrition) lignes.push(nutrition);
+  } catch { /* pas bloquant */ }
 
   return lignes.join('\n');
 }

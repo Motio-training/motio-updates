@@ -2295,3 +2295,44 @@ body:not(.connecte) #vue:has(.onb){
 /* Libellé réservé aux lecteurs d'écran. */
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
   clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ==========================================================================
+   Nutrition (views/nutrition.js)
+   ========================================================================== */
+.nut-jour{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:0 0 1rem;font-family:var(--f-display);text-transform:capitalize}
+.nut-fleche{
+  width:2.4rem;height:2.4rem;border-radius:var(--r-pill);cursor:pointer;
+  background:var(--carte);color:var(--encre);border:1px solid var(--trait);
+  font-size:1.3rem;line-height:1;
+}
+.nut-fleche:disabled{opacity:.35;cursor:default}
+.nut-gros{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;margin:0 0 1rem}
+.nut-gros strong{font-family:var(--f-display);font-size:2.4rem;font-weight:700;letter-spacing:-.02em}
+.nut-gros span{color:var(--encre-2);font-size:.9rem}
+.nut-macro{margin:0 0 .8rem}
+.nut-macro-tete{display:flex;justify-content:space-between;gap:1rem;font-size:.88rem;margin-bottom:.3rem}
+.nut-barre{height:.55rem;border-radius:var(--r-pill);background:var(--creme-2);overflow:hidden}
+.nut-barre i{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .3s ease}
+.nut-barre i.trop{background:var(--dore)}
+.nut-lignes{list-style:none;margin:.6rem 0 0;padding:0;display:grid;gap:.1rem}
+.nut-lignes li{display:flex;align-items:center;gap:.8rem;padding:.5rem 0;border-top:1px solid var(--trait)}
+.nut-lignes li:first-child{border-top:0}
+.nut-nom{flex:1;min-width:0;overflow-wrap:anywhere}
+.nut-nom small{display:block;color:var(--encre-2);font-size:.76rem}
+.nut-kcal{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
+.nut-repas .carte-actions{margin-top:.6rem}
+.nut-semaine{position:relative;display:flex;align-items:flex-end;gap:.4rem;height:7rem;margin:.8rem 0 .4rem}
+.nut-semaine::before{
+  content:"";position:absolute;left:0;right:0;bottom:var(--cible);
+  border-top:1px dashed var(--encre-2);opacity:.5;
+}
+.nut-col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:.25rem;font-size:.72rem;color:var(--encre-2)}
+.nut-col i{display:block;width:100%;border-radius:4px 4px 0 0;background:var(--accent);opacity:.55;min-height:2px}
+.nut-col i.trop{background:var(--dore)}
+.nut-col.on i{opacity:1}
+.nut-col span{height:1rem}
+.nut-courbe{width:100%;height:auto;margin:.4rem 0}
+.nut-courbe polyline{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.nut-courbe .pesees circle{fill:var(--encre-2);opacity:.55}
+.nut-courbe text{fill:var(--encre-2);font-size:9px;font-family:var(--f-mono)}
+.nut-quantite{border-color:var(--accent)}

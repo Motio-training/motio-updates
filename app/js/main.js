@@ -28,6 +28,7 @@ import { vueDirect } from './views/direct.js';
 import { vueGroupes, vueGroupeDetail, vueGroupeRejoindre } from './views/groupes.js';
 import { vueDefis } from './views/defis.js';
 import { vueMinuteurs } from './views/minuteurs.js';
+import { vueNutrition, vueNutritionObjectif, vueNutritionPoids, vueNutritionAjouter } from './views/nutrition.js';
 import { vueOnboarding, pending as onboardingPending } from './views/onboarding.js';
 
 const PUBLIQUES = ['/connexion'];
@@ -76,6 +77,12 @@ route('/programmes/bilan', vueProgrammeBilan);
 route('/programmes/:id', vueProgramme);
 route('/programmes/:id/modifier', vueProgrammeModifier);
 route('/historique', vueHistorique);
+/* Les sous-écrans fixes AVANT /nutrition/ajouter/:repas/:jour n'ont pas de
+   risque de collision (nombre de segments différent), mais gardés groupés. */
+route('/nutrition', vueNutrition);
+route('/nutrition/objectif', vueNutritionObjectif);
+route('/nutrition/poids', vueNutritionPoids);
+route('/nutrition/ajouter/:repas/:jour', vueNutritionAjouter);
 
 setNotFound(() => render(empty(
   'Page introuvable',
@@ -103,6 +110,7 @@ before(async (path) => {
 const GROUPES_ROUTE = {
   minuteurs: ['/minuteurs'],
   entrainement: ['/seances', '/programmes', '/historique'],
+  nutrition: ['/nutrition'],
   social: ['/fil', '/amis', '/messages', '/groupes', '/defis', '/direct'],
   profil: ['/profil']
 };
