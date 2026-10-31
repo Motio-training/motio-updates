@@ -1,6 +1,6 @@
 {
-  "versionCode": 192,
-  "versionName": "2.90",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.90/motio.apk",
-  "notes": "Nutrition sans saisie : plus de journal a remplir. Moti ecrit tes menus de la semaine d'apres ton objectif et ton programme (plus de glucides les jours de seance, en-cas avant et apres l'effort), et les inscrit dans ton agenda. Reperes prudents sur les complements."
+  "versionCode": 193,
+  "versionName": "2.91",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.91/motio.apk",
+  "notes": "Nutrition liee au programme : objectif, taille, sexe et rythme d'entrainement repris du profil, plus rien a ressaisir (seule l'annee de naissance, une fois). Apres un bilan, Moti ecrit aussi ton plan nutritionnel de la semaine."
 }
