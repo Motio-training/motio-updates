@@ -1,6 +1,6 @@
 {
-  "versionCode": 196,
-  "versionName": "2.94",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.94/motio.apk",
-  "notes": "Seance du jour consultable avec sa croix (reporter, sauter, retirer), 5 prochaines seances, bouton LIVE, notifications d amis qui ouvrent la bonne page, champ de note de fin refait, remplacement d un exercice par un proche."
+  "versionCode": 197,
+  "versionName": "2.95",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.95/motio.apk",
+  "notes": "La fiche d une seance a venir donne la charge conseillee pour les repetitions prevues. Glisser sur la seance du haut de l accueil ou dans sa fiche montre la seance d apres, qu on peut demarrer."
 }
