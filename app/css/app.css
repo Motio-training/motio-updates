@@ -2367,3 +2367,13 @@ body:not(.connecte) #vue:has(.onb){
 .substitut .corps{flex:1;min-width:0;display:flex;flex-direction:column}
 .substitut .corps span{font-size:.76rem;color:var(--encre-2)}
 .substitut-fleche{color:var(--accent);font-size:1.1rem}
+
+/* ---- Décaler la semaine / tout le programme (seance-prevue.js) ---- */
+.decalage-liste{list-style:none;margin:0;padding:0;text-align:left}
+.decalage-liste li{padding:.35rem 0;border-bottom:1px solid var(--trait);font-size:.88rem}
+.decalage-liste li:last-child{border-bottom:0}
+.decalage-apercu{text-align:left;font-size:.88rem;margin-top:.9rem}
+.decalage-apercu p{margin:0 0 .5rem}
+.decalage-apercu .decalage-derniere{color:var(--encre-2);font-size:.82rem}
+.menu-action .champ-label{text-align:left;margin:.2rem 0 .1rem}
+@media (max-width:480px){.prog-actions{gap:.4rem}.prog-actions .btn{font-size:.78rem;padding-left:.35rem;padding-right:.35rem;white-space:nowrap}}

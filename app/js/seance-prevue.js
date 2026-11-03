@@ -157,13 +157,131 @@ async function retirer(moi, p, s) {
   return null;
 }
 
+/* ---- Décaler plusieurs séances d'un coup (v88) ----
+
+   Demande de Nicolas : « aujourd'hui je ne peux pas faire ma séance, je
+   voudrais décaler tous les entraînements de la semaine, du lundi au
+   dimanche » — et, dans l'écran du programme, tout le programme. Toutes les
+   séances décalées bougent du MÊME nombre de jours : la forme du planning (un
+   jour de repos entre deux séances…) est conservée. Portage de SeanceActions
+   (SeancePrevue.kt). */
+
+/** Nombre de jours entre deux dates, arrondi pour absorber le changement d'heure. */
+export const joursEntre = (de, a) => Math.round((minuit(a) - minuit(de)) / 86400000);
+
+/** Lundi 0 h de la semaine (lundi → dimanche) qui contient ce jour. */
+function lundiDe(ms) {
+  const d = new Date(minuit(ms));
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getTime();
+}
+
+/** Les séances encore à faire de la semaine (lundi → dimanche) de `s`. */
+export function semaineDe(p, s) {
+  const debut = lundiDe(s.dateMs);
+  const fin = plusJours(debut, 7);
+  return (p.sessions || [])
+    .filter(x => !faite(x) && !x.skipped && x.dateMs >= debut && x.dateMs < fin)
+    .sort((a, b) => a.dateMs - b.dateMs);
+}
+
+/** Ce que « décaler tout le programme » fait bouger : toutes les séances pas encore faites. */
+export const aDecaler = (p) => (p.sessions || []).filter(x => !faite(x)).sort((a, b) => a.dateMs - b.dateMs);
+
+/** « d'un jour », « de 3 jours » — le nombre se dit, il ne s'écrit pas « de 1 jours ». */
+const deJours = (n) => {
+  const j = Math.abs(n);
+  if (j % 7 === 0) return j === 7 ? "d'une semaine" : `de ${j / 7} semaines`;
+  return j === 1 ? "d'un jour" : `de ${j} jours`;
+};
+
+/** Décale les séances de `liste` de `jours` jours (l'heure de chacune est gardée). */
+async function decalerSeances(moi, p, liste, jours) {
+  liste.forEach(x => { x.dateMs = plusJours(x.dateMs, jours); });
+  p.sessions.sort((a, b) => a.dateMs - b.dateMs);
+  await saveProgram(moi.id, p);
+}
+
+/** « Aujourd'hui », « Demain », « jeu. 5 » : le libellé court d'un jour proposé. */
+function libelleJour(k, jour) {
+  return k === 0 ? "Aujourd'hui" : k === 1 ? 'Demain' : dateBreve(jour).split(' ').slice(0, 2).join(' ');
+}
+
+/**
+ * Décaler TOUT le programme, depuis son écran : de combien, ce que ça donne (la
+ * prochaine séance, la dernière), puis on confirme — un geste qui touche tout le
+ * planning ne part jamais d'un seul appui. Les séances déjà faites ne bougent pas.
+ * `apres` est appelé une fois le programme enregistré (la vue se redessine).
+ */
+export function ouvrirDecalageProgramme({ moi, p, apres }) {
+  const liste = aDecaler(p);
+  const choix = [[1, '1 jour'], [2, '2 jours'], [3, '3 jours'], [4, '4 jours'], [5, '5 jours'], [7, '1 semaine'], [14, '2 semaines']];
+  const m = h(`
+    <div class="modale" role="dialog" aria-label="Décaler tout le programme">
+      <div class="modale-boite modale-boite-etroite menu-action">
+        <p class="menu-action-titre">Décaler tout le programme</p>
+        ${liste.length ? `
+          <p class="menu-action-sous" style="margin:.4rem 0 .9rem">Les ${liste.length} séances à venir avancent du même nombre de jours. Celles déjà faites ne bougent pas.</p>
+          <p class="champ-label">Décaler de</p>
+          <div class="seance-jours" data-choix></div>
+          <div class="decalage-apercu" data-apercu></div>
+          <button class="btn btn-lg" data-oui type="button" disabled style="width:100%;margin-top:.9rem">Décaler</button>`
+          : '<p class="menu-action-sous" style="margin:.6rem 0">Il ne reste aucune séance à faire dans ce programme.</p>'}
+        <button class="lien-inline menu-action-annuler" data-fermer type="button">Annuler</button>
+      </div>
+    </div>`);
+  const fermer = () => m.remove();
+  m.addEventListener('click', (e) => { if (e.target === m) fermer(); });
+  m.querySelector('[data-fermer]').onclick = fermer;
+
+  if (liste.length) {
+    let jours = 0;
+    const oui = m.querySelector('[data-oui]');
+    const apercu = m.querySelector('[data-apercu]');
+    const puces = [];
+    choix.forEach(([n, libelle]) => {
+      const b = h(`<button type="button" class="chip-cat">${esc(libelle)}</button>`);
+      b.onclick = () => {
+        jours = n;
+        puces.forEach(x => x.classList.toggle('on', x === b));
+        const premiere = liste[0], derniere = liste[liste.length - 1];
+        apercu.replaceChildren(h(`
+          <div>
+            <p>La prochaine : « ${esc(premiere.title)} »<br>
+              <b>${esc(dateBreve(premiere.dateMs))} → ${esc(dateBreve(plusJours(premiere.dateMs, n)))}</b></p>
+            ${liste.length > 1 ? `<p class="decalage-derniere">La dernière : « ${esc(derniere.title)} »<br>
+              ${esc(dateBreve(derniere.dateMs))} → ${esc(dateBreve(plusJours(derniere.dateMs, n)))}</p>` : ''}
+          </div>`));
+        oui.disabled = false;
+      };
+      puces.push(b);
+      m.querySelector('[data-choix]').appendChild(b);
+    });
+    oui.onclick = async () => {
+      oui.disabled = true;
+      try {
+        await decalerSeances(moi, p, liste, jours);
+        fermer();
+        toast(`${liste.length} séances décalées ${deJours(jours)}`);
+        apres?.();
+      } catch (e) {
+        toast(e.message || "Le programme n'a pas pu être décalé.");
+        oui.disabled = false;
+      }
+    };
+  }
+  document.body.appendChild(m);
+}
+
 /* ============================================================ menu de la croix */
 
 /**
- * Décaler la séance, la sauter cette fois, ou la retirer du programme
- * (seulement si elle revient chaque semaine — sinon sauter suffit). Trois
- * écrans dans la même fenêtre : le menu, le choix du jour, la confirmation.
- * Une suppression définitive ne part jamais d'un seul appui.
+ * Décaler la séance, ou toute la semaine d'un coup, la sauter cette fois, ou la
+ * retirer du programme (seulement si elle revient chaque semaine — sinon sauter
+ * suffit). Plusieurs écrans dans la même fenêtre : le menu, le choix du jour
+ * (cette séance seule, ou la semaine), l'aperçu de ce que la semaine devient, la
+ * confirmation d'un retrait. Un changement qui touche plusieurs séances ou qui
+ * supprime ne part jamais d'un seul appui.
  */
 export function ouvrirMenuSeance({ moi, p, s, apres }) {
   const m = h(`
@@ -187,23 +305,30 @@ export function ouvrirMenuSeance({ moi, p, s, apres }) {
 
   function menu() {
     retour.textContent = 'Annuler'; retour.onclick = fermer;
+    const semaine = semaineDe(p, s);
     corps.replaceChildren(h(`
       <div>
         <p class="menu-action-sous">${esc(quand(p, s))}</p>
         <div class="menu-action-lignes">
-          <button class="menu-action-ligne" data-reporter type="button">Reporter à un autre jour</button>
+          <button class="menu-action-ligne" data-seule type="button">Décaler cet entraînement</button>
+          ${semaine.length >= 2 ? `
+          <button class="menu-action-ligne" data-semaine type="button">Décaler toute la semaine</button>
+          <p class="menu-action-sous">${semaine.length} séances, du lundi au dimanche, d'un coup</p>` : ''}
           <button class="menu-action-ligne" data-sauter type="button">Sauter cette séance</button>
           <p class="menu-action-sous">Le reste du programme continue.</p>
           ${serepete(p, s) ? '<button class="menu-action-ligne menu-action-ligne-danger" data-retirer type="button">Retirer du programme</button>' : ''}
         </div>
       </div>`));
-    corps.querySelector('[data-reporter]').onclick = jours;
+    corps.querySelector('[data-seule]').onclick = () => jours('seule');
+    corps.querySelector('[data-semaine]')?.addEventListener('click', () => jours('semaine'));
     corps.querySelector('[data-sauter]').onclick = () =>
       termine(() => sauter(moi, p, s), `« ${s.title} » sautée : elle ne compte pas pour cette fois`);
     corps.querySelector('[data-retirer]')?.addEventListener('click', confirmation);
   }
 
-  function jours() {
+  /** Le jour où va la séance : pour elle seule, ou pour la semaine entière
+   *  (les autres suivent du même nombre de jours, après un aperçu). */
+  function jours(portee) {
     retour.textContent = 'Retour'; retour.onclick = menu;
     const auj = minuit(Date.now());
     // En retard, « Aujourd'hui » est le report le plus utile.
@@ -211,12 +336,32 @@ export function ouvrirMenuSeance({ moi, p, s, apres }) {
     const zone = h('<div class="seance-jours"></div>');
     decalages.forEach(k => {
       const jour = plusJours(auj, k);
-      const libelle = k === 0 ? "Aujourd'hui" : k === 1 ? 'Demain' : dateBreve(jour).split(' ').slice(0, 2).join(' ');
-      const b = h(`<button type="button" class="chip-cat">${esc(libelle)}</button>`);
-      b.onclick = () => termine(() => reporter(moi, p, s, jour), `« ${s.title} » reportée au ${dateBreve(jour)}`);
+      const b = h(`<button type="button" class="chip-cat">${esc(libelleJour(k, jour))}</button>`);
+      b.onclick = () => (portee === 'seule'
+        ? termine(() => reporter(moi, p, s, jour), `« ${s.title} » décalée au ${dateBreve(jour)}`)
+        : apercuSemaine(jour));
       zone.appendChild(b);
     });
-    corps.replaceChildren(h('<p class="menu-action-sous">Reporter à quel jour ?</p>'), zone);
+    corps.replaceChildren(h(`<p class="menu-action-sous">${portee === 'seule'
+      ? 'Décaler à quel jour ?'
+      : `Cette séance passe à quel jour ? Les ${semaineDe(p, s).length} séances de la semaine suivent du même nombre de jours.`}</p>`), zone);
+  }
+
+  /** Ce que devient la semaine, ligne par ligne, avant de confirmer. */
+  function apercuSemaine(jour) {
+    retour.textContent = 'Retour'; retour.onclick = () => jours('semaine');
+    const semaine = semaineDe(p, s);
+    const n = joursEntre(s.dateMs, jour);
+    const bloc = h(`
+      <div>
+        <p class="menu-action-sous" style="margin:.4rem 0 .6rem">Les ${semaine.length} séances de la semaine avancent ${deJours(n)} :</p>
+        <ul class="decalage-liste">${semaine.map(x => `
+          <li><b>${esc(x.title)}</b> : ${esc(dateBreve(x.dateMs))} → ${esc(dateBreve(plusJours(x.dateMs, n)))}</li>`).join('')}</ul>
+        <button class="btn btn-lg" data-oui type="button" style="width:100%;margin-top:.8rem">Décaler les ${semaine.length} séances</button>
+      </div>`);
+    bloc.querySelector('[data-oui]').onclick = () =>
+      termine(() => decalerSeances(moi, p, semaine, n), `${semaine.length} séances décalées ${deJours(n)}`);
+    corps.replaceChildren(bloc);
   }
 
   function confirmation() {
@@ -270,7 +415,7 @@ function pageFiche({ moi, p, s, carnet, historique, fermer, apres }) {
       ${!w ? '<p class="etat-mono">Le modèle de cette séance a été supprimé du carnet.</p>' : ''}
       <div class="prog-modale-actions">
         ${w && !faite(s) ? '<button class="btn btn-lg" data-go type="button">Démarrer la séance</button>' : ''}
-        ${!faite(s) ? '<button class="lien-inline" data-actions type="button">Reporter, sauter ou retirer…</button>' : ''}
+        ${!faite(s) ? '<button class="lien-inline" data-actions type="button">Décaler, sauter ou retirer…</button>' : ''}
       </div>
     </div>`);
   page.querySelector('[data-go]')?.addEventListener('click', () => {
@@ -341,7 +486,7 @@ function pageCarte({ moi, p, s, rang, estDuJour, carnet, ouvrir, menu, forme }) 
         <b>${etiquette}</b>
         <span class="aujourdhui-droite">
           ${rang === 0 && forme ? `<span class="forme-${forme.classe}">${esc(forme.label)}</span>` : ''}
-          ${estDuJour ? '<button class="croix-seance" data-croix type="button" aria-label="Reporter, sauter ou retirer cette séance">✕</button>' : ''}
+          ${estDuJour ? '<button class="croix-seance" data-croix type="button" aria-label="Décaler, sauter ou retirer cette séance">✕</button>' : ''}
         </span>
       </div>
       <div class="aujourdhui-seance">

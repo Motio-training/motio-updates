@@ -34,7 +34,7 @@ import {
 } from '../programme-ia.js';
 import { construireProgrammeLocal } from '../generateur-local.js';
 import * as PE from '../programme-edition.js';
-import { chargerHistorique, repereCharge } from '../seance-prevue.js';
+import { chargerHistorique, repereCharge, ouvrirDecalageProgramme } from '../seance-prevue.js';
 import * as BL from '../programme-bilan.js';
 import { vignetteExercice } from '../exercise-visuals.js';
 import { vueSeanceEdition, catColor } from './entrainement.js';
@@ -445,6 +445,7 @@ export async function vueProgramme(params) {
         ${n ? `<button class="btn btn-lg prog-prochaine" data-prochaine type="button">Prochaine : ${esc(n.title)} — ${esc(dateBreve(n.dateMs))}</button>` : ''}
         <div class="prog-actions">
           <a class="btn btn-ghost" href="#/programmes/${esc(String(p.id))}/modifier">✎ Modifier</a>
+          <button class="btn btn-ghost" data-decaler type="button">⇆ Décaler</button>
           <button class="btn btn-ghost ${actif ? 'prog-agenda-ok' : ''}" data-agenda type="button">${actif ? 'Agenda ✓' : '＋ Google Agenda'}</button>
         </div>
         <div data-agenda-zone></div>
@@ -460,6 +461,8 @@ export async function vueProgramme(params) {
       </div>`));
 
     el.querySelector('[data-prochaine]')?.addEventListener('click', () => ouvrirSeance(n));
+    // Tout le programme, de quelques jours (maladie, déplacement) à deux semaines.
+    el.querySelector('[data-decaler]').onclick = () => ouvrirDecalageProgramme({ moi, p, apres: dessiner });
     el.querySelector('[data-agenda]').onclick = () => (actif ? montrerAgenda(true) : ajouterAgenda());
     el.querySelector('[data-supprimer]').onclick = supprimer;
     montrerAgenda(false);

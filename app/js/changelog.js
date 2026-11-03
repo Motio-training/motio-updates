@@ -664,4 +664,8 @@ export const CHANGELOG = [
                 "En séance, toucher le nom de l'exercice puis « ⇄ Remplacer » propose les 3 exercices les plus proches (mêmes muscles, même mouvement), avec le catalogue complet en dernier recours",
                 "Correction : l'espace web ne se recharge plus une fois à chaque ouverture"
             ] },
+  { date: "3 novembre 2026", versions: "v2.97", items: [
+                "Une séance du jour que tu ne peux pas faire : dans son menu, « Décaler cet entraînement » ne touche qu'elle, « Décaler toute la semaine » fait avancer d'un coup toutes les séances du lundi au dimanche du même nombre de jours, après t'avoir montré ce que chacune devient",
+                "Dans l'écran du programme, « Décaler » fait avancer tout le programme de 1 à 5 jours, d'une ou de deux semaines. Les séances déjà faites ne bougent pas, et l'agenda suit"
+            ] },
 ];
