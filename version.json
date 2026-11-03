@@ -1,6 +1,6 @@
 {
-  "versionCode": 197,
-  "versionName": "2.95",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.95/motio.apk",
-  "notes": "La fiche d une seance a venir donne la charge conseillee pour les repetitions prevues. Glisser sur la seance du haut de l accueil ou dans sa fiche montre la seance d apres, qu on peut demarrer."
+  "versionCode": 198,
+  "versionName": "2.96",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.96/motio.apk",
+  "notes": "Le glissement entre les seances suit le doigt, comme si tu tenais la seance, et bloque sur la premiere et la derniere seance."
 }
