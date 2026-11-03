@@ -654,4 +654,14 @@ export const CHANGELOG = [
                 "Surtout : le travail vit maintenant SUR LE SERVEUR et plus dans la connexion. Si elle tombe, rien n'est perdu — un bouton « Reprendre la génération » repart de l'étape en cours, sans réécrire ni repayer ce qui est déjà fait",
                 "Générer une seule séance reste instantané comme avant : le découpage ne concerne que les programmes"
             ] },
+  { date: "3 novembre 2026", versions: "v2.94 → v2.96", items: [
+                "Toucher le nom de la séance prévue, en haut de l'accueil, en affiche le détail : exercices, séries, dernière charge. C'est aussi vrai de celle du lendemain, une fois la séance du jour terminée",
+                "La charge indiquée est celle conseillée pour les répétitions PRÉVUES : 120 kg × 3 la dernière fois ne s'affiche plus comme la charge à reprendre pour 4 × 15. La dernière série reste en repère, en dessous",
+                "Glisse la séance du haut vers la gauche pour voir la suivante, sur les 5 prochaines ; vers la droite pour revenir. Elle suit ton doigt, et ça bloque sur la première et la dernière. Chacune se démarre de là",
+                "Le jour J, une croix à côté de la séance ouvre un menu : la reporter à un autre jour, la sauter cette fois, ou la retirer du programme quand elle revient chaque semaine",
+                "Sous elle, les 5 prochaines séances du programme. Sans programme suivi, ce sont tes séances épinglées",
+                "Un bouton LIVE apparaît en haut de l'accueil quand un ami est en séance, et ouvre son suivi en direct",
+                "En séance, toucher le nom de l'exercice puis « ⇄ Remplacer » propose les 3 exercices les plus proches (mêmes muscles, même mouvement), avec le catalogue complet en dernier recours",
+                "Correction : l'espace web ne se recharge plus une fois à chaque ouverture"
+            ] },
 ];

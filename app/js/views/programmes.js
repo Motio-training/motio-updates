@@ -34,6 +34,7 @@ import {
 } from '../programme-ia.js';
 import { construireProgrammeLocal } from '../generateur-local.js';
 import * as PE from '../programme-edition.js';
+import { chargerHistorique, repereCharge } from '../seance-prevue.js';
 import * as BL from '../programme-bilan.js';
 import { vignetteExercice } from '../exercise-visuals.js';
 import { vueSeanceEdition, catColor } from './entrainement.js';
@@ -300,6 +301,10 @@ export async function vueProgramme(params) {
   try { flux = await fluxAgenda(moi.id, p.id); } catch { /* table absente ou hors ligne : pas d'agenda */ }
 
   const el = h(`<section class="page prog"></section>`);
+  /* L'historique de chaque exercice, pour la charge à viser dans la fiche d'une
+     séance : il se remplit en arrière-plan, la fiche s'ouvre toujours bien après. */
+  const historique = new Map();
+  chargerHistorique(moi.id).then(m => { for (const [nom, v] of m) historique.set(nom, v); });
   let vueMois = false;
   try { vueMois = localStorage.getItem(CLE_VUE) === 'mois'; } catch { /* stockage refusé : la liste */ }
   let moisAffiche = null;          // année × 12 + mois, null = celui de la prochaine séance
@@ -513,8 +518,15 @@ export async function vueProgramme(params) {
           <div class="modale-tete"><h2>${esc(s.title)} — semaine ${s.week}</h2></div>
           <p class="ligne-meta">${esc(dateBreve(s.dateMs))}, ${esc(heureDeLaSeance(p, s))} · environ ${approx(dureePrevue(s.items))}</p>
           ${s.deload ? '<p class="prog-decharge">Semaine de décharge : volume réduit volontairement.</p>' : ''}
-          <ul class="prog-items">${(s.items || []).map(it => `
-            <li><b>${esc(it.name)}</b> — ${esc(doseItem(it))}${it.hint ? `<span>${esc(it.hint)}</span>` : ''}</li>`).join('')}
+          <ul class="prog-items">${(s.items || []).map(it => {
+            // La charge conseillée pour les répétitions PRÉVUES, la dernière
+            // série en repère : « 120 kg × 3 » ne dit pas quoi prendre pour 15.
+            const r = repereCharge(it, historique);
+            return `<li><b>${esc(it.name)}</b> — ${esc(doseItem(it))}
+              ${r.conseille ? `<span class="repere-conseille">${esc(r.conseille)}</span>` : ''}
+              ${r.derniere ? `<span>${esc(r.derniere)}</span>` : ''}
+              ${it.hint ? `<span>${esc(it.hint)}</span>` : ''}</li>`;
+          }).join('')}
           </ul>
           ${!w ? '<p class="etat-mono">Le modèle de cette séance a été supprimé du carnet.</p>' : ''}
           <div class="prog-modale-actions">

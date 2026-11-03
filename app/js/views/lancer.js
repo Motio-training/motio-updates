@@ -42,7 +42,8 @@ import { getWorkout, saveWorkout, finishSession, sessionsOf, conteneurLibre,
 import { currentUser } from '../supabase.js';
 import { libelleRir, kg, dureeSeance, estime1RM, nouvelExercice,
          estPoidsDuCorps, pdcEffectif, fmtCharge } from '../model.js';
-import { devineMateriel } from '../catalog.js';
+import { devineMateriel, GEARS } from '../catalog.js';
+import { substituts } from '../substituts.js';
 import { Engine } from '../timer.js';
 import * as beeper from '../beeper.js';
 import { ouvrirBilan } from '../bilan.js';
@@ -1027,7 +1028,7 @@ export async function vueLancerSeance(params) {
             ${hasVisual(ex.name)
               ? '<button class="menu-action-ligne" data-visuel type="button">Voir le mouvement</button>'
               : ''}
-            <button class="menu-action-ligne" data-remplacer type="button">Remplacer l'exercice</button>
+            <button class="menu-action-ligne menu-action-ligne-accent" data-remplacer type="button">⇄  Remplacer l'exercice</button>
           </div>
           <button class="lien-inline menu-action-annuler" data-annuler type="button">Annuler</button>
         </div>
@@ -1052,20 +1053,38 @@ export async function vueLancerSeance(params) {
     if (termine) return;
     const ex = session.exercises[exIndex];
     const nb = ex.sets.length;
+    /* Trois exercices proches proposés d'abord (substituts.js : mêmes muscles,
+       même mouvement, du plus ressemblant au moins ressemblant), le catalogue
+       complet ensuite pour qui veut autre chose. Ceux déjà dans la séance ne
+       sont pas proposés : ce serait le faire deux fois. */
+    const proches = substituts(ex.name, session.exercises.map(e => e.name));
     const modale = h(`
       <div class="modale" role="dialog" aria-label="Remplacer l'exercice">
         <div class="modale-boite">
-          <div class="modale-tete"><h2>Remplacer l'exercice</h2></div>
+          <div class="modale-tete"><h2>⇄  Remplacer l'exercice</h2></div>
           <p class="etat-mono">${nb === 0
-            ? "L'exercice sera remplacé par celui que tu choisis."
+            ? `« ${esc(ex.name)} » sera remplacé par celui que tu choisis.`
             : `Les ${nb} série${nb > 1 ? 's' : ''} déjà faites resteront enregistrées sous « ${esc(ex.name)} ». Le nouvel exercice prendra la suite, avec les séries restantes.`}</p>
+          <p class="champ-label" style="margin-top:.9rem">Les plus proches</p>
+          ${proches.length ? `<div class="substituts">${proches.map((p, k) => `
+            <button type="button" class="substitut" data-nom="${esc(p.nom)}">
+              <span class="substitut-rang">${k + 1}</span>
+              <span class="corps"><b>${esc(p.nom)}</b>
+                <span>${p.memesMuscles ? 'mêmes muscles' : 'muscles proches'} · ${esc((GEARS[p.materiel] || {}).short || '')}</span></span>
+              <span class="substitut-fleche">⇄</span>
+            </button>`).join('')}</div>`
+            : '<p class="etat-mono">Aucun exercice proche dans le catalogue. Choisis-en un à la main.</p>'}
           <div class="modale-pied">
             <button class="lien-inline" data-annuler type="button">Annuler</button>
-            <button class="btn" data-choisir type="button">Choisir</button>
+            <button class="btn btn-ghost" data-choisir type="button">Autre exercice du catalogue…</button>
           </div>
         </div>
       </div>`);
+    modale.addEventListener('click', (e) => { if (e.target === modale) modale.remove(); });
     modale.querySelector('[data-annuler]').onclick = () => modale.remove();
+    modale.querySelectorAll('[data-nom]').forEach(b => {
+      b.onclick = () => { modale.remove(); remplacerExercice(b.dataset.nom); };
+    });
     modale.querySelector('[data-choisir]').onclick = () => {
       modale.remove();
       ouvrirCatalogue((nom) => remplacerExercice(nom));

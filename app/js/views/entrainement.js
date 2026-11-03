@@ -1,7 +1,7 @@
 import { h, render, loading, empty, failure, esc, toast, dateCourte, duree, dateBreve } from '../ui.js';
 import { listWorkouts, getWorkout, saveWorkout, deleteWorkout,
          listPrograms, saveProgram, sessionsOf, deleteSharedSession,
-         getCategories, saveCategories, aAccesIA } from '../api.js';
+         getCategories, saveCategories, aAccesIA, amisEnDirect } from '../api.js';
 import { currentUser } from '../supabase.js';
 import { nouvelleSeance, nouvelExercice, dureeSeance, dureeExercice,
          MODES, MODE_LABELS, CATEGORIES_DEFAUT, fmtRecup, kg,
@@ -23,7 +23,9 @@ import { vignetteExercice, ouvrirPlanche, visualFor } from '../exercise-visuals.
 import { suivreModele, annoncerSeancePrevue } from '../programme-edition.js';
 import * as forme from '../forme.js';
 import { ajouterMicro } from '../dictee.js';
-import { prechargerImages } from '../hors-ligne.js';
+import { prechargerImages, estHorsLigne } from '../hors-ligne.js';
+import { carrouselSeances, chargerHistorique, ouvrirFiches, enHaut as seanceEnHaut,
+         prochaines as seancesSuivantes, fiches as fichesDeProgramme, quand as quandSeance } from '../seance-prevue.js';
 
 /* ======================================================== liste des séances
    Reprend exactement TrainingList/WorkoutCard (TrainingScreens.kt) : carte
@@ -173,6 +175,7 @@ export async function vueSeances(_params, toutes = false) {
            création/édition de séance (vueSeanceEdition). -->
       <div class="rangee-titre" style="margin-bottom:1rem">
         <h1 style="margin:0">${toutes ? 'TOUTES MES SÉANCES' : 'ENTRAÎNEMENT'}</h1>
+        <span data-live></span>
       </div>
 
       <!-- La carte Moti est remontée dans la barre du haut (index.html) : elle
@@ -226,36 +229,32 @@ export async function vueSeances(_params, toutes = false) {
     el.querySelector('[data-reprise]').appendChild(bandeau);
   }
 
-  /* ================================================== Aujourd'hui (v2.79)
+  /* ================================================== Aujourd'hui (v2.79, v87)
 
-     CarteAujourdhui (Aujourdhui.kt) : la séance du jour — ou à rattraper —
-     avec son bouton Démarrer, et la météo de la forme. Compacte, pour ne pas
-     repousser les séances hors de vue. Le ressenti de la dernière séance est
-     relevé ici, dans l'historique des séances déjà chargé. */
+     CarteAujourdhui (Aujourdhui.kt) : la séance du jour — ou à rattraper — et
+     les cinq suivantes, qu'on parcourt en glissant (seance-prevue.js,
+     pager.js). Chacune a son bouton Démarrer ; le nom ouvre la fiche, la croix
+     du jour J propose reporter, sauter ou retirer. La météo de la forme reste
+     dessous. Le ressenti de la dernière séance est relevé ici, dans
+     l'historique des séances déjà chargé. */
   rows.forEach(r => (r.data?.history || []).forEach(s => forme.noterRessenti(s.startedAt, s.mood)));
+
+  /* L'historique de chaque exercice, pour la charge à viser dans les fiches :
+     il se remplit en arrière-plan, la fiche s'ouvre toujours bien après. */
+  const historique = new Map();
+  chargerHistorique(moi.id).then(m => { for (const [nom, v] of m) historique.set(nom, v); });
+
+  // Une action sur une séance (reporter, sauter, retirer) a modifié le
+  // programme : tout se redessine d'après le serveur.
+  const apresAction = () => vueSeances(null, toutes);
+
   function dessinerAujourdhui() {
     const zone = el.querySelector('[data-aujourdhui]');
     if (!zone) return;
     const m = forme.formeDuJour();
-    const auj = new Date(); auj.setHours(0, 0, 0, 0);
-    const sessions = progActif?.sessions || [];
-    const aFaire = sessions.filter(s => !(s.doneAt > 0) && !s.skipped && s.dateMs < auj.getTime() + 86400000)
-      .sort((a, b) => a.dateMs - b.dateMs)[0] || null;
-    const p = aFaire || prochaine;
-    const jourDe = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
-    const quand = !p ? '' : !aFaire ? dateBreve(p.dateMs)
-      : jourDe(p.dateMs) === auj.getTime()
-        ? `Aujourd'hui · ${new Date(p.dateMs).toTimeString().slice(0, 5)}`
-        : `À rattraper · ${dateBreve(p.dateMs)}`;
     const carte = h(`
       <div class="aujourdhui">
-        <div class="aujourdhui-tete"><b>AUJOURD'HUI</b><span class="forme-${m.classe}">${m.label}</span></div>
-        ${p ? `<div class="aujourdhui-seance">
-            <div><b>${aFaire ? '' : 'Prochaine : '}${esc(p.title)}</b>
-              <span>${esc(quand)} · semaine ${p.week} · ${(p.items || []).length} exos</span></div>
-            ${aFaire ? '<button class="btn" data-demarrer-prevue type="button">Démarrer</button>'
-              : `<a class="lien-inline" href="#/programmes/${progActif.id}">Programme ›</a>`}
-          </div>` : '<p class="aujourdhui-rien">Pas de séance prévue aujourd\'hui.</p>'}
+        <div data-carrousel></div>
         ${m.mesures.length ? `<p class="aujourdhui-mesures">${esc(m.mesures.join('  ·  '))}</p>` : ''}
         ${m.facteur < 1 ? `<p class="aujourdhui-allege">Charges conseillées allégées de ${Math.round((1 - m.facteur) * 100)} % : ${esc(m.raisons.join(', '))}.</p>` : ''}
         ${m.reponse < 0 ? `<div class="aujourdhui-question"><span>Comment tu te sens ?</span>
@@ -263,16 +262,64 @@ export async function vueSeances(_params, toutes = false) {
             <button type="button" class="chip-cat" data-forme="1">Moyen</button>
             <button type="button" class="chip-cat" data-forme="2">Fatigué</button></div>` : ''}
       </div>`);
-    carte.querySelector('[data-demarrer-prevue]')?.addEventListener('click', () => {
-      annoncerSeancePrevue(progActif.id, aFaire.id, aFaire.workoutId);
-      location.hash = `#/seances/${aFaire.workoutId}/lancer`;
-    });
+    const carrousel = progActif
+      ? carrouselSeances({ moi, p: progActif, carnet: rows, historique, forme: m, apres: apresAction })
+      : null;
+    const emplacement = carte.querySelector('[data-carrousel]');
+    if (carrousel) emplacement.appendChild(carrousel);
+    else emplacement.appendChild(h(`
+      <div>
+        <div class="aujourdhui-tete"><b>AUJOURD'HUI</b><span class="forme-${m.classe}">${esc(m.label)}</span></div>
+        <p class="aujourdhui-rien">Pas de séance prévue aujourd'hui.</p>
+      </div>`));
     carte.querySelectorAll('[data-forme]').forEach(b => {
       b.onclick = () => { forme.repondre(Number(b.dataset.forme)); dessinerAujourdhui(); };
     });
     zone.replaceChildren(carte);
   }
   if (!toutes) dessinerAujourdhui();
+
+  /* ============================================================ bouton LIVE
+
+     Quand au moins un ami s'entraîne en ce moment : un appui ouvre son suivi
+     en direct (direct.js), toute sa séance avec. À plusieurs, un appui propose
+     de choisir. Personne en direct : rien n'est affiché. Relu toutes les 20 s
+     tant que l'écran est ouvert (BoutonLive, Aujourdhui.kt). */
+  function dessinerLive(enDirect) {
+    const zone = el.querySelector('[data-live]');
+    if (!zone) return;
+    if (!enDirect.length) { zone.replaceChildren(); return; }
+    const b = h(`<button type="button" class="bouton-live"><i></i>LIVE · ${
+      enDirect.length === 1 ? esc(enDirect[0].username) : `${enDirect.length} amis`}</button>`);
+    b.onclick = () => {
+      if (enDirect.length === 1) { location.hash = `#/direct/${enDirect[0].user_id}`; return; }
+      const choix = h(`
+        <div class="modale" role="dialog" aria-label="En direct">
+          <div class="modale-boite modale-boite-etroite menu-action">
+            <p class="menu-action-titre">En direct</p>
+            <div class="menu-action-lignes">${enDirect.map(l => `
+              <button class="menu-action-ligne" type="button" data-ami="${esc(l.user_id)}">
+                ${esc(l.username)}<span class="menu-action-sous" style="display:block">${esc(l.workout_name || 'Séance')}${l.current_exercise ? ' · ' + esc(l.current_exercise) : ''}</span>
+              </button>`).join('')}</div>
+            <button class="lien-inline menu-action-annuler" data-fermer type="button">Fermer</button>
+          </div>
+        </div>`);
+      choix.addEventListener('click', (e) => { if (e.target === choix) choix.remove(); });
+      choix.querySelector('[data-fermer]').onclick = () => choix.remove();
+      choix.querySelectorAll('[data-ami]').forEach(x => {
+        x.onclick = () => { choix.remove(); location.hash = `#/direct/${x.dataset.ami}`; };
+      });
+      document.body.appendChild(choix);
+    };
+    zone.replaceChildren(b);
+  }
+  async function sonderLive() {
+    if (!document.body.contains(el)) return;     // écran quitté : plus la peine de sonder
+    if (!estHorsLigne()) {
+      try { dessinerLive(await amisEnDirect(moi.id)); } catch { /* réseau : on garde l'état affiché */ }
+    }
+    setTimeout(sonderLive, 20000);
+  }
 
   /* Hors ligne (hors-ligne.js) : les planches des séances des deux semaines
      à venir partent en cache dès maintenant, pour s'afficher en salle même
@@ -654,8 +701,44 @@ export async function vueSeances(_params, toutes = false) {
     zoneListe.replaceChildren();
     /* Recalculé à chaque redessin : épingler ou détacher une séance depuis le
        menu d'action la fait entrer ou sortir de l'écran principal aussitôt. */
-    const liste = toutes ? rows : rows.filter(s => (s.data || {}).pinned || idsProgramme.has(String((s.data || {}).id)));
-    if (!liste.length) {
+    /* Quand un programme est SUIVI (il lui reste une séance à faire), ce sont
+       ses cinq prochaines séances qui occupent la liste (« À VENIR »), pas tous
+       ses modèles : on veut savoir ce qui vient, pas parcourir le carnet. Seules
+       restent alors les séances épinglées HORS programme. Sans programme suivi,
+       on retrouve ce qui est épinglé, comme avant. « Toutes mes séances »
+       montre tout (SeancePrevue.kt, TrainingList). */
+    const suivi = !toutes && !!progActif && !!prochaine;
+    const estProgramme = (s) => idsProgramme.has(String((s.data || {}).id));
+    const liste = toutes ? rows : rows.filter(s => {
+      const d = s.data || {};
+      return suivi ? (d.pinned && !estProgramme(s)) : (d.pinned || estProgramme(s));
+    });
+    if (suivi) {
+      const haut = seanceEnHaut(progActif);
+      const suivantes = seancesSuivantes(progActif, haut);
+      if (suivantes.length) {
+        const toutesLesFiches = fichesDeProgramme(progActif);
+        zoneListe.appendChild(h('<p class="wcard-sec">À VENIR</p>'));
+        suivantes.forEach(s => {
+          const ligne = h(`
+            <button type="button" class="avenir-ligne">
+              <span class="corps">
+                <b>${esc(s.title)}</b>
+                <span>${esc(quandSeance(progActif, s))} · semaine ${s.week} · ${(s.items || []).length} exos</span>
+              </span>
+              <span class="chevron">›</span>
+            </button>`);
+          ligne.onclick = () => ouvrirFiches({
+            moi, p: progActif, liste: toutesLesFiches,
+            depart: Math.max(0, toutesLesFiches.findIndex(x => x.id === s.id)),
+            carnet: rows, historique, apres: apresAction
+          });
+          zoneListe.appendChild(ligne);
+        });
+      }
+      if (liste.length) zoneListe.appendChild(h('<p class="wcard-sec">ÉPINGLÉES</p>'));
+    }
+    if (!liste.length && !suivi) {
       /* Compte tout neuf (aucune séance du tout) : c'est le cas qui compte le
          plus, celui des amis iPhone qui viennent de s'inscrire. Il montrait
          un cul-de-sac — l'écran sortait ici en `return` avant le pied de
@@ -721,6 +804,7 @@ export async function vueSeances(_params, toutes = false) {
 
   dessinerListe();
   render(el);
+  if (!toutes) sonderLive();
 }
 
 /** Écran secondaire : le carnet complet, sans filtre. */

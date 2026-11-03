@@ -22,7 +22,7 @@
    client Supabase servi par esm.sh passent par le cache — voir plus bas.
    ========================================================================== */
 
-const CACHE = 'motio-app-v86';
+const CACHE = 'motio-app-v87';
 
 const COQUILLE = [
   './',
@@ -38,6 +38,7 @@ const COQUILLE = [
   'js/coach-guide.js', 'js/programme-edition.js', 'js/programme-bilan.js',
   'js/programme-build.js', 'js/charge.js',
   'js/forme.js', 'js/dictee.js', 'js/hors-ligne.js',
+  'js/pager.js', 'js/substituts.js', 'js/seance-prevue.js',
   'js/views/connexion.js', 'js/views/fil.js', 'js/views/profil.js',
   'js/views/entrainement.js', 'js/views/lancer.js', 'js/views/minuteurs.js',
   // circuit.js est chargé à la demande par lancer.js quand la séance est un
