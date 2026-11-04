@@ -1,6 +1,6 @@
 {
-  "versionCode": 200,
-  "versionName": "2.98",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.98/motio.apk",
-  "notes": "Nutrition : le plan s'ouvre sur les menus du jour. Roue crantee pour les reglages du plan, cible de calories et liste de courses a cote des onglets."
+  "versionCode": 201,
+  "versionName": "2.99",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.99/motio.apk",
+  "notes": "Nutrition : touche un repas du plan pour voir la photo du plat, ses calories et ses aliments. Reecris ton plan une fois pour avoir les photos."
 }
