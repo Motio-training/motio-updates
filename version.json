@@ -1,6 +1,6 @@
 {
-  "versionCode": 202,
-  "versionName": "2.100",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.100/motio.apk",
-  "notes": "Nutrition : un ecran d'attente s'affiche pendant que Moti ecrit ou reecrit ton plan (environ une minute). Retour pour annuler. Fiche plat sans la mention photo d'illustration."
+  "versionCode": 203,
+  "versionName": "2.101",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.101/motio.apk",
+  "notes": "Pendant une seance, le logo Motio (avec sa maison) ouvre l'ecran principal sans l'interrompre. Un bouton Retour a l'entrainement te ramene a ta seance. Entrainement libre disparait pendant une seance."
 }
