@@ -1,6 +1,6 @@
 {
-  "versionCode": 204,
-  "versionName": "2.102",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.102/motio.apk",
-  "notes": "La petite maison a cote du logo Motio n'apparait plus que pendant une seance."
+  "versionCode": 205,
+  "versionName": "2.103",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.103/motio.apk",
+  "notes": "Demarrer ouvre d'abord le detail de la seance (exercices, series, reps, charges), reglable dans Reglages. Le decompte de 10 secondes avant la premiere serie dit Preparation."
 }
