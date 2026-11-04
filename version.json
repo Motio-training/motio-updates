@@ -1,6 +1,6 @@
 {
-  "versionCode": 201,
-  "versionName": "2.99",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.99/motio.apk",
-  "notes": "Nutrition : touche un repas du plan pour voir la photo du plat, ses calories et ses aliments. Reecris ton plan une fois pour avoir les photos."
+  "versionCode": 202,
+  "versionName": "2.100",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.100/motio.apk",
+  "notes": "Nutrition : un ecran d'attente s'affiche pendant que Moti ecrit ou reecrit ton plan (environ une minute). Retour pour annuler. Fiche plat sans la mention photo d'illustration."
 }
