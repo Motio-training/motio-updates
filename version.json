@@ -1,6 +1,6 @@
 {
-  "versionCode": 203,
-  "versionName": "2.101",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.101/motio.apk",
-  "notes": "Pendant une seance, le logo Motio (avec sa maison) ouvre l'ecran principal sans l'interrompre. Un bouton Retour a l'entrainement te ramene a ta seance. Entrainement libre disparait pendant une seance."
+  "versionCode": 204,
+  "versionName": "2.102",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.102/motio.apk",
+  "notes": "La petite maison a cote du logo Motio n'apparait plus que pendant une seance."
 }
