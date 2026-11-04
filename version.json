@@ -1,6 +1,6 @@
 {
-  "versionCode": 199,
-  "versionName": "2.97",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.97/motio.apk",
-  "notes": "Decaler toute la semaine (lundi au dimanche) depuis la seance du jour, ou seulement cet entrainement. Decaler tout le programme depuis son ecran."
+  "versionCode": 200,
+  "versionName": "2.98",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.98/motio.apk",
+  "notes": "Nutrition : le plan s'ouvre sur les menus du jour. Roue crantee pour les reglages du plan, cible de calories et liste de courses a cote des onglets."
 }
