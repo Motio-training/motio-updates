@@ -1,6 +1,6 @@
 {
-  "versionCode": 206,
-  "versionName": "2.104",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.104/motio.apk",
-  "notes": "Nouveau bouton Suggestions dans Reglages, Application : ecris une idee d'amelioration ou un bug, ca arrive directement au developpeur. Pas besoin de compte."
+  "versionCode": 207,
+  "versionName": "2.105",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.105/motio.apk",
+  "notes": "Securite et confidentialite : la seance proposee par Moti n'ecrase plus la seance en cours, Motio ne lit plus le presse-papiers automatiquement, et les rapports de plantage n'emportent plus le contenu du carnet."
 }

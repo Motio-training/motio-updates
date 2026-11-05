@@ -18,17 +18,19 @@
 
    Ne touche JAMAIS aux requêtes vers Supabase (l'API et l'authentification
    doivent toujours parler au réseau réel) : seuls les fichiers de la coquille
-   (HTML/CSS/JS/icônes/polices de CE dossier) et, depuis la v77, le code du
-   client Supabase servi par esm.sh passent par le cache — voir plus bas.
+   (HTML/CSS/JS/icônes/polices de CE dossier) passent par le cache. Depuis la
+   v89, le code du client Supabase en fait partie (js/vendor/) : il n'est plus
+   servi par esm.sh.
    ========================================================================== */
 
-const CACHE = 'motio-app-v88';
+const CACHE = 'motio-app-v89';
 
 const COQUILLE = [
   './',
   'index.html',
   'manifest.json',
   'css/app.css',
+  'js/vendor/supabase-2.118.0.js',
   'js/main.js', 'js/router.js', 'js/supabase.js', 'js/config.js', 'js/api.js',
   'js/model.js', 'js/catalog.js', 'js/partage.js', 'js/ui.js', 'js/trophies.js',
   'js/reglages.js', 'js/timer.js', 'js/beeper.js', 'js/workout-share.js',
@@ -75,16 +77,14 @@ self.addEventListener('activate', (e) => {
 });
 
 function estDistant(url) {
-  return url.hostname.endsWith('supabase.co') || url.hostname === 'esm.sh' ||
+  return url.hostname.endsWith('supabase.co') ||
     url.hostname.endsWith('googleapis.com') || url.hostname.endsWith('gstatic.com');
 }
 
-/* Le client Supabase lui-même (son CODE, servi par esm.sh — pas les appels à
-   l'API) : réseau d'abord comme le reste, mais gardé pour le hors ligne
-   (v77). Sans lui, aucune page ne démarrait sans réseau, même avec toute la
-   coquille en cache — et lancer une séance en salle sans réseau est
-   justement le but (hors-ligne.js). En ligne, rien ne change : la copie ne
-   sert que quand le réseau ne répond pas. */
+/* Réseau d'abord, copie gardée pour le hors ligne. Le code du client Supabase
+   (js/vendor/, v89) passe par ici comme le reste de la coquille : sans lui,
+   aucune page ne démarrait sans réseau — et lancer une séance en salle sans
+   réseau est justement le but (hors-ligne.js). */
 function reseauDabord(requete, options) {
   return fetch(requete, options).then((rep) => {
     if (rep.ok) caches.open(CACHE).then((c) => c.put(requete, rep.clone()));
@@ -95,7 +95,6 @@ function reseauDabord(requete, options) {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
-  if (url.hostname === 'esm.sh') { e.respondWith(reseauDabord(e.request)); return; }
   if (url.origin !== location.origin && !url.hostname.endsWith('gstatic.com')) return;
   if (estDistant(url)) return;   // laisse passer tel quel : jamais de cache pour l'API
 

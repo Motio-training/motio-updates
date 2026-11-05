@@ -1,5 +1,15 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+/* Le client Supabase est HÉBERGÉ ICI (js/vendor/supabase-2.118.0.js, chargé
+   par index.html avant main.js, qui l'expose en window.supabase) et non plus
+   importé d'esm.sh en version « @2 ». Avec « @2 », chaque nouvelle version
+   publiée partait en production le jour même sans être passée par nous
+   (la 2.119.0 est arrivée ainsi le 4 novembre), et un CDN tiers compromis
+   pouvait servir n'importe quel code à toutes les sessions ouvertes.
+   Fichier tiré du paquet npm officiel, empreinte sha512 vérifiée (audit du
+   5 novembre 2026). Pour changer de version : remplacer le fichier, son nom
+   dans index.html et dans sw.js. */
 import { CONFIG } from './config.js';
+
+const { createClient } = window.supabase;
 
 export const sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }

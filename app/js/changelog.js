@@ -668,4 +668,9 @@ export const CHANGELOG = [
                 "Une séance du jour que tu ne peux pas faire : dans son menu, « Décaler cet entraînement » ne touche qu'elle, « Décaler toute la semaine » fait avancer d'un coup toutes les séances du lundi au dimanche du même nombre de jours, après t'avoir montré ce que chacune devient",
                 "Dans l'écran du programme, « Décaler » fait avancer tout le programme de 1 à 5 jours, d'une ou de deux semaines. Les séances déjà faites ne bougent pas, et l'agenda suit"
             ] },
+  { date: "5 novembre 2026", versions: "v2.105", items: [
+                "Sécurité : une réaction à un message ne peut plus être autre chose qu'un des six emojis proposés. Avant, une « réaction » piégée envoyée par quelqu'un pouvait agir dans la page de l'espace web de la personne qui la recevait",
+                "L'espace web interdit maintenant tout script ou image venant d'un autre serveur que Motio, et charge sa bibliothèque de connexion depuis Motio lui-même, dans une version figée",
+                "Une photo de profil ou une bannière de groupe ne peut plus pointer vers une image hébergée ailleurs, qui permettait de relever l'adresse IP de ceux qui la voient"
+            ] },
 ];

@@ -136,7 +136,14 @@ export async function vueMessageThread(params) {
     if (agg && Object.keys(agg.counts).length) {
       const rangee = h(`<div class="reac-rangee ${mine ? 'mine' : ''}"></div>`);
       for (const [emoji, count] of Object.entries(agg.counts)) {
-        const pilule = h(`<button type="button" class="reac-pilule ${agg.mine.has(emoji) ? 'mine' : ''}">${emoji} ${count}</button>`);
+        /* La réaction est écrite par L'AUTRE personne : jusqu'à l'audit du
+           5 novembre 2026 elle s'affichait telle quelle, et une « réaction »
+           faite de HTML s'exécutait dans la page du destinataire (vol de
+           session possible). Seuls les six emojis proposés s'affichent
+           désormais, échappés quoi qu'il arrive ; la base refuse aussi tout
+           le reste (contrainte message_reactions_emoji_check). */
+        if (!REACTION_EMOJIS.includes(emoji)) continue;
+        const pilule = h(`<button type="button" class="reac-pilule ${agg.mine.has(emoji) ? 'mine' : ''}">${esc(emoji)} ${Number(count) || 0}</button>`);
         pilule.onclick = () => reagir(m.id, emoji);
         rangee.appendChild(pilule);
       }
@@ -177,7 +184,7 @@ export async function vueMessageThread(params) {
       </div>`);
     const zone = modale.querySelector('[data-choix]');
     REACTION_EMOJIS.forEach((e) => {
-      const btn = h(`<button type="button" class="reac-emoji">${e}</button>`);
+      const btn = h(`<button type="button" class="reac-emoji">${esc(e)}</button>`);
       btn.onclick = () => { modale.remove(); reagir(messageId, e); };
       zone.appendChild(btn);
     });

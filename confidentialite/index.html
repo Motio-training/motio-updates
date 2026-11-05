@@ -50,8 +50,9 @@
 
 <h2>2. Ce qui reste sur votre téléphone</h2>
 <p>Utilisée sans compte, l'application ne réalise aucun envoi de données personnelles,
-hormis le partage et les suggestions décrits juste en dessous, et seulement quand vous le
-demandez. Sont enregistrés localement, dans l'espace
+hormis le partage et les suggestions décrits juste en dessous, seulement quand vous le
+demandez, et le rapport technique envoyé si l'application plante (paragraphe 6). Sont
+enregistrés localement, dans l'espace
 privé de l'application :</p>
 <ul>
   <li>vos entraînements, séances réalisées, séries, charges et répétitions ;</li>
@@ -146,6 +147,13 @@ vos suggestions restent mais ne sont plus rattachées à vous. Pour en demander 
 
   <tr><td>Abonnements, kudos, commentaires</td>
       <td>Fonctionnement de la partie sociale</td><td>Exécution du service</td></tr>
+
+  <tr><td><strong>Nutrition, si vous l'utilisez</strong> : votre objectif (sexe, année de
+      naissance, taille, niveau d'activité, objectif et rythme visés), vos pesées datées,
+      et sur l'espace web le journal des repas et vos aliments personnels</td>
+      <td>Calculer votre cible de calories et de macronutriments, suivre l'évolution de
+          votre poids, et les retrouver sur vos autres appareils</td>
+      <td>Exécution du service</td></tr>
 </table>
 </div>
 <p>Si vous vous connectez avec Google, Google nous transmet votre adresse e-mail et un
@@ -289,13 +297,25 @@ aussi contenir une donnée de santé. Elle <strong>reste sur votre téléphone</
 n'est ni publiée dans le fil, ni transmise à Moti. Elle ne part sur le serveur que si vous
 utilisez la sauvegarde du carnet, laquelle n'est lisible que par vous.</p>
 
+<h3>Le plan nutrition</h3>
+<p>Pour écrire votre plan de repas de la semaine, Moti reçoit : votre cible quotidienne de
+calories et de macronutriments, calculée à partir de votre objectif nutrition (paragraphe
+3), les séances prévues des sept prochains jours, l'instantané d'entraînement décrit
+ci-dessus, et le texte que vous saisissez dans vos préférences. Si vous y indiquez une
+allergie, une intolérance ou un régime suivi pour raison médicale, vous écrivez une
+<strong>donnée de santé</strong> : la même base s'applique que pour le coach (consentement
+explicite, article 9.2.a du RGPD), et le même conseil : n'y écrivez que ce qui sert au plan.
+Le plan obtenu est enregistré <strong>sur votre téléphone seulement</strong>, pas sur le
+serveur. Ni votre adresse e-mail ni votre identifiant de compte ne sont transmis.</p>
+
 <h2>6. Hébergement et sous-traitants</h2>
 <ul>
   <li><strong>Supabase</strong> — héberge la base de données et les fichiers, dans la
       région <code>eu-north-1</code> (Stockholm, Union européenne).</li>
 
   <li><strong>Anthropic</strong> — fait fonctionner Moti, le coach IA, ainsi que le
-      générateur de programme. Lorsque vous écrivez à Moti, sont transmis : les douze
+      générateur de programme et le plan nutrition (voir paragraphe 5 pour ce qu'il
+      reçoit alors). Lorsque vous écrivez à Moti, sont transmis : les douze
       derniers messages de la conversation, votre prénom ou pseudo, votre niveau et votre
       objectif déclarés, vos séances récentes, vos records saisis et votre programme en
       cours. <strong>Ni votre adresse e-mail ni votre identifiant de compte ne sont
@@ -309,6 +329,17 @@ utilisez la sauvegarde du carnet, laquelle n'est lisible que par vous.</p>
       texte de la notification. Désactiver les notifications dans l'application arrête ces
       envois.</li>
 
+  <li><strong>Google (Firebase Crashlytics)</strong> — reçoit un rapport technique quand
+      l'application Android plante ou rencontre une erreur : modèle du téléphone, versions
+      d'Android et de l'application, identifiant d'installation et endroit du code où
+      l'erreur s'est produite. Si vous êtes connecté, votre identifiant de compte (une
+      suite de chiffres et de lettres, jamais votre adresse e-mail) y est joint, pour
+      pouvoir retrouver ce qui vous est arrivé. Le contenu de vos séances, messages et
+      conversations n'y figure pas : quand une erreur porte sur leur lecture, seul
+      l'endroit de l'erreur est transmis. Base légale : intérêt légitime à corriger les
+      défauts de l'application. Les rapports sont effacés au bout de 90 jours. Ces envois
+      ont lieu même sans compte.</li>
+
   <li><strong>GitHub</strong> — distribue les mises à jour de l'application et héberge ce
       site ainsi que l'espace web. N'a accès à aucune donnée de compte.</li>
 </ul>
@@ -318,8 +349,9 @@ utilisez la sauvegarde du carnet, laquelle n'est lisible que par vous.</p>
 <p>Vos données en ligne sont conservées tant que votre compte existe. Sa suppression
 efface immédiatement et définitivement : le profil et la photo de profil, les abonnements,
 les séances partagées, les kudos, les commentaires, les messages privés et de groupe que
-vous avez envoyés, les conversations avec le coach, le poids, les appairages de montre et
-la sauvegarde du carnet.</p>
+vous avez envoyés, les conversations avec le coach, le poids, l'objectif nutrition et les
+pesées, le journal des repas, les appairages de montre et la sauvegarde du carnet.</p>
+<p>Les rapports de plantage (paragraphe 6) sont effacés par Google au bout de 90 jours.</p>
 <p>Les messages que vous avez envoyés disparaissent également des conversations de leurs
 destinataires. Votre carnet local, lui, demeure sur votre téléphone.</p>
 <p>La conversation avec le coach obéit à une règle plus stricte, décrite au paragraphe 5 :
@@ -334,7 +366,10 @@ l'adresse de contact du paragraphe 1.</p>
 <h2>8. Vos droits</h2>
 <ul>
   <li><strong>Accès et portabilité</strong> — Profil › Exporter produit un fichier lisible
-      contenant l'intégralité de vos données.</li>
+      contenant votre carnet : séances, historique, catalogue et programmes. Pour obtenir
+      une copie de toutes vos autres données (profil, messages, commentaires, conversations
+      avec le coach, nutrition, suggestions), écrivez à l'adresse de contact du paragraphe
+      1 : vous recevrez un fichier lisible sous un mois.</li>
   <li><strong>Rectification</strong> — le pseudo, le nom affiché, la photo et le poids se
       modifient depuis le Profil.</li>
   <li><strong>Effacement</strong> — Profil › Compte › Supprimer. Pour la seule conversation

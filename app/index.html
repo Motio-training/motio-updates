@@ -2,6 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<!-- POLITIQUE DE SÉCURITÉ DU CONTENU (audit du 5 novembre 2026). Seconde
+     barrière derrière l'échappement des textes (esc, ui.js) : même si un texte
+     venu d'un autre utilisateur glissait du HTML dans la page, aucun script ne
+     pourrait s'y exécuter (ni attribut onerror, ni script étranger), et aucune
+     image ne pourrait être chargée depuis un autre serveur que Supabase.
+     GitHub Pages ne permet pas d'envoyer d'en-tête HTTP : d'où la balise. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://mwjfhavvoiafjueecopg.supabase.co; connect-src 'self' https://mwjfhavvoiafjueecopg.supabase.co wss://mwjfhavvoiafjueecopg.supabase.co; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <!-- interactive-widget=resizes-content : sans lui, le clavier virtuel ne
      rétrécit QUE le viewport visuel sur Android, pas le viewport de mise en
      page. Le `100dvh` de l'écran de discussion gardait donc la hauteur d'un
@@ -123,6 +130,9 @@
 <!-- QR code (Kazuhiko Arase, MIT) : script classique, déjà vendorisé pour le
      site marketing (assets/js/vendor/qrcode.js) — expose window.qrcode. -->
 <script src="../assets/js/vendor/qrcode.js"></script>
+<!-- Client Supabase, version figée et hébergée ici (voir js/supabase.js) :
+     script classique, exécuté avant le module main.js qui en a besoin. -->
+<script src="js/vendor/supabase-2.118.0.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
