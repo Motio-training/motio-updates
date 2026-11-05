@@ -200,7 +200,7 @@ export function carteSeance(s, moi, kudo, nbCommentaires, titre) {
     if (aDuDetail && !zoneDetail.childElementCount) {
       for (const ex of detail) {
         const series = (ex.s || []).map(st => {
-          const rir = st.rir >= 0 ? ` · ${libelleRir(st.rir)}` : '';
+          const rir = st.rir >= 0 ? ` · ${libelleRir(st.rir, st.echec)}` : '';
           return `${kg(st.w)} × ${st.r}${rir}`;
         });
         zoneDetail.appendChild(h(`

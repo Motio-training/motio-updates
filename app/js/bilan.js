@@ -276,7 +276,7 @@ export async function ouvrirBilan({ moi, modele, session, libre = false, onFerme
     tension_ms: tensionOf(),
     details: session.exercises.map(e => ({
       n: e.name,
-      s: e.sets.map(s => ({ w: s.weight, r: s.reps, rir: s.rir }))
+      s: e.sets.map(s => ({ w: s.weight, r: s.reps, rir: s.rir, ...(s.echec ? { echec: true } : {}) }))
     }))
   });
   el.querySelector('[data-fermer]').onclick = () => onFermer();

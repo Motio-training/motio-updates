@@ -206,10 +206,11 @@ export function volumeSerie(s) { return (s.weight || 0) * (s.reps || 0); }
 export function volumeExercice(e) { return (e.sets || []).reduce((t, s) => t + volumeSerie(s), 0); }
 
 /** rirLabel — WorkoutModel.kt */
-export function libelleRir(rir) {
+export function libelleRir(rir, echec = false) {
   if (rir < 0) return '';
-  if (rir === 0) return 'RIR 0 · échec';
-  if (rir >= 5) return 'RIR 5+ · facile';
+  if (echec) return 'Échec · répétitions non terminées';
+  if (rir === 0) return 'RIR 0 · dernière répétition validée';
+  if (rir >= 4) return 'RIR 4+ · facile';
   return `RIR ${rir} · RPE ${10 - rir}`;
 }
 

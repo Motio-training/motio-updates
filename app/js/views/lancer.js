@@ -60,7 +60,25 @@ import { seancePrevuePour, seancePrevueDe, oublierSeancePrevue, exercicesDeLaSem
  *  réglage du circuit (motio.circuit-visuels) : voir dessinerPlanche. */
 const CLE_VISUELS_SEANCE = 'motio.seance-visuels';
 
-const RIR = [0, 1, 2, 3, 4, 5];
+/* Six puces : X (échec), puis 0 à 3 répétitions en réserve, puis « 4 ou plus ».
+   X vaut -2 ICI (valeur de puce, aussi gardée dans l'état de reprise) ; sur la
+   série elle-même il s'enregistre `rir: 0, echec: true` — pour tout calcul un
+   échec vaut RIR 0, seuls l'affichage et le partage le distinguent. -1 reste
+   « non renseigné ». Voir rirDePuce / puceDeRir. */
+const RIR_ECHEC = -2;
+const RIR = [RIR_ECHEC, 0, 1, 2, 3, 4];
+const libellePuceRir = (r) => (r === RIR_ECHEC ? 'X' : r >= 4 ? '4+' : String(r));
+/** Pose sur la série la valeur d'une puce. */
+function poserRir(s, puce) {
+  s.rir = puce === RIR_ECHEC ? 0 : puce;
+  if (puce === RIR_ECHEC) s.echec = true; else delete s.echec;
+}
+/** La puce qu'allume une série (les anciens RIR 5 allument « 4+ »). */
+function puceDeSerie(s) {
+  const rir = s.rir ?? -1;
+  if (rir < 0) return -1;
+  return s.echec ? RIR_ECHEC : Math.min(rir, 4);
+}
 const SETUP_SEC = 10;
 const MOODS = [[1, '😩'], [2, '😕'], [3, '😐'], [4, '🙂'], [5, '💪']];
 const MOOD_LABELS = { 1: 'Épuisé', 2: 'Fatigué', 3: 'Normal', 4: 'En forme', 5: 'Excellent' };
@@ -75,7 +93,7 @@ function ouvrirChoixRir(actuel, onValider) {
       <div class="modale-boite modale-boite-etroite">
         <div class="modale-tete"><h2>RIR (répétitions en réserve)</h2></div>
         <div class="run-rir" data-rir>
-          ${RIR.map(r => `<button type="button" class="puce" data-rir-val="${r}">${r === 5 ? '5+' : r}</button>`).join('')}
+          ${RIR.map(r => `<button type="button" class="puce" data-rir-val="${r}">${libellePuceRir(r)}</button>`).join('')}
         </div>
         <div class="modale-pied">
           <button class="lien-inline" data-annuler type="button">Annuler</button>
@@ -417,7 +435,7 @@ export async function vueLancerSeance(params) {
     const s = session.exercises[exIndex].sets[i];
     if (!s) return;
     serieEnEdition = i;
-    poidsVal = s.weight || 0; repsVal = s.reps || 0; rirChoisi = s.rir ?? -1;
+    poidsVal = s.weight || 0; repsVal = s.reps || 0; rirChoisi = puceDeSerie(s);
     majCellules(); majPucesRir(); majEtiquetteSaisie();
     afficherSaisie(true);
   }
@@ -435,7 +453,7 @@ export async function vueLancerSeance(params) {
     if (!s) return;
     s.weight = poidsVal || 0;
     if (repsVal) s.reps = repsVal;
-    s.rir = rirChoisi;
+    poserRir(s, rirChoisi);
     // Corrigé à la main : ce n'est plus une reconduction.
     s.rirAuto = false;
     redessinerSeries();
@@ -463,6 +481,7 @@ export async function vueLancerSeance(params) {
    * que l'application affiche en grisé.
    */
   function rirPourNouvelleSerie(ex) {
+    if (rirChoisi === RIR_ECHEC) return { rir: 0, rirAuto: false, echec: true };
     if (rirChoisi >= 0) return { rir: rirChoisi, rirAuto: false };
     const duJour = ex.sets.length ? (ex.sets[ex.sets.length - 1].rir ?? -1) : -1;
     if (duJour >= 0) return { rir: duJour, rirAuto: true };
@@ -662,7 +681,7 @@ export async function vueLancerSeance(params) {
           </div>
           <p class="run-rir-label">RIR (facultatif, répétitions en réserve)</p>
           <div class="run-rir" data-rir>
-            ${RIR.map(r => `<button type="button" class="puce" data-rir-val="${r}">${r === 5 ? '5+' : r}</button>`).join('')}
+            ${RIR.map(r => `<button type="button" class="puce" data-rir-val="${r}">${libellePuceRir(r)}</button>`).join('')}
           </div>
           <p class="run-saisie-aide" data-saisie-aide>Touche le chrono pour valider la série.</p>
         </div>
@@ -760,7 +779,9 @@ export async function vueLancerSeance(params) {
       else { tensionMs = engine.chronoStart ? Date.now() - engine.chronoStart : 0; engine.chronoStop(); }
 
       const marge = rirPourNouvelleSerie(ex);
-      ex.sets.push({ weight: poids, reps, tensionMs, rir: marge.rir, rirAuto: marge.rirAuto });
+      const serie = { weight: poids, reps, tensionMs, rir: marge.rir, rirAuto: marge.rirAuto };
+      if (marge.echec) serie.echec = true;
+      ex.sets.push(serie);
       beeper.vibrerSerie();
       redessinerSeries();
       dessinerSousligne(false);
@@ -832,7 +853,7 @@ export async function vueLancerSeance(params) {
         <div class="run-serie-action"><button type="button">Modifier</button></div>
         <div class="ligne run-serie-faite">
           Série ${i + 1} — ${esc(fmtCharge(nomEx, poidsCorps, s.weight))} × ${s.reps}
-          ${s.rir >= 0 ? `<span class="etiquette">${esc(libelleRir(s.rir))}</span>` : ''}
+          ${s.rir >= 0 ? `<span class="etiquette">${esc(libelleRir(s.rir, s.echec))}</span>` : ''}
         </div>
       </li>`);
     const contenu = li.querySelector('.run-serie-faite');
@@ -886,7 +907,7 @@ export async function vueLancerSeance(params) {
               // signalé par Nicolas (« on n'a pas la possibilité de noter le
               // RIR de la série qu'on vient d'effectuer »). Même choix à 6
               // puces que la saisie initiale (RIR const), en 3e étape.
-              ouvrirChoixRir(s.rir, (rir) => { s.rir = rir; redessinerSeries(); });
+              ouvrirChoixRir(puceDeSerie(s), (puce) => { poserRir(s, puce); redessinerSeries(); });
             }
           });
         }

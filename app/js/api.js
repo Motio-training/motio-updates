@@ -828,6 +828,7 @@ function detailsCompact(exercises) {
       s: e.sets.map(s => {
         const o = { w: s.weight, r: s.reps, t: s.tensionMs };
         if (s.rir >= 0) o.rir = s.rir;
+        if (s.echec) o.echec = true;
         return o;
       })
     }));

@@ -1,6 +1,6 @@
 {
-  "versionCode": 208,
-  "versionName": "2.106",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.106/motio.apk",
-  "notes": "Bloquer quelqu'un ou le retirer de tes abonnes, accord avant la premiere reponse de Moti, et Reglages > Confidentialite pour telecharger toutes tes donnees. Mise a jour necessaire pour continuer a utiliser Moti."
+  "versionCode": 209,
+  "versionName": "2.107",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.107/motio.apk",
+  "notes": "RIR : nouveau bouton X pour une serie a l'echec (repetitions non terminees). Le 0 veut dire : derniere repetition validee. Echelle X, 0, 1, 2, 3, 4+."
 }

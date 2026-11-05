@@ -681,4 +681,9 @@ export const CHANGELOG = [
                 "Pour éviter les abus, le nombre de demandes à Moti est plafonné sur 24 heures, très au-dessus d'un usage normal",
                 "Correction : tu peux maintenant aimer et commenter les séances des membres de tes groupes et des profils publics"
             ] },
+  { date: "5 novembre 2026", versions: "v2.107", items: [
+                "RIR : un bouton X avant le 0. X veut dire « échec » : tu n'as pas pu terminer toutes tes répétitions. 0 veut maintenant dire ce qu'il dit : la dernière répétition est passée, mais tu n'aurais pas pu en faire une de plus",
+                "L'échelle garde six boutons, de la même taille : X, 0, 1, 2, 3 et 4+ (le 4 et le 5+ sont réunis). Tes anciennes séries ne changent pas : un ancien 0 reste un RIR 0, un ancien 5+ s'affiche 4+",
+                "Pour le calcul des charges conseillées et du 1RM, un échec compte comme un RIR 0. Le fil et le détail des séances partagées l'écrivent « Échec »"
+            ] },
 ];
