@@ -1,6 +1,6 @@
 {
-  "versionCode": 210,
-  "versionName": "2.108",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.108/motio.apk",
-  "notes": "Widget en 4x2, 4x1 et 5x1 : la carte Prochaine seance avec les seances suivantes (fleches), Demarrer ouvre le detail puis l'appli sur la seance lancee."
+  "versionCode": 211,
+  "versionName": "2.109",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.109/motio.apk",
+  "notes": "Mot de passe oublie : un lien sous Se connecter, dans l'appli et sur le site. E-mails de Motio en francais. Mot de passe de 8 caracteres minimum."
 }

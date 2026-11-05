@@ -686,4 +686,14 @@ export const CHANGELOG = [
                 "L'échelle garde six boutons, de la même taille : X, 0, 1, 2, 3 et 4+ (le 4 et le 5+ sont réunis). Tes anciennes séries ne changent pas : un ancien 0 reste un RIR 0, un ancien 5+ s'affiche 4+",
                 "Pour le calcul des charges conseillées et du 1RM, un échec compte comme un RIR 0. Le fil et le détail des séances partagées l'écrivent « Échec »"
             ] },
+  { date: "5 novembre 2026", versions: "v2.108", items: [
+                "Widget : il existe maintenant en 4 × 2, 4 × 1 et 5 × 1. Une seule fiche à poser, puis tu l'agrandis ou le réduis comme tu veux",
+                "Il reprend la carte du haut de l'écran Entraînement : « Prochaine séance », le titre, le jour, la semaine, le nombre d'exercices et le bouton Démarrer. Les flèches (ou les points, en 4 × 2) font défiler les cinq séances suivantes",
+                "« Démarrer » ouvre par-dessus ton écran d'accueil la même fenêtre de détail que dans l'appli (exercices, séries, charges). Un second appui sur « Démarrer l'entraînement » ouvre Motio directement sur la séance lancée"
+            ] },
+  { date: "5 novembre 2026", versions: "v2.109", items: [
+                "Mot de passe oublié : un lien sous « Se connecter », dans l'appli comme sur le site. Tu reçois un e-mail, tu choisis ton nouveau mot de passe sur le site, puis tu te reconnectes",
+                "Les e-mails de Motio (confirmation d'inscription, mot de passe oublié, changement d'adresse) sont maintenant en français, et leurs liens mènent à motiotraining.com",
+                "Un nouveau mot de passe fait au moins 8 caractères"
+            ] },
 ];

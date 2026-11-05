@@ -94,6 +94,44 @@ export async function signInWithGoogle() {
   if (error) throw new Error(traduire(error.message));
 }
 
+/* Longueur minimale d'un mot de passe : la même valeur que le réglage
+   Authentication › Sign In / Providers › Email du projet Supabase, et que
+   MDP_MIN côté Android (Supabase.kt). */
+export const MDP_MIN = 8;
+
+/**
+ * « Mot de passe oublié » : demande l'e-mail de réinitialisation. La réponse ne
+ * dit jamais si l'adresse existe (on ne sert pas d'annuaire) : l'appelant
+ * affiche toujours le même message. Le lien du mail pointe sur
+ * motiotraining.com/app/?token_hash=…&type=recovery (modèle d'e-mail), lu au
+ * démarrage par `lireLienMail` (main.js).
+ */
+export async function demanderReinitialisation(email) {
+  const { error } = await sb.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: CONFIG.SITE_URL
+  });
+  if (error) throw new Error(traduire(error.message));
+}
+
+/** Enregistre le nouveau mot de passe du compte connecté. */
+export async function changerMotDePasse(motDePasse) {
+  const { error } = await sb.auth.updateUser({ password: motDePasse });
+  if (error) throw new Error(traduire(error.message));
+}
+
+/**
+ * Consomme le lien reçu par e-mail (confirmation d'inscription, mot de passe
+ * oublié, changement d'adresse). Le jeton à usage unique voyage dans
+ * `token_hash` : il ne s'échange qu'ici, par un appel volontaire de la page, et
+ * non par une simple ouverture du lien (un antivirus ou un aperçu de
+ * messagerie qui « visite » le lien ne le grille donc plus).
+ */
+export async function consommerLienMail(tokenHash, type) {
+  const { data, error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type });
+  if (error) throw new Error(traduire(error.message));
+  return data.session ?? null;
+}
+
 export async function signOut() {
   await sb.auth.signOut();
   location.hash = '#/connexion';
@@ -105,7 +143,12 @@ export function traduire(m = '') {
   if (c('invalid login credentials')) return 'Adresse e-mail ou mot de passe incorrect.';
   if (c('email not confirmed')) return 'Adresse non confirmée : ouvre le lien reçu par e-mail.';
   if (c('user already registered')) return 'Un compte existe déjà avec cette adresse.';
-  if (c('password should be')) return 'Mot de passe trop court (6 caractères minimum).';
+  if (c('password should be')) return `Mot de passe trop court (${MDP_MIN} caractères minimum).`;
+  if (c('same password') || c('different from the old')) return "Choisis un mot de passe différent de l'ancien.";
+  if (c('rate limit') || c('for security purposes')) return 'Trop de demandes. Réessaie dans quelques minutes.';
+  if (c('token has expired') || c('otp_expired') || c('invalid or has expired') || c('invalid token')) {
+    return 'Ce lien a expiré ou a déjà été utilisé. Demande-en un nouveau.';
+  }
   if (c('duplicate key') && c('username')) return 'Ce pseudo est déjà pris.';
   if (c('row-level security')) return 'Action refusée par le serveur.';
   if (c('does not exist') && c('relation')) return "Table absente : le script SQL n'a pas été exécuté.";

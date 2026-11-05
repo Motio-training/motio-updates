@@ -383,6 +383,9 @@ h2{
    ========================================================================== */
 
 .champ{display:block;margin:0 0 1rem;max-width:26rem}
+/* `hidden` doit gagner sur le display:block ci-dessus : sans cette ligne, le
+   champ Pseudo de la connexion restait affiché hors inscription. */
+.champ[hidden]{display:none}
 .champ span{
   display:block;
   font-family:var(--f-mono);font-size:.66rem;font-weight:500;

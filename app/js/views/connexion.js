@@ -1,5 +1,7 @@
 import { h, render, toast } from '../ui.js';
-import { signIn, signUp, signInWithGoogle, CLE_ERREUR_AUTH } from '../supabase.js';
+import {
+  signIn, signUp, signInWithGoogle, demanderReinitialisation, MDP_MIN, CLE_ERREUR_AUTH
+} from '../supabase.js';
 import { CONFIG } from '../config.js';
 
 export function vueConnexion() {
@@ -28,6 +30,7 @@ export function vueConnexion() {
 
       <p class="fineprint">
         <button class="lien-inline" data-bascule>Créer un compte</button>
+        <span data-zone-oubli>· <button class="lien-inline" data-oubli>Mot de passe oublié ?</button></span>
         · <a href="${CONFIG.DOWNLOAD_URL}" rel="noopener">Télécharger Motio</a>
       </p>
     </section>`);
@@ -43,7 +46,25 @@ export function vueConnexion() {
     valider.textContent = inscription ? 'Créer le compte' : 'Se connecter';
     bascule.textContent = inscription ? "J'ai déjà un compte" : 'Créer un compte';
     champPseudo.hidden = !inscription;
+    el.querySelector('[data-zone-oubli]').hidden = inscription;
     el.querySelector('[data-mdp]').autocomplete = inscription ? 'new-password' : 'current-password';
+  };
+
+  /* Mot de passe oublié : l'adresse saisie plus haut suffit. La réponse est
+     toujours la même, que le compte existe ou non. */
+  el.querySelector('[data-oubli]').onclick = async (e) => {
+    const mail = el.querySelector('[data-email]').value.trim();
+    if (!mail) return toast("Saisis d'abord ton adresse e-mail.");
+    const bouton = e.currentTarget;
+    bouton.disabled = true;
+    try {
+      await demanderReinitialisation(mail);
+      toast("Si un compte existe avec cette adresse, un e-mail vient de partir. Ouvre le lien qu'il contient.");
+    } catch (err) {
+      toast(err.message);
+    } finally {
+      bouton.disabled = false;
+    }
   };
 
   el.querySelector('[data-google]').onclick = async (e) => {
@@ -66,6 +87,7 @@ export function vueConnexion() {
 
     if (!mail || !mdp) return toast('Renseigne une adresse et un mot de passe.');
     if (inscription && pseudo.length < 3) return toast('Le pseudo fait 3 caractères minimum.');
+    if (inscription && mdp.length < MDP_MIN) return toast(`Le mot de passe fait ${MDP_MIN} caractères minimum.`);
 
     valider.disabled = true;
     try {

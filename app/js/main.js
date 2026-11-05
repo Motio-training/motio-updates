@@ -1,5 +1,5 @@
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
-import { currentSession, onAuthChange, CLE_ERREUR_AUTH } from './supabase.js';
+import { currentSession, onAuthChange, consommerLienMail, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty, toast } from './ui.js';
 import { appliquerTheme } from './reglages.js';
 import { etatBrut as seanceEnCours } from './run-state.js';
@@ -12,6 +12,7 @@ appliquerTheme();
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change', appliquerTheme);
 
 import { vueConnexion } from './views/connexion.js';
+import { vueNouveauMdp } from './views/nouveau-mdp.js';
 import { vueFil } from './views/fil.js';
 import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte } from './views/profil.js';
 import { vueReglages, vueReglagesMaj, vueReglagesNouveautes } from './views/reglages.js';
@@ -35,6 +36,7 @@ const PUBLIQUES = ['/connexion'];
 /* --- routes --- */
 route('/', () => { location.hash = '#/seances'; });
 route('/connexion', vueConnexion);
+route('/nouveau-mot-de-passe', vueNouveauMdp);
 route('/onboarding', vueOnboarding);
 route('/minuteurs', vueMinuteurs);
 route('/fil', vueFil);
@@ -90,7 +92,11 @@ before(async (path) => {
   if (session && path === '/connexion') return '/seances';
   // Tutoriel de première ouverture : passe devant tout le reste, comme côté
   // natif (OnboardingScreen s'affiche par-dessus l'app tant qu'il est dû).
-  if (session && path !== '/onboarding' && onboardingPending()) return '/onboarding';
+  // Le tutoriel ne passe pas devant le choix d'un nouveau mot de passe : le
+  // lien du mail ne se rejoue pas, l'écran ne doit pas être perdu en route.
+  if (session && path !== '/onboarding' && path !== '/nouveau-mot-de-passe' && onboardingPending()) {
+    return '/onboarding';
+  }
   majChrome(!!session && path !== '/onboarding', path);
   return null;
 });
@@ -212,6 +218,50 @@ onAuthChange((session) => { resolve(); syncPrefs(session); });
    3. rendre au routeur un hash qu'il sait lire.
    ========================================================================== */
 
+/* ==========================================================================
+   LIEN REÇU PAR E-MAIL (v2.109)
+
+   Les modèles d'e-mail de Supabase (tools/emails-auth/) pointent sur
+   motiotraining.com/app/?token_hash=…&type=… plutôt que sur l'adresse
+   d'authentification de Supabase : un lien à ton nom, et un jeton qui ne
+   s'échange que par cet appel (voir consommerLienMail). L'adresse est nettoyée
+   AVANT l'échange : le jeton ne reste ni dans l'historique, ni dans une
+   capture, ni dans l'en-tête Referer des liens suivants.
+
+   Types : recovery (mot de passe oublié) → écran du nouveau mot de passe ;
+   signup / email (confirmation) → séances ; email_change → compte.
+   ========================================================================== */
+const LIENS_MAIL = {
+  recovery: '/nouveau-mot-de-passe',
+  signup: '/seances',
+  email: '/seances',
+  magiclink: '/seances',
+  invite: '/seances',
+  email_change: '/profil/compte'
+};
+
+async function traiterLienMail() {
+  const q = new URLSearchParams(location.search);
+  const tokenHash = q.get('token_hash');
+  const type = q.get('type');
+  if (!tokenHash || !Object.hasOwn(LIENS_MAIL, type)) return;
+
+  const cible = LIENS_MAIL[type];
+  history.replaceState(null, '', location.pathname + '#' + cible);
+  try {
+    const session = await consommerLienMail(tokenHash, type);
+    if (!session) throw new Error("Connexion non aboutie : ouvre de nouveau le lien reçu par e-mail.");
+    if (type === 'email_change') setTimeout(() => toast('Adresse e-mail changée.'), 600);
+    else if (type !== 'recovery') {
+      setTimeout(() => toast("Adresse confirmée. Tu peux aussi te connecter dans l'application Motio."), 600);
+    }
+  } catch (err) {
+    try { sessionStorage.setItem(CLE_ERREUR_AUTH, err.message); } catch { /* stockage refusé */ }
+    history.replaceState(null, '', location.pathname + '#/connexion');
+  }
+}
+await traiterLienMail();
+
 function lireRetourAuth() {
   const frag = new URLSearchParams(location.hash.replace(/^#\/?/, ''));
   const query = new URLSearchParams(location.search);
@@ -314,7 +364,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '88';
+const VERSION = '92';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher
