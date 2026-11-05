@@ -24,6 +24,7 @@
    ========================================================================== */
 
 import { sb, currentUser } from './supabase.js';
+import { invoquerIA } from './consentement-ia.js';
 import { GROUPES, devineMateriel } from './catalog.js';
 import { nouvelleSeance, nouvelExercice, CIRCUIT_WORK_SEC } from './model.js';
 import { toursPour, toursCircuitPour } from './coach-guide.js';
@@ -534,7 +535,7 @@ export async function genererProgrammeIA({
          la rendrait deux fois plus lente et deux fois plus chère pour rien. Le
          découpage n'existe que pour les programmes, qui eux frôlaient le
          plafond de la plateforme. */
-      const r = await sb.functions.invoke('generate-program', { body: corps });
+      const r = await invoquerIA('generate-program', { body: corps });
       if (r.error) throw await motifLisible(r.error);
       if (!r.data) throw new Error('Réponse vide du générateur.');
       data = r.data;

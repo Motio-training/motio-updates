@@ -2,7 +2,8 @@ import { h, render, loading, empty, failure, esc, toast, dateCourte, dateBreve, 
 import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
          listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
-         kudosFor, commentCounts, setNotifPref, setWeight, getMyWeight } from '../api.js';
+         kudosFor, commentCounts, setNotifPref, setWeight, getMyWeight,
+         abonnesDe, meSuit, retirerAbonne, bloquer, debloquer, aBloque } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -154,6 +155,14 @@ export async function vueProfil(params) {
         <div class="bloc">
           <p class="bloc-titre">Records estimés</p>
           <div data-records></div>
+        </div>
+
+        <div class="bloc">
+          <p class="bloc-titre">Ta tranquillité</p>
+          <div class="menu-groupe" data-protection></div>
+          <p class="etat-mono" style="font-size:.8rem;margin-top:.4rem">Bloquer : vous ne vous suivez
+            plus, vous ne pouvez plus vous écrire, ni voir vos séances. Pour signaler un comportement :
+            admin.motio@gmail.com.</p>
         </div>`}
     </section>`);
 
@@ -272,7 +281,71 @@ export async function vueProfil(params) {
     }
   }
 
+  /* Se protéger (audit du 5 novembre 2026, ActionsProtection de
+     FriendProfileScreen.kt) : retirer de ses abonnés, bloquer, débloquer. */
+  const zoneProtection = el.querySelector('[data-protection]');
+  if (zoneProtection) {
+    const pseudo = profil.username || 'cette personne';
+    const dessinerProtection = async () => {
+      let suitMoi = false, bloque = false;
+      try { [suitMoi, bloque] = await Promise.all([meSuit(moi.id, cible), aBloque(moi.id, cible)]); }
+      catch { /* on propose quand même de bloquer */ }
+      zoneProtection.replaceChildren();
+      if (suitMoi && !bloque) {
+        const b = h(`<button class="menu-ligne" type="button"><span class="corps"><b>Retirer de mes abonnés</b></span></button>`);
+        b.onclick = () => confirmerAction(
+          `Retirer ${pseudo} de tes abonnés ?`,
+          "Cette personne ne verra plus tes séances (sauf si ton profil est public). Elle pourra se réabonner : pour l'en empêcher, bloque-la.",
+          'Retirer',
+          async () => { await retirerAbonne(moi.id, cible); toast(`${pseudo} ne te suit plus.`); dessinerProtection(); }
+        );
+        zoneProtection.appendChild(b);
+      }
+      const bb = h(`<button class="menu-ligne" type="button"><span class="corps"><b style="color:var(--accent2)">${bloque ? 'Débloquer' : 'Bloquer'} ${esc(pseudo)}</b></span></button>`);
+      bb.onclick = () => bloque
+        ? confirmerAction(
+          `Débloquer ${pseudo} ?`,
+          "Vous pourrez de nouveau vous suivre et vous écrire. Les abonnements d'avant ne reviennent pas d'eux-mêmes.",
+          'Débloquer',
+          async () => { await debloquer(moi.id, cible); toast(`${pseudo} est débloqué.`); dessinerProtection(); }
+        )
+        : confirmerAction(
+          `Bloquer ${pseudo} ?`,
+          "Vous ne vous suivrez plus, dans un sens comme dans l'autre, et cette personne ne pourra plus te suivre à nouveau, t'écrire, ni voir tes séances et ton direct. Elle n'est pas prévenue. Tu peux la débloquer plus tard dans Réglages › Confidentialité.",
+          'Bloquer',
+          async () => { await bloquer(cible); toast(`${pseudo} est bloqué.`); location.hash = '#/amis'; }
+        );
+      zoneProtection.appendChild(bb);
+    };
+    dessinerProtection();
+  }
+
   render(el);
+}
+
+/** Confirmation d'une action de protection (même fenêtre que confirmerNePlusSuivre). */
+function confirmerAction(titre, texte, bouton, action) {
+  const modale = h(`
+    <div class="modale" role="dialog" aria-label="${esc(titre)}">
+      <div class="modale-boite modale-boite-etroite">
+        <div class="modale-tete" style="justify-content:center"><h2>${esc(titre)}</h2></div>
+        <p class="etat-mono">${esc(texte)}</p>
+        <div class="modale-pied" style="justify-content:center;gap:1.2rem">
+          <button class="lien-inline" data-annuler type="button">Annuler</button>
+          <button class="lien-inline" data-confirmer type="button" style="color:var(--accent2);font-weight:700">${esc(bouton)}</button>
+        </div>
+      </div>
+    </div>`);
+  const fermer = () => modale.remove();
+  modale.addEventListener('click', (e) => { if (e.target === modale) fermer(); });
+  modale.querySelector('[data-annuler]').onclick = fermer;
+  const ok = modale.querySelector('[data-confirmer]');
+  ok.onclick = async () => {
+    ok.disabled = true;
+    try { await action(); fermer(); }
+    catch (err) { toast(err.message || "L'action n'a pas abouti."); ok.disabled = false; }
+  };
+  document.body.appendChild(modale);
 }
 
 /* ============================================================ sous-écrans
@@ -1021,6 +1094,13 @@ export async function vueAmis() {
         <p class="bloc-titre">Je suis</p>
         <div data-abos></div>
       </div>
+
+      <div class="bloc">
+        <p class="bloc-titre">Me suivent</p>
+        <div data-abonnes></div>
+        <p class="etat-mono" style="font-size:.8rem;margin-top:.4rem">Pour qu'une personne ne puisse plus
+          te suivre ni t'écrire, ouvre son profil et bloque-la.</p>
+      </div>
     </section>`);
   el.insertBefore(socialHeader('Amis', 'amis', unread, () => vueAmis(), mesAmis?.length ?? null), el.firstChild);
 
@@ -1053,6 +1133,40 @@ export async function vueAmis() {
     for (const p of mesAmis) ul.appendChild(lignePersonne(p, moi, true));
     zone.appendChild(ul);
   }
+
+  /* Ceux qui me suivent, avec « Retirer » (audit du 5 novembre 2026). */
+  const zoneAbonnes = el.querySelector('[data-abonnes]');
+  const dessinerAbonnes = async () => {
+    let abonnes;
+    try { abonnes = await abonnesDe(moi.id); }
+    catch (e) { zoneAbonnes.replaceChildren(failure(e, "Tes abonnés n'ont pas pu être chargés")); return; }
+    if (!abonnes.length) {
+      zoneAbonnes.replaceChildren(h(`<p class="etat-mono">Personne ne te suit pour l'instant.</p>`));
+      return;
+    }
+    const ul = h('<ul class="liste"></ul>');
+    for (const p of abonnes) {
+      const initiale = (p.username || '?')[0].toUpperCase();
+      const avatar = p.avatar_url
+        ? `<img class="msg-avatar" src="${esc(p.avatar_url)}" alt="">`
+        : `<span class="msg-avatar">${esc(initiale)}</span>`;
+      const li = h(`
+        <li class="ligne ligne-action" style="display:flex;align-items:center;gap:.65rem">
+          ${avatar}
+          <a class="ligne-titre" style="flex:1;min-width:0" href="#/profil/${esc(p.id)}">${esc(p.username || 'sans pseudo')}</a>
+          <button class="btn btn-sm btn-ghost" type="button">Retirer</button>
+        </li>`);
+      li.querySelector('button').onclick = () => confirmerAction(
+        `Retirer ${p.username || 'cette personne'} de tes abonnés ?`,
+        "Cette personne ne verra plus tes séances (sauf si ton profil est public). Elle pourra se réabonner : pour l'en empêcher, bloque-la depuis son profil.",
+        'Retirer',
+        async () => { await retirerAbonne(moi.id, p.id); dessinerAbonnes(); }
+      );
+      ul.appendChild(li);
+    }
+    zoneAbonnes.replaceChildren(ul);
+  };
+  dessinerAbonnes();
 
   render(el);
 }

@@ -1,6 +1,6 @@
 {
-  "versionCode": 207,
-  "versionName": "2.105",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.105/motio.apk",
-  "notes": "Securite et confidentialite : la seance proposee par Moti n'ecrase plus la seance en cours, Motio ne lit plus le presse-papiers automatiquement, et les rapports de plantage n'emportent plus le contenu du carnet."
+  "versionCode": 208,
+  "versionName": "2.106",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.106/motio.apk",
+  "notes": "Bloquer quelqu'un ou le retirer de tes abonnes, accord avant la premiere reponse de Moti, et Reglages > Confidentialite pour telecharger toutes tes donnees. Mise a jour necessaire pour continuer a utiliser Moti."
 }

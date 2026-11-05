@@ -673,4 +673,12 @@ export const CHANGELOG = [
                 "L'espace web interdit maintenant tout script ou image venant d'un autre serveur que Motio, et charge sa bibliothèque de connexion depuis Motio lui-même, dans une version figée",
                 "Une photo de profil ou une bannière de groupe ne peut plus pointer vers une image hébergée ailleurs, qui permettait de relever l'adresse IP de ceux qui la voient"
             ] },
+  { date: "5 novembre 2026", versions: "v2.106", items: [
+                "Bloquer quelqu'un, depuis son profil : vous ne vous suivez plus, dans un sens comme dans l'autre, et cette personne ne peut plus te suivre à nouveau, t'écrire, ni voir tes séances et ton direct. Elle n'est pas prévenue",
+                "Amis : la liste de ceux qui te suivent, avec « Retirer » pour en faire sortir quelqu'un de tes abonnés",
+                "Réglages › Confidentialité : tes comptes bloqués, ton accord à Moti, et « Télécharger toutes mes données », un fichier lisible avec tout ce que le serveur sait de toi",
+                "Moti demande maintenant ton accord avant sa première réponse : ce qu'il reçoit, où ça part, et comment le retirer. Sans accord, rien ne lui est envoyé",
+                "Pour éviter les abus, le nombre de demandes à Moti est plafonné sur 24 heures, très au-dessus d'un usage normal",
+                "Correction : tu peux maintenant aimer et commenter les séances des membres de tes groupes et des profils publics"
+            ] },
 ];

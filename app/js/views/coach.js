@@ -18,6 +18,7 @@
 import { h, render, esc, toast } from '../ui.js';
 import { ajouterMicro } from '../dictee.js';
 import { sb, currentUser } from '../supabase.js';
+import { invoquerIA } from '../consentement-ia.js';
 import { coachThread, coachSendMessage, coachClearThread, aAccesIA } from '../api.js';
 import { nouvelleSeance, MODE_LABELS, CIRCUIT_WORK_SEC, CIRCUIT_REST_SEC } from '../model.js';
 import { toursPour } from '../coach-guide.js';
@@ -293,7 +294,7 @@ export async function vueCoach() {
       const history = messages.slice(-FENETRE).map(m => ({
         role: m.role === 'coach' ? 'assistant' : 'user', content: m.text
       }));
-      const { data, error } = await sb.functions.invoke('coach-chat', {
+      const { data, error } = await invoquerIA('coach-chat', {
         body: { messages: history, context: contexte }
       });
       if (error) throw await motifLisible(error);

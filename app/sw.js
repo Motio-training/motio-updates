@@ -23,14 +23,14 @@
    servi par esm.sh.
    ========================================================================== */
 
-const CACHE = 'motio-app-v89';
+const CACHE = 'motio-app-v90';
 
 const COQUILLE = [
   './',
   'index.html',
   'manifest.json',
   'css/app.css',
-  'js/vendor/supabase-2.118.0.js',
+  'js/vendor/supabase-2.118.0.js', 'js/consentement-ia.js',
   'js/main.js', 'js/router.js', 'js/supabase.js', 'js/config.js', 'js/api.js',
   'js/model.js', 'js/catalog.js', 'js/partage.js', 'js/ui.js', 'js/trophies.js',
   'js/reglages.js', 'js/timer.js', 'js/beeper.js', 'js/workout-share.js',

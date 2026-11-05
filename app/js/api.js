@@ -219,6 +219,63 @@ export async function unfollow(userId, cibleId) {
     .eq('follower_id', userId).eq('following_id', cibleId).select());
 }
 
+/* ------------------------------------------------ abonnés et blocage
+   Audit du 5 novembre 2026 : on peut suivre n'importe qui sans validation,
+   et écrire à n'importe qui, il fallait pouvoir s'en protéger. Mêmes appels
+   que Social.kt. Le blocage est appliqué par le SERVEUR (fonction `bloquer`
+   et règles d'accès) : plus d'abonnement ni de réabonnement dans les deux
+   sens, plus de messages, plus de séances ni de direct visibles. */
+
+async function profilsDeIds(ids) {
+  if (!ids.length) return [];
+  const profils = unwrap(await sb.from(T.profiles).select('id,username,avatar_url').in('id', ids));
+  return profils.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+}
+
+/** Les profils des gens qui me suivent. */
+export async function abonnesDe(moiId) {
+  return profilsDeIds(await followers(moiId));
+}
+
+export async function meSuit(moiId, autreId) {
+  const r = unwrap(await sb.from(T.follows).select('follower_id')
+    .eq('follower_id', autreId).eq('following_id', moiId));
+  return r.length > 0;
+}
+
+/** Retire quelqu'un de mes abonnés ; il pourra se réabonner, sauf blocage. */
+export async function retirerAbonne(moiId, abonneId) {
+  return unwrap(await sb.from(T.follows).delete()
+    .eq('follower_id', abonneId).eq('following_id', moiId).select());
+}
+
+export async function bloquer(cibleId) {
+  unwrap(await sb.rpc('bloquer', { p_cible: cibleId }));
+}
+
+export async function debloquer(moiId, cibleId) {
+  return unwrap(await sb.from('blocks').delete()
+    .eq('blocker_id', moiId).eq('blocked_id', cibleId).select());
+}
+
+export async function aBloque(moiId, cibleId) {
+  const r = unwrap(await sb.from('blocks').select('blocked_id')
+    .eq('blocker_id', moiId).eq('blocked_id', cibleId));
+  return r.length > 0;
+}
+
+/** Les profils des personnes que j'ai bloquées. */
+export async function bloques(moiId) {
+  const r = unwrap(await sb.from('blocks').select('blocked_id').eq('blocker_id', moiId));
+  return profilsDeIds(r.map(x => x.blocked_id).filter(Boolean));
+}
+
+/** Toutes les données du compte (droit d'accès), rendues par le serveur
+ *  pour la seule personne connectée. */
+export async function exporterMesDonnees() {
+  return unwrap(await sb.rpc('export_my_data'));
+}
+
 /* ------------------------------------------------------ séances partagées */
 
 const CHAMPS_SESSION =

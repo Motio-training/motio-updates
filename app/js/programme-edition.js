@@ -17,6 +17,7 @@
    ========================================================================== */
 
 import { sb } from './supabase.js';
+import { invoquerIA } from './consentement-ia.js';
 import { CIRCUIT_WORK_SEC } from './model.js';
 import { getWorkout, saveWorkout, deleteWorkout, saveProgram, listPrograms } from './api.js';
 import {
@@ -702,7 +703,7 @@ export function fusionnerIA(etat, draft) {
  */
 export async function modifierProgrammeIA(etat, instruction) {
   const p = etat.program;
-  const { data, error } = await sb.functions.invoke('generate-program', {
+  const { data, error } = await invoquerIA('generate-program', {
     body: {
       mode: 'modify', instruction,
       current_program: versIA(etat),

@@ -22,6 +22,7 @@
    ========================================================================== */
 
 import { sb } from './supabase.js';
+import { invoquerIA } from './consentement-ia.js';
 
 /**
  * supabase-js masque le corps des réponses non-2xx d'une fonction Edge : sans
@@ -58,7 +59,7 @@ export class ErreurEtape extends Error {
  * du travail. `onEtape` reçoit l'étape en cours ('seances' | 'phases').
  */
 export async function construire(demande, onEtape = () => {}) {
-  const { data, error } = await sb.functions.invoke('program-build', {
+  const { data, error } = await invoquerIA('program-build', {
     body: { action: 'start', ...demande }
   });
   if (error) throw await motifLisible(error);
@@ -77,7 +78,7 @@ export async function reprendre(jobId, onEtape = () => {}) {
   for (let reste = ETAPES_MAX; reste > 0; reste--) {
     let data, error;
     try {
-      ({ data, error } = await sb.functions.invoke('program-build', {
+      ({ data, error } = await invoquerIA('program-build', {
         body: { action: 'step', job_id: jobId }
       }));
     } catch (e) {

@@ -204,6 +204,12 @@ identifiant de compte. Aucune autre donnée de votre compte Google n'est demand�
 <p>Ces règles sont appliquées par le serveur au moyen de politiques d'accès par ligne
 (<em>Row Level Security</em>), et non par l'application. Elles demeurent donc valables
 même si quelqu'un utilisait une version modifiée de l'application.</p>
+<p>Il n'est pas nécessaire d'accepter qui vous suit : chacun peut suivre un compte. Vous
+pouvez en revanche, depuis le profil d'une personne, la <strong>retirer de vos
+abonnés</strong>, ou la <strong>bloquer</strong> : vous ne vous suivez plus, dans un sens
+comme dans l'autre, et elle ne peut plus vous suivre à nouveau, vous écrire, ni voir vos
+séances, votre séance en direct, ni y réagir. Le blocage est lui aussi appliqué par le
+serveur. La liste des personnes bloquées se trouve dans Réglages › Confidentialité.</p>
 
 <h2>5. Données de santé et coach IA</h2>
 
@@ -252,9 +258,17 @@ fonctionne sans lui, et rien d'autre n'est envoyé à Anthropic.</p>
 <p>Motio ne vous demande jamais de renseigner votre état de santé : aucun champ ne le
 réclame, aucune fonctionnalité ne l'exige. Si vous choisissez d'en parler à Moti, ce
 traitement repose sur votre <strong>consentement explicite</strong> (article 9.2.a du
-RGPD), que vous donnez en écrivant le message et que vous retirez en effaçant la
-conversation. Le retrait vaut pour l'avenir : il n'annule pas les réponses déjà
-produites.</p>
+RGPD). Depuis le 5 novembre 2026, il est recueilli <strong>avant toute première
+demande</strong> à Moti, dans une fenêtre « Moti et tes données » qui dit ce qui est
+envoyé et où : tant que vous ne l'avez pas accepté, rien n'est transmis à Anthropic, et le
+serveur refuse lui-même toute demande. La date de votre accord est enregistrée dans la
+table <code>ai_consents</code>. Vous le retirez à tout moment dans Réglages ›
+Confidentialité › Moti et tes données : Moti s'arrête alors, et le reste de l'application
+continue de fonctionner. Le retrait vaut pour l'avenir : il n'annule pas les réponses
+déjà produites, et la conversation s'efface à part, avec « Recommencer ».</p>
+<p>Pour éviter les abus et les coûts démesurés, le serveur compte vos demandes à Moti
+(leur type et leur date, dans la table <code>ai_usage</code>, gardés 30 jours) et en
+plafonne le nombre sur 24 heures, très au-dessus d'un usage normal.</p>
 
 <h3>Combien de temps, et comment effacer</h3>
 <p>La conversation est conservée tant que vous ne l'effacez pas, et au plus tard jusqu'à
@@ -365,11 +379,13 @@ l'adresse de contact du paragraphe 1.</p>
 
 <h2>8. Vos droits</h2>
 <ul>
-  <li><strong>Accès et portabilité</strong> — Profil › Exporter produit un fichier lisible
-      contenant votre carnet : séances, historique, catalogue et programmes. Pour obtenir
-      une copie de toutes vos autres données (profil, messages, commentaires, conversations
-      avec le coach, nutrition, suggestions), écrivez à l'adresse de contact du paragraphe
-      1 : vous recevrez un fichier lisible sous un mois.</li>
+  <li><strong>Accès et portabilité</strong> — Réglages › Confidentialité › « Télécharger
+      toutes mes données », dans l'application comme dans l'espace web, produit un fichier
+      lisible avec tout ce que le serveur détient sur vous : compte, profil, séances
+      partagées et synchronisées, abonnements, personnes bloquées, messages, commentaires,
+      conversations avec le coach, nutrition, accord et utilisation de l'IA, suggestions.
+      Profil › Exporter, lui, sauvegarde le carnet tenu sur le téléphone. Pour toute autre
+      demande, écrivez à l'adresse de contact du paragraphe 1 : réponse sous un mois.</li>
   <li><strong>Rectification</strong> — le pseudo, le nom affiché, la photo et le poids se
       modifient depuis le Profil.</li>
   <li><strong>Effacement</strong> — Profil › Compte › Supprimer. Pour la seule conversation

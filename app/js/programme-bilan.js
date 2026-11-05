@@ -21,6 +21,7 @@
    ========================================================================== */
 
 import { sb, currentUser } from './supabase.js';
+import { invoquerIA } from './consentement-ia.js';
 import { instantaneAthlete } from './athlete.js';
 import {
   genererProgrammeIA, motifLisible, defaultDaysFor, WEEK_DAYS,
@@ -52,7 +53,7 @@ export async function tourSuivant(tours) {
   /* Fonction à part : l'entretien n'a besoin ni du catalogue ni du schéma de
      programme, et dix questions feraient dix envois du catalogue entier pour
      rien (voir l'en-tête de program-interview). */
-  const { data, error } = await sb.functions.invoke('program-interview', {
+  const { data, error } = await invoquerIA('program-interview', {
     body: {
       history: tours.map(t => ({ role: t.deMoti ? 'assistant' : 'user', content: t.texte })),
       athlete_context: athlete
