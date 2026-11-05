@@ -1,6 +1,6 @@
 {
-  "versionCode": 205,
-  "versionName": "2.103",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.103/motio.apk",
-  "notes": "Demarrer ouvre d'abord le detail de la seance (exercices, series, reps, charges), reglable dans Reglages. Le decompte de 10 secondes avant la premiere serie dit Preparation."
+  "versionCode": 206,
+  "versionName": "2.104",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.104/motio.apk",
+  "notes": "Nouveau bouton Suggestions dans Reglages, Application : ecris une idee d'amelioration ou un bug, ca arrive directement au developpeur. Pas besoin de compte."
 }

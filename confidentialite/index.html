@@ -31,7 +31,7 @@
 <main>
 
 <h1>Politique de confidentialité — Motio</h1>
-<p class="date">Dernière mise à jour : 9 septembre 2026</p>
+<p class="date">Dernière mise à jour : 5 novembre 2026</p>
 
 <div class="card">
   <p><strong>En résumé.</strong> Sans compte, Motio ne transmet rien, à la seule
@@ -50,7 +50,8 @@
 
 <h2>2. Ce qui reste sur votre téléphone</h2>
 <p>Utilisée sans compte, l'application ne réalise aucun envoi de données personnelles,
-hormis le partage décrit juste en dessous. Sont enregistrés localement, dans l'espace
+hormis le partage et les suggestions décrits juste en dessous, et seulement quand vous le
+demandez. Sont enregistrés localement, dans l'espace
 privé de l'application :</p>
 <ul>
   <li>vos entraînements, séances réalisées, séries, charges et répétitions ;</li>
@@ -63,8 +64,9 @@ publicité, aucun traceur, aucune mesure d'audience n'est présent, ni dans l'ap
 ni sur l'espace web, ni sur ce site.</p>
 
 <h3>Le partage d'une séance par lien ou par QR code</h3>
-<p>C'est le seul envoi que l'application effectue sans compte, et seulement quand vous le
-demandez. Pour que le lien envoyé reste court et lisible, la <strong>définition</strong>
+<p>C'est, avec les suggestions décrites plus bas, le seul envoi que l'application effectue
+sans compte, et seulement quand vous le demandez. Pour que le lien envoyé reste court et
+lisible, la <strong>définition</strong>
 de la séance partagée — son nom, sa catégorie, ses exercices, séries, répétitions visées
 et temps de repos — est déposée sur le serveur, dans la table <code>share_links</code>,
 qui rend en échange un identifiant de sept caractères. C'est cet identifiant, et lui seul,
@@ -77,6 +79,20 @@ d'en demander la suppression.</p>
 <p>Sans connexion réseau, l'application se replie sur son ancien format de lien, qui
 contient la séance elle-même et ne dépose donc rien sur le serveur. Ce lien est nettement
 plus long.</p>
+
+<h3>Les suggestions</h3>
+<p>Dans Réglages › Application › Suggestions, vous pouvez écrire une idée d'amélioration ou
+signaler un bug. Rien n'est envoyé tant que vous n'appuyez pas sur « Envoyer ». Sont alors
+déposés sur le serveur, dans la table <code>suggestions</code> : le texte que vous avez
+écrit, son genre (idée, bug ou autre), la version de l'application et le modèle de votre
+téléphone, utiles pour comprendre un bug.</p>
+<p>Votre identifiant de compte et votre pseudo ne sont joints que si vous êtes connecté et
+que vous laissez l'interrupteur « Joindre mon pseudo » activé. Sans compte, ou interrupteur
+désactivé, la suggestion est anonyme. Ne mentionnez pas de donnée de santé ni de donnée
+personnelle dans le texte. Seul l'éditeur de l'application peut lire les suggestions ; elles
+sont conservées le temps de les traiter, puis supprimées. Si vous supprimez votre compte,
+vos suggestions restent mais ne sont plus rattachées à vous. Pour en demander l'effacement,
+écrivez à <a href="mailto:admin.motio@gmail.com">admin.motio@gmail.com</a>.</p>
 
 <h2>3. Ce qui est traité si vous créez un compte</h2>
 <div class="tableau-defilant">
