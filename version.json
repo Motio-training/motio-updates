@@ -1,6 +1,6 @@
 {
-  "versionCode": 209,
-  "versionName": "2.107",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.107/motio.apk",
-  "notes": "RIR : nouveau bouton X pour une serie a l'echec (repetitions non terminees). Le 0 veut dire : derniere repetition validee. Echelle X, 0, 1, 2, 3, 4+."
+  "versionCode": 210,
+  "versionName": "2.108",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.108/motio.apk",
+  "notes": "Widget en 4x2, 4x1 et 5x1 : la carte Prochaine seance avec les seances suivantes (fleches), Demarrer ouvre le detail puis l'appli sur la seance lancee."
 }
