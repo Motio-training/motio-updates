@@ -256,6 +256,16 @@ async function traiterLienMail() {
       setTimeout(() => toast("Adresse confirmée. Tu peux aussi te connecter dans l'application Motio."), 600);
     }
   } catch (err) {
+    /* Déjà connecté sur cet appareil : la garde ne montrera pas l'écran de
+       connexion, le message serait resté en réserve et ressorti plus tard,
+       hors de propos. On l'affiche donc tout de suite, sur l'accueil. */
+    let dejaConnecte = null;
+    try { dejaConnecte = await currentSession(); } catch { /* rien */ }
+    if (dejaConnecte) {
+      history.replaceState(null, '', location.pathname + '#/seances');
+      setTimeout(() => toast(err.message), 600);
+      return;
+    }
     try { sessionStorage.setItem(CLE_ERREUR_AUTH, err.message); } catch { /* stockage refusé */ }
     history.replaceState(null, '', location.pathname + '#/connexion');
   }
@@ -364,7 +374,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '92';
+const VERSION = '93';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher
