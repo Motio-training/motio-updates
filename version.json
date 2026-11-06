@@ -1,6 +1,6 @@
 {
-  "versionCode": 213,
-  "versionName": "2.111",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.111/motio.apk",
-  "notes": "Administrateurs : Reglages > Administration > Inscrits, pour voir les comptes et ouvrir ou fermer Moti compte par compte."
+  "versionCode": 214,
+  "versionName": "2.112",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.112/motio.apk",
+  "notes": "Correction d'un plantage au lancement d'une seance quand la seance precedente avait plus d'exercices."
 }
