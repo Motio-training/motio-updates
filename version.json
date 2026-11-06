@@ -1,6 +1,7 @@
 {
-  "versionCode": 214,
-  "versionName": "2.112",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.112/motio.apk",
-  "notes": "Correction d'un plantage au lancement d'une seance quand la seance precedente avait plus d'exercices."
+  "versionCode": 215,
+  "versionName": "2.113",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.113/motio.apk",
+  "sha256": "85ece30c6ba32de7609d4012b74a65604581f030502937d54f01ac38f7db9126",
+  "notes": "Securite : lien de connexion, liens de seance et mises a jour verifiees. Suivi sur demande pour les profils prives. Messages seulement entre abonnes."
 }
