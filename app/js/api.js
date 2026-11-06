@@ -276,6 +276,26 @@ export async function exporterMesDonnees() {
   return unwrap(await sb.rpc('export_my_data'));
 }
 
+/* ------------------------------------------------------ administration */
+
+/** Vrai si le compte connecté figure dans app_admins (lu côté serveur). */
+export async function estAdmin() {
+  const { data, error } = await sb.rpc('is_admin');
+  return !error && data === true;
+}
+
+/** Tous les inscrits, le plus récent en premier (admins seulement, refusé sinon). */
+export async function inscrits() {
+  return unwrap(await sb.rpc('admin_inscrits')) || [];
+}
+
+/** Ouvre (jusqu'à [jusqua], ou sans fin si null) ou ferme Moti pour un compte. */
+export async function changerAccesIA(userId, ouvrir, jusqua = null) {
+  return unwrap(await sb.rpc('admin_acces_ia', {
+    p_user: userId, p_ouvrir: ouvrir, p_jusqua: jusqua
+  }));
+}
+
 /* ------------------------------------------------------ séances partagées */
 
 const CHAMPS_SESSION =

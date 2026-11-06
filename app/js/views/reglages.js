@@ -14,7 +14,7 @@
 
 import { h, render, esc, toast } from '../ui.js';
 import { currentUser } from '../supabase.js';
-import { bloques, debloquer, exporterMesDonnees } from '../api.js';
+import { bloques, debloquer, exporterMesDonnees, estAdmin } from '../api.js';
 import { consentementIA, accepterConsentementIA, retirerConsentementIA,
          texteConsentementIA } from '../consentement-ia.js';
 import { ouvrirTheme, ouvrirReglagesBips, themeActuel, reglagesBips } from '../reglages.js';
@@ -63,6 +63,16 @@ export async function vueReglages() {
             <span class="corps"><b>Télécharger toutes mes données</b><span data-resume-export>Profil, séances partagées, messages, Moti, nutrition : un fichier lisible</span></span>
             <span class="chevron">›</span>
           </button>
+        </div>
+      </div>
+
+      <div class="bloc" data-bloc-admin hidden>
+        <p class="bloc-titre">Administration</p>
+        <div class="menu-groupe">
+          <a class="menu-ligne" href="#/reglages/inscrits">
+            <span class="corps"><b>Inscrits</b><span>Les comptes Motio, et l'accès à Moti compte par compte</span></span>
+            <span class="chevron">›</span>
+          </a>
         </div>
       </div>
 
@@ -126,6 +136,7 @@ export async function vueReglages() {
   const moi = await currentUser().catch(() => null);
   if (moi) {
     el.querySelector('[data-bloc-confidentialite]').hidden = false;
+    estAdmin().then(oui => { el.querySelector('[data-bloc-admin]').hidden = !oui; });
     const resume = el.querySelector('[data-resume-consentement]');
     const majResume = async () => {
       try {

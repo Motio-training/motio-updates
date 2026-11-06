@@ -1,6 +1,6 @@
 {
-  "versionCode": 212,
-  "versionName": "2.110",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.110/motio.apk",
-  "notes": "Correction : un mot de passe doit faire 10 caracteres minimum, avec au moins une lettre et un chiffre."
+  "versionCode": 213,
+  "versionName": "2.111",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.111/motio.apk",
+  "notes": "Administrateurs : Reglages > Administration > Inscrits, pour voir les comptes et ouvrir ou fermer Moti compte par compte."
 }

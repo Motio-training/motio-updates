@@ -699,4 +699,7 @@ export const CHANGELOG = [
   { date: "6 novembre 2026", versions: "v2.110", items: [
                 "Correction : un nouveau mot de passe doit faire au moins 10 caractères, avec au moins une lettre et un chiffre. L'appli annonçait 8 par erreur, le serveur refusait donc des mots de passe qu'elle laissait passer"
             ] },
+  { date: "6 novembre 2026", versions: "v2.111", items: [
+                "Pour les administrateurs : Réglages › Administration › Inscrits. La liste des comptes Motio, et l'accès à Moti ouvert ou fermé compte par compte, sans fin ou jusqu'à une date. Le même écran existe dans l'appli"
+            ] },
 ];

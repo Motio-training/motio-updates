@@ -16,6 +16,7 @@ import { vueNouveauMdp } from './views/nouveau-mdp.js';
 import { vueFil } from './views/fil.js';
 import { vueProfil, vueAmis, vueProfilAnalyse, vueProfilCompte } from './views/profil.js';
 import { vueReglages, vueReglagesMaj, vueReglagesNouveautes } from './views/reglages.js';
+import { vueReglagesInscrits } from './views/inscrits.js';
 import { vueSeances, vueToutesSeances, vueSeanceEdition,
          vueHistorique, vueImporterSeance, vueHistoriqueSeance } from './views/entrainement.js';
 import {
@@ -55,6 +56,7 @@ route('/profil/:id', vueProfil);
 route('/reglages', vueReglages);
 route('/reglages/maj', vueReglagesMaj);
 route('/reglages/nouveautes', vueReglagesNouveautes);
+route('/reglages/inscrits', vueReglagesInscrits);
 route('/coach', vueCoach);
 route('/messages', vueMessages);
 route('/messages/:id', vueMessageThread);
@@ -374,7 +376,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '94';
+const VERSION = '95';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

@@ -23,7 +23,7 @@
    servi par esm.sh.
    ========================================================================== */
 
-const CACHE = 'motio-app-v94';
+const CACHE = 'motio-app-v95';
 
 const COQUILLE = [
   './',
@@ -41,7 +41,7 @@ const COQUILLE = [
   'js/programme-build.js', 'js/charge.js',
   'js/forme.js', 'js/dictee.js', 'js/hors-ligne.js',
   'js/pager.js', 'js/substituts.js', 'js/seance-prevue.js',
-  'js/views/connexion.js', 'js/views/nouveau-mdp.js', 'js/views/fil.js', 'js/views/profil.js',
+  'js/views/connexion.js', 'js/views/nouveau-mdp.js', 'js/views/inscrits.js', 'js/views/fil.js', 'js/views/profil.js',
   'js/views/entrainement.js', 'js/views/lancer.js', 'js/views/minuteurs.js',
   // circuit.js est chargé à la demande par lancer.js quand la séance est un
   // circuit : sans lui dans le précache, un circuit serait injouable hors
