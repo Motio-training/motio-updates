@@ -1,6 +1,6 @@
 import { h, render, toast } from '../ui.js';
 import {
-  signIn, signUp, signInWithGoogle, demanderReinitialisation, MDP_MIN, CLE_ERREUR_AUTH
+  signIn, signUp, signInWithGoogle, demanderReinitialisation, erreurMdp, CLE_ERREUR_AUTH
 } from '../supabase.js';
 import { CONFIG } from '../config.js';
 
@@ -87,7 +87,7 @@ export function vueConnexion() {
 
     if (!mail || !mdp) return toast('Renseigne une adresse et un mot de passe.');
     if (inscription && pseudo.length < 3) return toast('Le pseudo fait 3 caractères minimum.');
-    if (inscription && mdp.length < MDP_MIN) return toast(`Le mot de passe fait ${MDP_MIN} caractères minimum.`);
+    if (inscription && erreurMdp(mdp)) return toast(erreurMdp(mdp));
 
     valider.disabled = true;
     try {

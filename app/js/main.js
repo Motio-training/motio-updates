@@ -1,4 +1,4 @@
-import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
+﻿import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
 import { currentSession, onAuthChange, consommerLienMail, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty, toast } from './ui.js';
 import { appliquerTheme } from './reglages.js';
@@ -374,7 +374,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '93';
+const VERSION = '94';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

@@ -94,10 +94,20 @@ export async function signInWithGoogle() {
   if (error) throw new Error(traduire(error.message));
 }
 
-/* Longueur minimale d'un mot de passe : la même valeur que le réglage
-   Authentication › Sign In / Providers › Email du projet Supabase, et que
-   MDP_MIN côté Android (Supabase.kt). */
-export const MDP_MIN = 8;
+/* Règle des mots de passe : la même que le réglage Authentication › Sign In /
+   Providers › Email du projet Supabase (10 caractères, au moins une lettre et
+   un chiffre, vérifié le 6 nov. 2026), et que `Supabase.regleMdp` côté
+   Android. Changer l'une = changer les trois. */
+export const MDP_MIN = 10;
+export const REGLE_MDP = `${MDP_MIN} caractères minimum, avec au moins une lettre et un chiffre`;
+
+/** Message d'erreur si le mot de passe ne respecte pas la règle, sinon null. */
+export function erreurMdp(mdp) {
+  if (mdp.length < MDP_MIN || !/[A-Za-z]/.test(mdp) || !/[0-9]/.test(mdp)) {
+    return `Le mot de passe doit faire ${REGLE_MDP}.`;
+  }
+  return null;
+}
 
 /**
  * « Mot de passe oublié » : demande l'e-mail de réinitialisation. La réponse ne
@@ -143,7 +153,7 @@ export function traduire(m = '') {
   if (c('invalid login credentials')) return 'Adresse e-mail ou mot de passe incorrect.';
   if (c('email not confirmed')) return 'Adresse non confirmée : ouvre le lien reçu par e-mail.';
   if (c('user already registered')) return 'Un compte existe déjà avec cette adresse.';
-  if (c('password should be')) return `Mot de passe trop court (${MDP_MIN} caractères minimum).`;
+  if (c('password should')) return `Le mot de passe doit faire ${REGLE_MDP}.`;
   if (c('same password') || c('different from the old')) return "Choisis un mot de passe différent de l'ancien.";
   if (c('rate limit') || c('for security purposes')) return 'Trop de demandes. Réessaie dans quelques minutes.';
   if (c('token has expired') || c('otp_expired') || c('invalid or has expired') || c('invalid token')) {

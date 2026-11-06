@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Service worker — installabilité + coquille disponible hors ligne.
 
    RÉSEAU D'ABORD, cache en secours — pas l'inverse. Un cache-d'abord a
@@ -23,7 +23,7 @@
    servi par esm.sh.
    ========================================================================== */
 
-const CACHE = 'motio-app-v93';
+const CACHE = 'motio-app-v94';
 
 const COQUILLE = [
   './',

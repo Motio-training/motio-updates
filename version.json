@@ -1,6 +1,6 @@
 {
-  "versionCode": 211,
-  "versionName": "2.109",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.109/motio.apk",
-  "notes": "Mot de passe oublie : un lien sous Se connecter, dans l'appli et sur le site. E-mails de Motio en francais. Mot de passe de 8 caracteres minimum."
+  "versionCode": 212,
+  "versionName": "2.110",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.110/motio.apk",
+  "notes": "Correction : un mot de passe doit faire 10 caracteres minimum, avec au moins une lettre et un chiffre."
 }

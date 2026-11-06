@@ -696,4 +696,7 @@ export const CHANGELOG = [
                 "Les e-mails de Motio (confirmation d'inscription, mot de passe oublié, changement d'adresse) sont maintenant en français, et leurs liens mènent à motiotraining.com",
                 "Un nouveau mot de passe fait au moins 8 caractères"
             ] },
+  { date: "6 novembre 2026", versions: "v2.110", items: [
+                "Correction : un nouveau mot de passe doit faire au moins 10 caractères, avec au moins une lettre et un chiffre. L'appli annonçait 8 par erreur, le serveur refusait donc des mots de passe qu'elle laissait passer"
+            ] },
 ];

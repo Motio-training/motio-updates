@@ -1,6 +1,6 @@
 import { h, render, toast } from '../ui.js';
 import { go } from '../router.js';
-import { changerMotDePasse, MDP_MIN } from '../supabase.js';
+import { changerMotDePasse, erreurMdp, REGLE_MDP } from '../supabase.js';
 
 /**
  * « Choisis un nouveau mot de passe » : l'écran où atterrit le lien du mail
@@ -16,7 +16,7 @@ export function vueNouveauMdp() {
     <section class="page page-etroite">
       <h1>Nouveau mot de passe</h1>
       <p class="lede">Choisis le mot de passe de ton compte Motio
-         (${MDP_MIN} caractères minimum). Il servira sur le site comme
+         (${REGLE_MDP}). Il servira sur le site comme
          dans l'application.</p>
 
       <label class="champ"><span>Nouveau mot de passe</span>
@@ -32,7 +32,7 @@ export function vueNouveauMdp() {
   const envoyer = async () => {
     const mdp = el.querySelector('[data-mdp]').value;
     const confirmation = el.querySelector('[data-confirmation]').value;
-    if (mdp.length < MDP_MIN) return toast(`Le mot de passe fait ${MDP_MIN} caractères minimum.`);
+    if (erreurMdp(mdp)) return toast(erreurMdp(mdp));
     if (mdp !== confirmation) return toast('Les deux mots de passe ne sont pas identiques.');
     valider.disabled = true;
     try {
