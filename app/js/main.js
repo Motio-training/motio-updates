@@ -1,4 +1,12 @@
-﻿import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
+﻿/* Anti-clickjacking : GitHub Pages ne permet pas d'envoyer X-Frame-Options, et la CSP posée en <meta>
+   ignore frame-ancestors. Si la page est chargée dans un cadre d'un autre site, on la masque
+   et on tente de sortir du cadre. */
+if (window.top !== window.self) {
+  document.documentElement.style.display = 'none';
+  try { window.top.location = window.self.location; } catch { /* cadre isolé : page masquée */ }
+}
+
+import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
 import { currentSession, onAuthChange, consommerLienMail, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty, toast } from './ui.js';
 import { appliquerTheme } from './reglages.js';
@@ -376,7 +384,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '95';
+const VERSION = '96';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

@@ -3,7 +3,8 @@ import { getProfile, setUsername, sessionsOf, following, followers,
          searchProfiles, follow, unfollow, unreadMessagesCount, deleteMyAccount, directDe,
          listWorkouts, saveWorkout, listPrograms, saveProgram, uploadAvatar, setPublicProfile,
          kudosFor, commentCounts, setNotifPref, setWeight, getMyWeight,
-         abonnesDe, meSuit, retirerAbonne, bloquer, debloquer, aBloque } from '../api.js';
+         abonnesDe, meSuit, retirerAbonne, bloquer, debloquer, aBloque,
+         demandesEnvoyees, demandesRecues, accepterDemande } from '../api.js';
 import { currentUser, signOut } from '../supabase.js';
 import { kg, estime1RM } from '../model.js';
 import { computeStatsFrom, fmtQty } from '../trophies.js';
@@ -41,6 +42,9 @@ export async function vueProfil(params) {
 
   const stats = calculerStats(seances);
   const jeSuis = !estMoi && (await following(moi.id)).some(p => p.id === cible);
+  /* Suivi sur demande : une demande envoyée à ce profil et pas encore acceptée. */
+  const demandeEnAttente = !estMoi && !jeSuis
+    && (await demandesEnvoyees(moi.id).catch(() => [])).some(p => p.id === cible);
   /* Badge « en direct » (LiveSessionScreen.kt) : uniquement sur le profil
      d'un ami, jamais sur le mien — se voir soi-même « en direct » n'a pas
      de sens. */
@@ -145,7 +149,7 @@ export async function vueProfil(params) {
              tutoriel et mentions légales vivent derrière la roue crantée de
              l'en-tête (#/reglages, views/reglages.js), comme dans
              l'application Android depuis la v2.71. -->` : `
-        <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : 'Suivre'}</button>
+        <button class="btn" data-suivre>${jeSuis ? 'Ne plus suivre' : demandeEnAttente ? 'Demande envoyée · annuler' : 'Suivre'}</button>
 
         <div class="bloc">
           <p class="bloc-titre">Séances récentes</p>
@@ -266,16 +270,26 @@ export async function vueProfil(params) {
   const btnSuivre = el.querySelector('[data-suivre]');
   if (btnSuivre) {
     let suivi = jeSuis;
+    let enAttente = demandeEnAttente;
+    const libelle = () => suivi ? 'Ne plus suivre' : enAttente ? 'Demande envoyée · annuler' : 'Suivre';
     btnSuivre.onclick = () => {
+      /* Une demande en attente s'annule d'un clic, sans confirmation. */
       if (!suivi) { toggleSuivi(); return; }
       confirmerNePlusSuivre(profil.username || 'cet utilisateur', toggleSuivi);
     };
     async function toggleSuivi() {
       btnSuivre.disabled = true;
       try {
-        if (suivi) { await unfollow(moi.id, cible); suivi = false; }
-        else { await follow(moi.id, cible); suivi = true; }
-        btnSuivre.textContent = suivi ? 'Ne plus suivre' : 'Suivre';
+        if (suivi || enAttente) { await unfollow(moi.id, cible); suivi = false; enAttente = false; }
+        else {
+          const lignes = await follow(moi.id, cible);
+          /* Le serveur décide : profil public = suivi direct, sinon demande en attente. */
+          if (lignes?.[0]?.status === 'pending') {
+            enAttente = true;
+            toast(`Demande envoyée : ${profil.username || 'cette personne'} doit l'accepter.`);
+          } else suivi = true;
+        }
+        btnSuivre.textContent = libelle();
       } catch (err) { toast(err.message); }
       finally { btnSuivre.disabled = false; }
     }
@@ -1076,13 +1090,17 @@ function calculerStats(seances) {
 
 export async function vueAmis() {
   const moi = await currentUser();
-  let unread = 0, mesAmis = null, erreurAbos = null;
+  let unread = 0, mesAmis = null, erreurAbos = null, envoyees = [], recues = [];
   try {
-    [unread, mesAmis] = await Promise.all([
+    [unread, mesAmis, envoyees, recues] = await Promise.all([
       unreadMessagesCount(moi.id).catch(() => 0),
-      following(moi.id)
+      following(moi.id),
+      demandesEnvoyees(moi.id).catch(() => []),
+      demandesRecues(moi.id).catch(() => [])
     ]);
   } catch (e) { erreurAbos = e; }
+  const idsAmis = new Set((mesAmis || []).map(p => p.id));
+  const idsAttente = new Set(envoyees.map(p => p.id));
 
   const el = h(`
     <section class="page">
@@ -1090,9 +1108,16 @@ export async function vueAmis() {
         <input type="search" data-q placeholder="deux lettres minimum"></label>
       <ul class="liste" data-resultats></ul>
 
+      <div class="bloc" data-bloc-demandes hidden>
+        <p class="bloc-titre" data-titre-demandes>Demandes reçues</p>
+        <div data-demandes></div>
+      </div>
+
       <div class="bloc">
         <p class="bloc-titre">Je suis</p>
         <div data-abos></div>
+        <p class="bloc-titre" data-titre-envoyees hidden style="margin-top:.8rem">Demandes envoyées</p>
+        <div data-envoyees></div>
       </div>
 
       <div class="bloc">
@@ -1118,7 +1143,7 @@ export async function vueAmis() {
           res.appendChild(h('<li class="ligne"><p class="etat-mono">Aucun résultat.</p></li>'));
           return;
         }
-        for (const p of trouves) res.appendChild(lignePersonne(p, moi, false));
+        for (const p of trouves) res.appendChild(lignePersonne(p, moi, idsAmis.has(p.id), idsAttente.has(p.id)));
       } catch (err) { toast(err.message); }
     }, 280);
   });
@@ -1132,6 +1157,44 @@ export async function vueAmis() {
     const ul = h('<ul class="liste"></ul>');
     for (const p of mesAmis) ul.appendChild(lignePersonne(p, moi, true));
     zone.appendChild(ul);
+  }
+
+  /* Demandes envoyées, en attente de réponse : un appui les annule. */
+  if (envoyees.length) {
+    el.querySelector('[data-titre-envoyees]').hidden = false;
+    const ul = h('<ul class="liste"></ul>');
+    for (const p of envoyees) ul.appendChild(lignePersonne(p, moi, false, true));
+    el.querySelector('[data-envoyees]').appendChild(ul);
+  }
+
+  /* Demandes reçues : accepter (la personne verra mes séances) ou refuser. */
+  if (recues.length) {
+    el.querySelector('[data-bloc-demandes]').hidden = false;
+    el.querySelector('[data-titre-demandes]').textContent = `Demandes reçues (${recues.length})`;
+    const ul = h('<ul class="liste"></ul>');
+    for (const p of recues) {
+      const initiale = (p.username || '?')[0].toUpperCase();
+      const avatar = p.avatar_url
+        ? `<img class="msg-avatar" src="${esc(p.avatar_url)}" alt="">`
+        : `<span class="msg-avatar">${esc(initiale)}</span>`;
+      const li = h(`
+        <li class="ligne ligne-action" style="display:flex;align-items:center;gap:.65rem">
+          ${avatar}
+          <a class="ligne-titre" style="flex:1;min-width:0" href="#/profil/${esc(p.id)}">${esc(p.username || 'sans pseudo')}
+            <span class="etat-mono" style="display:block;font-size:.75rem">veut te suivre</span></a>
+          <button class="btn btn-sm btn-ghost" type="button" data-refuser>Refuser</button>
+          <button class="btn btn-sm" type="button" data-accepter>Accepter</button>
+        </li>`);
+      const agir = (action) => async () => {
+        li.querySelectorAll('button').forEach(b => { b.disabled = true; });
+        try { await action(); vueAmis(); }
+        catch (err) { toast(err.message); li.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
+      };
+      li.querySelector('[data-accepter]').onclick = agir(() => accepterDemande(p.id));
+      li.querySelector('[data-refuser]').onclick = agir(() => retirerAbonne(moi.id, p.id));
+      ul.appendChild(li);
+    }
+    el.querySelector('[data-demandes]').appendChild(ul);
   }
 
   /* Ceux qui me suivent, avec « Retirer » (audit du 5 novembre 2026). */
@@ -1171,8 +1234,10 @@ export async function vueAmis() {
   render(el);
 }
 
-function lignePersonne(p, moi, suivi0) {
+function lignePersonne(p, moi, suivi0, enAttente0 = false) {
   let suivi = suivi0;
+  let enAttente = enAttente0 && !suivi0;
+  const libelle = () => suivi ? 'Ne plus suivre' : enAttente ? 'Demande envoyée · annuler' : 'Suivre';
   const initiale = (p.username || '?')[0].toUpperCase();
   /* Avatar (photo ou initiale, 34px) : PersonRow (SocialScreens.kt ~672-705)
      en a un devant chaque nom, absent du web jusqu'ici — cette ligne n'était
@@ -1185,16 +1250,23 @@ function lignePersonne(p, moi, suivi0) {
       ${avatar}
       <a class="ligne-titre" style="flex:1;min-width:0" href="#/profil/${esc(p.id)}">${esc(p.username || 'sans pseudo')}</a>
       <a class="btn btn-sm btn-ghost" href="#/messages/${esc(p.id)}">Message</a>
-      <button class="btn btn-sm ${suivi ? 'btn-ghost' : ''}">${suivi ? 'Ne plus suivre' : 'Suivre'}</button>
+      <button class="btn btn-sm ${suivi || enAttente ? 'btn-ghost' : ''}">${libelle()}</button>
     </li>`);
   const b = li.querySelector('button');
   async function toggleSuivi() {
     b.disabled = true;
     try {
-      if (suivi) { await unfollow(moi.id, p.id); suivi = false; }
-      else { await follow(moi.id, p.id); suivi = true; }
-      b.textContent = suivi ? 'Ne plus suivre' : 'Suivre';
-      b.classList.toggle('btn-ghost', suivi);
+      if (suivi || enAttente) { await unfollow(moi.id, p.id); suivi = false; enAttente = false; }
+      else {
+        const lignes = await follow(moi.id, p.id);
+        /* Le serveur décide : profil public = suivi direct, sinon demande en attente. */
+        if (lignes?.[0]?.status === 'pending') {
+          enAttente = true;
+          toast(`Demande envoyée : ${p.username || 'cette personne'} doit l'accepter.`);
+        } else suivi = true;
+      }
+      b.textContent = libelle();
+      b.classList.toggle('btn-ghost', suivi || enAttente);
     } catch (err) { toast(err.message); }
     finally { b.disabled = false; }
   }

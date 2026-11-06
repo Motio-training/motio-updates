@@ -194,8 +194,9 @@ export async function avatarsFor(ids) {
 /* ------------------------------------------------------------ abonnements */
 
 export async function following(userId) {
+  /* Seuls les suivis ACCEPTÉS (v96) : une demande en attente n'est pas un ami. */
   const liens = unwrap(await sb.from(T.follows)
-    .select('following_id').eq('follower_id', userId));
+    .select('following_id').eq('follower_id', userId).eq('status', 'accepted'));
   const ids = liens.map(l => l.following_id).filter(Boolean);
   if (!ids.length) return [];
   const profils = unwrap(await sb.from(T.profiles).select('id,username,avatar_url').in('id', ids));
@@ -204,8 +205,35 @@ export async function following(userId) {
 
 export async function followers(userId) {
   const liens = unwrap(await sb.from(T.follows)
-    .select('follower_id').eq('following_id', userId));
+    .select('follower_id').eq('following_id', userId).eq('status', 'accepted'));
   return liens.map(l => l.follower_id).filter(Boolean);
+}
+
+/* SUIVI SUR DEMANDE (v96, comme Social.kt v2.113) : suivre un profil qui n'est pas
+   public envoie une demande. C'est le SERVEUR qui fixe le statut (déclencheur
+   suivi_statut), jamais l'application. */
+
+async function profilsDemandes(colonneLien, filtre, valeur, statut) {
+  const liens = unwrap(await sb.from(T.follows).select(colonneLien).eq(filtre, valeur).eq('status', statut));
+  const ids = liens.map(l => l[colonneLien]).filter(Boolean);
+  if (!ids.length) return [];
+  const profils = unwrap(await sb.from(T.profiles).select('id,username,avatar_url').in('id', ids));
+  return profils.sort((a, b) => (a.username || '').localeCompare(b.username || ''));
+}
+
+/** Les demandes que j'ai envoyées et qui attendent encore une réponse. */
+export function demandesEnvoyees(moiId) {
+  return profilsDemandes('following_id', 'follower_id', moiId, 'pending');
+}
+
+/** Les demandes reçues, à accepter ou à refuser. */
+export function demandesRecues(moiId) {
+  return profilsDemandes('follower_id', 'following_id', moiId, 'pending');
+}
+
+/** Accepte la demande de cette personne. Refuser = retirerAbonne. */
+export async function accepterDemande(followerId) {
+  unwrap(await sb.rpc('accepter_demande_suivi', { p_follower: followerId }));
 }
 
 export async function follow(userId, cibleId) {
@@ -239,7 +267,7 @@ export async function abonnesDe(moiId) {
 
 export async function meSuit(moiId, autreId) {
   const r = unwrap(await sb.from(T.follows).select('follower_id')
-    .eq('follower_id', autreId).eq('following_id', moiId));
+    .eq('follower_id', autreId).eq('following_id', moiId).eq('status', 'accepted'));
   return r.length > 0;
 }
 
@@ -664,13 +692,24 @@ export async function sendText(moiId, friendId, texte) {
   const clean = texte.trim();
   if (!clean) throw new Error('Message vide.');
   if (clean.length > 1000) throw new Error('Message trop long (1000 caractères maximum).');
-  return unwrap(await sb.from(T.messages)
-    .insert({ sender_id: moiId, recipient_id: friendId, body: clean }).select().single());
+  return unwrap(motifMessage(await sb.from(T.messages)
+    .insert({ sender_id: moiId, recipient_id: friendId, body: clean }).select().single()));
 }
 
 export async function sendWorkoutMessage(moiId, friendId, name, code) {
-  return unwrap(await sb.from(T.messages)
-    .insert({ sender_id: moiId, recipient_id: friendId, workout_name: name, workout_data: code }).select().single());
+  return unwrap(motifMessage(await sb.from(T.messages)
+    .insert({ sender_id: moiId, recipient_id: friendId, workout_name: name, workout_data: code }).select().single()));
+}
+
+/** Depuis la v96, on n'écrit qu'aux personnes liées par un suivi accepté : le
+ *  serveur refuse le reste par une règle d'accès (« row-level security »), dont
+ *  le texte brut ne dirait rien à l'utilisateur. */
+function motifMessage(reponse) {
+  const e = reponse && reponse.error;
+  if (e && (e.code === '42501' || /row-level security/i.test(e.message || ''))) {
+    return { ...reponse, error: { ...e, message: "Tu ne peux écrire qu'aux personnes que tu suis ou qui te suivent." } };
+  }
+  return reponse;
 }
 
 export async function markThreadRead(messageIds) {
