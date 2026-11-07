@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-61U/29pnAohTqV2qffCqyNSzzWO0QAGK8Pyq0GETynU='; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://mwjfhavvoiafjueecopg.supabase.co; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RCBOaTWcSKgNdTmSJIlXg2GWPXND7LJADKiSVJ626KM='; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://mwjfhavvoiafjueecopg.supabase.co; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Séance Motio</title>
 <style>
@@ -99,8 +99,24 @@ async function resoudre(id) {
     const b64 = code.replace(/-/g, "+").replace(/_/g, "/");
     const bin = atob(b64 + "=".repeat((4 - b64.length % 4) % 4));
     const octets = Uint8Array.from(bin, c => c.charCodeAt(0));
+    // Plafond de 1 Mo une fois décompressé : une séance partagée fait quelques Ko,
+    // un lien piégé ne doit pas pouvoir faire gonfler la mémoire de la page.
+    if (code.length > 200000) return;
     const flux = new Blob([octets]).stream().pipeThrough(new DecompressionStream("deflate"));
-    const json = await new Response(flux).json();
+    const lecteur = flux.getReader();
+    const morceaux = [];
+    let total = 0;
+    for (;;) {
+      const r = await lecteur.read();
+      if (r.done) break;
+      total += r.value.length;
+      if (total > 1000000) { await lecteur.cancel().catch(() => {}); return; }
+      morceaux.push(r.value);
+    }
+    const bruts = new Uint8Array(total);
+    let pos = 0;
+    for (const m of morceaux) { bruts.set(m, pos); pos += m.length; }
+    const json = JSON.parse(new TextDecoder().decode(bruts));
 
     if (json.n) document.getElementById("titre").textContent = json.n;
     const ex = json.e || [];

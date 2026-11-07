@@ -15,11 +15,33 @@ async function deflate(bytes) {
   writer.write(bytes); writer.close();
   return new Uint8Array(await new Response(cs.readable).arrayBuffer());
 }
+/* Plafond de la séance décompressée (1 Mo, comme WorkoutShare.unzip sur Android).
+   Une séance partagée fait quelques Ko : sans plafond, un petit lien piégé se
+   décompresse en une allocation énorme. On lit par morceaux et on COUPE dès que
+   le plafond est dépassé, avant toute allocation du résultat complet. */
+const MAX_DECOMPRESSE = 1_000_000;
 async function inflate(bytes) {
   const ds = new DecompressionStream('deflate');
   const writer = ds.writable.getWriter();
-  writer.write(bytes); writer.close();
-  return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+  writer.write(bytes).catch(() => {});
+  writer.close().catch(() => {});
+  const lecteur = ds.readable.getReader();
+  const morceaux = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await lecteur.read();
+    if (done) break;
+    total += value.length;
+    if (total > MAX_DECOMPRESSE) {
+      await lecteur.cancel().catch(() => {});
+      throw new Error('code de séance trop volumineux');
+    }
+    morceaux.push(value);
+  }
+  const out = new Uint8Array(total);
+  let o = 0;
+  for (const m of morceaux) { out.set(m, o); o += m.length; }
+  return out;
 }
 
 function b64urlEncode(bytes) {
