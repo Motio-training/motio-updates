@@ -207,7 +207,15 @@ $('#vue')?.addEventListener('click', () => {
    C'est aussi le moment où les réglages du compte redescendent — la même
    fonction est rappelée à la déconnexion, où elle se contente d'arrêter
    d'écrire. */
-onAuthChange((session) => { resolve(); syncPrefs(session); });
+let lienMailEnCours = false;
+onAuthChange((session) => {
+  /* Pendant l'échange d'un lien reçu par e-mail, la session n'existe pas
+     encore : rejouer la route renverrait sur la connexion, puis sur les
+     séances une fois la session ouverte, et l'écran visé (nouveau mot de
+     passe) serait perdu. traiterLienMail rejoue la route à la fin. */
+  if (!lienMailEnCours) resolve();
+  syncPrefs(session);
+});
 
 /* ==========================================================================
    RETOUR D'UN FOURNISSEUR D'IDENTITÉ (Google)
@@ -258,9 +266,12 @@ async function traiterLienMail() {
 
   const cible = LIENS_MAIL[type];
   history.replaceState(null, '', location.pathname + '#' + cible);
+  lienMailEnCours = true;
   try {
     const session = await consommerLienMail(tokenHash, type);
     if (!session) throw new Error("Connexion non aboutie : ouvre de nouveau le lien reçu par e-mail.");
+    // Session ouverte : l'écran visé est bien la destination, quoi qu'ait fait le routeur entre-temps.
+    history.replaceState(null, '', location.pathname + '#' + cible);
     if (type === 'email_change') setTimeout(() => toast('Adresse e-mail changée.'), 600);
     else if (type !== 'recovery') {
       setTimeout(() => toast("Adresse confirmée. Tu peux aussi te connecter dans l'application Motio."), 600);
@@ -278,6 +289,8 @@ async function traiterLienMail() {
     }
     try { sessionStorage.setItem(CLE_ERREUR_AUTH, err.message); } catch { /* stockage refusé */ }
     history.replaceState(null, '', location.pathname + '#/connexion');
+  } finally {
+    lienMailEnCours = false;
   }
 }
 await traiterLienMail();
@@ -391,7 +404,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '98';
+const VERSION = '99';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher
