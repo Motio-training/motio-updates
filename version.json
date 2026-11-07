@@ -1,7 +1,7 @@
 {
-  "versionCode": 215,
-  "versionName": "2.113",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.113/motio.apk",
-  "sha256": "85ece30c6ba32de7609d4012b74a65604581f030502937d54f01ac38f7db9126",
-  "notes": "Securite : lien de connexion, liens de seance et mises a jour verifiees. Suivi sur demande pour les profils prives. Messages seulement entre abonnes."
+  "versionCode": 216,
+  "versionName": "2.114",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.114/motio.apk",
+  "sha256": "600eafb02f942f19914a2e487c0f89e8d5773d4fed25aae3b59a0b51db96f53a",
+  "notes": "Securite : une mise a jour sans empreinte SHA-256 valide est desormais refusee."
 }
