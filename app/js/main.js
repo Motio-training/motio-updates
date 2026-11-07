@@ -7,7 +7,7 @@ if (window.top !== window.self) {
 }
 
 import { route, setNotFound, before, start, resolve, currentPath } from './router.js';
-import { currentSession, onAuthChange, consommerLienMail, CLE_ERREUR_AUTH } from './supabase.js';
+import { currentSession, onAuthChange, consommerLienMail, recuperationEnCours, CLE_ERREUR_AUTH } from './supabase.js';
 import { $, $$, h, render, empty, toast } from './ui.js';
 import { appliquerTheme } from './reglages.js';
 import { etatBrut as seanceEnCours } from './run-state.js';
@@ -288,7 +288,8 @@ function lireRetourAuth() {
   const lire = (cle) => frag.get(cle) ?? query.get(cle);
   const erreur = lire('error_description') || lire('error');
   const jeton = lire('access_token') || lire('code');
-  return { present: !!(erreur || jeton), erreur };
+  // Lu ICI, avant le nettoyage de l'adresse par le client Supabase.
+  return { present: !!(erreur || jeton), erreur, recuperation: lire('type') === 'recovery' };
 }
 
 const retourAuth = lireRetourAuth();
@@ -310,7 +311,13 @@ if (retourAuth.present) {
     } catch { /* stockage refusé */ }
   }
 
-  history.replaceState(null, '', location.pathname + (session ? '#/seances' : '#/connexion'));
+  /* Lien « mot de passe oublié » arrivé par l'adresse de Supabase : la session
+     est ouverte, mais le mot de passe reste à choisir. */
+  await new Promise(r => setTimeout(r, 0)); // le client émet PASSWORD_RECOVERY juste après l'ouverture de session
+  const recuperation = !!session && !retourAuth.erreur &&
+    (retourAuth.recuperation || recuperationEnCours());
+  history.replaceState(null, '', location.pathname +
+    (recuperation ? '#/nouveau-mot-de-passe' : session ? '#/seances' : '#/connexion'));
 }
 
 start();
@@ -384,7 +391,7 @@ currentSession().then(syncPrefs).catch(() => { /* hors ligne : le local fait foi
    À CHAQUE PUBLICATION : incrémenter VERSION ici ET dans app/version.txt (et
    le cache de sw.js, qui suit le même numéro).
    ========================================================================== */
-const VERSION = '97';
+const VERSION = '98';
 
 /* Mémoire de tentative : sessionStorage survit à location.reload() mais pas à
    la fermeture de l'application. Une version publiée ne peut donc déclencher

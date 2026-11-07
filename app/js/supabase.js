@@ -59,6 +59,15 @@ export async function currentUser() {
   return s?.user ?? null;
 }
 
+/* Retour d'un lien « mot de passe oublié » par la voie classique de Supabase
+   (adresse d'authentification, jeton dans le fragment ou code PKCE) : le client
+   émet PASSWORD_RECOVERY au moment d'ouvrir la session. main.js s'en sert pour
+   mener à l'écran du nouveau mot de passe au lieu des séances. Ce filet couvre
+   un modèle d'e-mail qui ne serait pas celui de tools/emails-auth/. */
+let recuperationDetectee = false;
+sb.auth.onAuthStateChange((evt) => { if (evt === 'PASSWORD_RECOVERY') recuperationDetectee = true; });
+export const recuperationEnCours = () => recuperationDetectee;
+
 export function onAuthChange(fn) {
   return sb.auth.onAuthStateChange((_evt, session) => fn(session));
 }
