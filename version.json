@@ -1,7 +1,7 @@
 {
-  "versionCode": 217,
-  "versionName": "2.115",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.115/motio.apk",
-  "sha256": "a0e4ff40094633cdaa1cad7d81ec8de579a18692dc502abe736b4a76aa40742c",
-  "notes": "Live : bouton reduire/agrandir. Superset : reglages par exercice, ajout et retrait. Bilan groupe. Exercices un cote a la fois. Tonnage : charge par main."
+  "versionCode": 218,
+  "versionName": "2.116",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.116/motio.apk",
+  "sha256": "669a88d24844b6f31618d0f253405a1ee8c44e9d0ab9b5659dc338888c265469",
+  "notes": "Seance en paysage : barre d'onglets masquee, boutons d'action toujours visibles."
 }
