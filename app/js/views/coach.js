@@ -206,7 +206,31 @@ export async function vueCoach() {
     b.appendChild(h(`<p>${esc(m.text).replace(/\n/g, '<br>')}</p>`));
     fil.appendChild(li);
 
-    if (m.workout) {
+    // Bilan de la semaine écrit par Moti depuis l'appli (BilanHebdo.kt) : le
+    // champ porte alors des RÉGLAGES proposés. On les montre ; ils
+    // s'appliquent depuis l'application, où vivent les séances.
+    if (m.workout && m.workout.kind === 'bilan') {
+      const liste = Array.isArray(m.workout.adjustments) ? m.workout.adjustments : [];
+      if (liste.length) {
+        const clair = (a) => [
+          a.load_kg > 0 ? `${String(a.load_kg).replace('.', ',')} kg` : '',
+          a.sets && a.reps ? `${a.sets} × ${a.reps}` : a.sets ? `${a.sets} séries` : a.reps ? `${a.reps} répétitions` : '',
+          a.rest_sec ? `repos ${a.rest_sec} s` : ''
+        ].filter(Boolean).join('  ·  ');
+        const carte = h(`
+          <li class="coach-ligne">
+            <div class="coach-bulle coach-reglages">
+              <p class="coach-reglages-titre">Réglages proposés</p>
+              ${liste.map(a => `
+                <p><strong>${esc(String(a.exercise || ''))}</strong><br>
+                <span class="coach-reglages-valeur">${esc(clair(a))}</span>
+                ${a.reason ? `<br><small>${esc(String(a.reason))}</small>` : ''}</p>`).join('')}
+              <p><small>À appliquer depuis l'application, dans ta conversation avec Moti.</small></p>
+            </div>
+          </li>`);
+        fil.appendChild(carte);
+      }
+    } else if (m.workout) {
       const pilule = h(`
         <li class="coach-ligne">
           <button type="button" class="coach-seance-pilule">

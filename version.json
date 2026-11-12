@@ -1,7 +1,7 @@
 {
-  "versionCode": 218,
-  "versionName": "2.116",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.116/motio.apk",
-  "sha256": "669a88d24844b6f31618d0f253405a1ee8c44e9d0ab9b5659dc338888c265469",
-  "notes": "Seance en paysage : barre d'onglets masquee, boutons d'action toujours visibles."
+  "versionCode": 219,
+  "versionName": "2.117",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.117/motio.apk",
+  "sha256": "a87e55f88547e074bdfcdc4eb6308b04aa130b92d34f2db75a17cd54f42c6ff8",
+  "notes": "Bilan de la semaine par Moti. Analyse et records refait. Frise des charges depuis le profil. Charge conseillee : pas d'augmentation sans seance validee. Delestage retenu."
 }

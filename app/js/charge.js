@@ -56,7 +56,7 @@ export function historiqueDesExercices(sessions) {
     for (const ex of (Array.isArray(s.details) ? s.details : [])) {
       const sets = (ex.s || [])
         .filter(st => st.r > 0 && st.w > 0)
-        .map(st => ({ weight: st.w, reps: st.r, rir: st.rir ?? -1 }));
+        .map(st => ({ weight: st.w, reps: st.r, rir: st.rir ?? -1, echec: !!st.echec }));
       if (!sets.length) continue;
       if (!parNom.has(ex.n)) parNom.set(ex.n, []);
       parNom.get(ex.n).push({ quand, sets });
@@ -192,34 +192,73 @@ export function chargeConseillee(nom, historique, cibleReps) {
   return { poids: arrondi(nom, brut.poids * forme.facteur), raison: `${brut.raison} ; ${forme.allegement}` };
 }
 
+/**
+ * LA DERNIÈRE SÉANCE A-T-ELLE ÉTÉ VALIDÉE ? (bilan, Coaching.kt, v2.117)
+ *
+ * On ne monte une charge que lorsqu'on TIENT la séance entière à cette charge :
+ * toutes les séries à l'objectif, sans alléger en route, sans finir au maximum.
+ * Deux séries de 10 puis 9 et 6 ne valident pas 10 répétitions.
+ *
+ * Les séances partagées ne portent ni l'objectif ni le nombre de séries
+ * prévues : la première série la plus lourde tient lieu d'objectif.
+ * `motif` vide = validée.
+ */
+function bilanSeance(sets) {
+  const top = sets.reduce((a, b) => (b.weight > a.weight ? b : a));
+  const travail = sets.slice(sets.findIndex(s => s.weight >= top.weight - 0.01));
+  const cibleRef = top.reps;
+  const derniere = travail[travail.length - 1];
+  let motif = '';
+  if (travail.some(s => s.weight < top.weight - 0.01)) {
+    motif = 'tu as dû alléger en cours de route la dernière fois';
+  } else if (travail.some(s => s.reps < cibleRef)) {
+    motif = `les ${cibleRef} répétitions ne sont pas passées sur toutes les séries la dernière fois (${travail.map(s => s.reps).join(', ')})`;
+  } else if (derniere.echec) {
+    motif = 'ta dernière série est allée à l\'échec';
+  } else if (derniere.rir === 0) {
+    motif = 'ta dernière série était au maximum (RIR 0)';
+  }
+  return { top, travail, cibleRef, motif };
+}
+
 function chargeBrute(nom, historique, cibleReps) {
   const cible = Math.min(30, Math.max(1, cibleReps || 8));
   const seances = historique.get(nom) || [];
 
   if (seances.length) {
-    const top = seances[0].sets.reduce((a, b) => (b.weight > a.weight ? b : a));
+    const b = bilanSeance(seances[0].sets);
+    const valide = !b.motif;
+    // Validée : la DERNIÈRE série de travail, avec son RIR. Sinon : la plus
+    // lourde, SANS son RIR, et la charge ne peut pas monter.
+    const top = valide ? b.travail[b.travail.length - 1] : b.top;
+    const rir = valide ? top.rir : -1;
+    const plafond = (!valide && cible >= b.cibleRef) ? b.top.weight : Infinity;
+    const borne = (poids, raison) => (poids >= plafond - 0.01
+      ? { poids: plafond, raison: `pas d'augmentation, ${b.motif}` }
+      : { poids, raison });
+
     if (Math.abs(cible - top.reps) <= ECART_FIABLE) {
-      return {
-        poids: arrondi(nom, chargeDepuis1RM(rmDeSerie(top.weight, top.reps, top.rir), cible)),
-        raison: `d'après ta dernière série (${serieLabel(top)})${top.reps !== cible ? `, ramenée à ${cible} répétitions` : ''}`
-      };
+      return borne(
+        arrondi(nom, chargeDepuis1RM(rmDeSerie(top.weight, top.reps, rir), cible)),
+        `d'après ta dernière série (${serieLabel(top)})${top.reps !== cible ? `, ramenée à ${cible} répétitions` : ''}`
+      );
     }
     const limite = Date.now() - RECENT_MS;
     for (const s of seances) {
       if (s.quand < limite) break;
       const proches = s.sets.filter(x => Math.abs(x.reps - cible) <= 2);
       if (!proches.length) continue;
-      const p = proches.reduce((a, b) => (b.weight > a.weight ? b : a));
-      return {
-        poids: arrondi(nom, chargeDepuis1RM(rmDeSerie(p.weight, p.reps, p.rir), cible)),
-        raison: `d'après ta dernière série à ${p.reps} répétitions (${serieLabel(p)})`
-      };
+      const p = proches.reduce((a, b2) => (b2.weight > a.weight ? b2 : a));
+      return borne(
+        arrondi(nom, chargeDepuis1RM(rmDeSerie(p.weight, p.reps, p.rir), cible)),
+        `d'après ta dernière série à ${p.reps} répétitions (${serieLabel(p)})`
+      );
     }
-    const rm = rmDeSerie(top.weight, top.reps, top.rir);
-    return {
-      poids: arrondi(nom, chargeDepuis1RM(rm, cible + 1)),
-      raison: `première fois à ${cible} répétitions : estimé depuis ton 1RM (≈ ${kg(Math.round(rm))}, d'après ${serieLabel(top)}), avec une répétition de marge`
-    };
+    const rm = rmDeSerie(top.weight, top.reps, rir);
+    return borne(
+      arrondi(nom, chargeDepuis1RM(rm, cible + 1)),
+      `première fois à ${cible} répétitions : estimé depuis ton 1RM (≈ ${kg(Math.round(rm))}, d'après ${serieLabel(top)}), avec une répétition de marge`
+    );
   }
 
   const manuel = oneRmManuel(nom);

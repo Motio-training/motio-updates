@@ -23,7 +23,7 @@
    servi par esm.sh.
    ========================================================================== */
 
-const CACHE = 'motio-app-v99';
+const CACHE = 'motio-app-v100';
 
 const COQUILLE = [
   './',
