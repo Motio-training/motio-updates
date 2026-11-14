@@ -1,7 +1,7 @@
-{
-  "versionCode": 221,
-  "versionName": "2.119",
-  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.119/motio.apk",
-  "sha256": "ccec98fbf61b03bae12d6d2b71df121f113387069e94968f82119a9dc3333716",
-  "notes": "Widget de seance en cours (valider la serie, RIR), bouton Exercice suivant orange apres la derniere serie, charge conseillee alignee sur La derniere fois."
+﻿{
+    "versionCode":  222,
+    "versionName":  "2.120",
+    "apkUrl":  "https://github.com/Motio-training/motio-updates/releases/download/v2.120/motio.apk",
+    "sha256":  "6d7a0757f32fc5e120bb38515aa62f0a128fc625593fb5b328b9933a14240ac9",
+    "notes":  "Rappel de fin de serie (bouton Exercice suivant et widget) a l orange du theme."
 }
