@@ -213,6 +213,7 @@ export async function vueCoach() {
       const liste = Array.isArray(m.workout.adjustments) ? m.workout.adjustments : [];
       if (liste.length) {
         const clair = (a) => [
+          a.replace_with ? `remplacé par ${a.replace_with}` : '',
           a.load_kg > 0 ? `${String(a.load_kg).replace('.', ',')} kg` : '',
           a.sets && a.reps ? `${a.sets} × ${a.reps}` : a.sets ? `${a.sets} séries` : a.reps ? `${a.reps} répétitions` : '',
           a.rest_sec ? `repos ${a.rest_sec} s` : ''

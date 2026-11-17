@@ -1,7 +1,7 @@
 {
-    "versionCode":  222,
-    "versionName":  "2.120",
-    "apkUrl":  "https://github.com/Motio-training/motio-updates/releases/download/v2.120/motio.apk",
-    "sha256":  "6d7a0757f32fc5e120bb38515aa62f0a128fc625593fb5b328b9933a14240ac9",
-    "notes":  "Rappel de fin de serie (bouton Exercice suivant et widget) a l orange du theme."
+  "versionCode": 223,
+  "versionName": "2.121",
+  "apkUrl": "https://github.com/Motio-training/motio-updates/releases/download/v2.121/motio.apk",
+  "sha256": "54c8595d2aaa66fe5b401eefc150f72b7252c54bf2e7b41a159deab69e27fd37",
+  "notes": "Charge PDC depuis la serie la plus lourde, widget de seance avec chrono et RIR sous le nom, jours sur la carte Aujourd hui, recap de fin de seance regroupe, carte du bilan de Moti et remplacement d exercice propose."
 }
